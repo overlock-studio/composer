@@ -1,0 +1,1 @@
+export { EditorAreaSidebar } from './EditorAreaSidebar';

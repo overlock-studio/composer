@@ -1,0 +1,91 @@
+{
+  "name": "@overlock-studio/composer",
+  "version": "0.1.0",
+  "description": "Visual editor library for Crossplane configurations. Node-based canvas with parsers and serializers for YAML round-trip.",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "require": "./dist/index.cjs"
+      },
+      "./lib/parser": {
+        "types": "./dist/lib/parser.d.ts",
+        "import": "./dist/lib/parser.js",
+        "require": "./dist/lib/parser.cjs"
+      },
+      "./styles/editor.css": "./dist/styles/editor.css",
+      "./package.json": "./package.json"
+    }
+  },
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./lib/parser": "./src/lib/parser.ts",
+    "./styles/editor.css": "./src/styles/editor.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "build": "yarn build:js && yarn build:types",
+    "build:js": "node esbuild.config.mjs",
+    "build:types": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+    "watch": "node esbuild.config.mjs --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@xyflow/react": "^12.10.0",
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
+    "@radix-ui/react-accordion": "^1.2.2",
+    "@radix-ui/react-checkbox": "^1.1.2",
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-label": "^2.1.1",
+    "@radix-ui/react-popover": "^1.1.4",
+    "@radix-ui/react-radio-group": "^1.2.2",
+    "@radix-ui/react-scroll-area": "^1.2.2",
+    "@radix-ui/react-select": "^2.1.2",
+    "@radix-ui/react-separator": "^1.1.0",
+    "@radix-ui/react-slot": "^1.1.1",
+    "@radix-ui/react-toast": "^1.2.3",
+    "@radix-ui/react-tooltip": "^1.1.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "pino": "^9.6.0",
+    "react-hook-form": "^7.54.2",
+    "react-use": "^17.2.4",
+    "tailwind-merge": "^2.5.5",
+    "yaml": "^2.7.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "24.2.1",
+    "@types/react": "19.1.10",
+    "@types/react-dom": "19.0.2",
+    "@xyflow/react": "^12.10.0",
+    "esbuild": "^0.24.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "tsc-alias": "^1.8.10",
+    "typescript": "5.6.3"
+  },
+  "packageManager": "yarn@4.4.1"
+}

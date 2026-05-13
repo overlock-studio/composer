@@ -1,0 +1,47 @@
+'use client';
+import React from 'react';
+import { EdgeDeletionDialogProps } from '../../../lib/types';
+import { useEditorAreaContext } from '../EditorAreaContext/EditorAreaContext';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../ui/dialog';
+import { Button } from '../../ui/button';
+
+export const EdgeDeletionDialog = ({
+  open,
+  edgeId,
+  setOpen,
+}: EdgeDeletionDialogProps) => {
+  const { setEdges } = useEditorAreaContext();
+
+  const handleConfirmDelete = () => {
+    setEdges((eds) => eds.filter((ed) => ed.id !== edgeId));
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Confirm Deletion</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this edge?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={() => setOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="primary">
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
