@@ -41,6 +41,7 @@ const pkg = JSON.parse(
 const external = [
   ...Object.keys(pkg.dependencies ?? {}),
   ...Object.keys(pkg.peerDependencies ?? {}),
+  /^node:/,
 ];
 
 const common = {
@@ -60,6 +61,7 @@ const common = {
 const entries = [
   { in: 'src/index.ts', out: 'dist/index' },
   { in: 'src/lib/parser.ts', out: 'dist/lib/parser' },
+  { in: 'src/oci/client.ts', out: 'dist/oci/client' },
 ];
 
 const buildOne = (entry, format) =>
