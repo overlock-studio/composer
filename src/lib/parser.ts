@@ -210,10 +210,18 @@ const buildBlocksForComposition = (
   const blockX = (containerWidth - BLOCK_WIDTH) / 2;
   let currentY = CONTAINER_HEADER_HEIGHT;
 
+  const usedNames = new Set<string>();
   const childBlocks: Block[] = resourceList
     .filter((r): r is Resource => !!r && typeof r === 'object')
     .map((resource, idx) => {
-      const resourceName = resource.name ?? `resource-${idx}`;
+      const requestedName = resource.name ?? `resource-${idx}`;
+      let resourceName = requestedName;
+      let suffix = 2;
+      while (usedNames.has(resourceName)) {
+        resourceName = `${requestedName}-${suffix}`;
+        suffix++;
+      }
+      usedNames.add(resourceName);
       const base = (resource.base ?? {}) as Resource['base'];
       const apiVersion = base.apiVersion ?? '';
       const kind = base.kind ?? '';
