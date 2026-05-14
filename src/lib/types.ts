@@ -172,6 +172,7 @@ export type ResourceNodeToolbarProps = {
   handlesStates?: HandlesStates;
   nodeId: string;
   treeData: HandleTreeNode[];
+  onRequestDelete: () => void;
 };
 
 export type ContainerNodeToolbarProps = {
@@ -183,11 +184,13 @@ export type ContainerNodeToolbarProps = {
   apiVersion?: string;
   onKindChange: (newKind: string) => void;
   onApiVersionChange: (newApiVersion: string) => void;
+  onRequestDelete: () => void;
 };
 
 export type ConnectorNodeToolbarProps = {
   connector: Connector;
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
+  onRequestDelete: () => void;
 };
 
 export type EditConnectorsMenuProps = {

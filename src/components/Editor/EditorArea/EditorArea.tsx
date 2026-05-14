@@ -371,6 +371,7 @@ export const EditorArea = () => {
           onEdgeMouseLeave={onEdgeMouseLeave}
           minZoom={0.1}
           multiSelectionKeyCode={null}
+          deleteKeyCode={null}
           ref={reactFlowRef}
           className="custom-editor"
         >

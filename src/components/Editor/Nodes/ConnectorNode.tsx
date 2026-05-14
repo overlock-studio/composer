@@ -1,14 +1,19 @@
 'use client';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ConnectorNodeData } from '../../../lib/types';
 import { Node, NodeProps, Position, useConnection } from '@xyflow/react';
 import { CustomHandle } from '../CustomHandle';
 import { ConnectorNodeToolbar } from '../Toolbars/ConnectorNodeToolbar';
+import { ConnectorNodeDeletionDialog } from '../ConfirmDeletionDialog';
+import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 
 const ConnectorNodeComponent = ({
   id,
   data,
+  selected,
 }: NodeProps<Node<ConnectorNodeData>>) => {
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  useNodeDeleteShortcut(selected, () => setOpenDeleteDialog(true));
   const connection = useConnection();
 
   const isInProgress = useMemo(() => connection?.inProgress, [connection]);
@@ -26,6 +31,13 @@ const ConnectorNodeComponent = ({
     <div className="connector-no-glow">
       <ConnectorNodeToolbar
         connector={data.connector}
+        setConnectors={data.setConnectors}
+        onRequestDelete={() => setOpenDeleteDialog(true)}
+      />
+      <ConnectorNodeDeletionDialog
+        open={openDeleteDialog}
+        nodeId={data.connector.path}
+        setOpen={setOpenDeleteDialog}
         setConnectors={data.setConnectors}
       />
       {data.connector.connection === 'output' && (
