@@ -178,7 +178,7 @@ const ResourceNodeComponent = ({
     >
       <div className="inner">
         <div className="text-center align-middle border-b-[2px] border-muted-foreground/20 px-2 py-1.5 bg-muted rounded-t-lg">
-          <div className="text-[0.7em]">
+          <div className="text-sm font-medium">
             {data.blockType?.title || data.label}
           </div>
           {data.blockType?.apiVersion && (

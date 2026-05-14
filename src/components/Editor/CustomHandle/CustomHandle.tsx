@@ -113,7 +113,13 @@ export const CustomHandle = ({
           <div className="mb-1">
             <span className="font-bold mr-1">Type:</span>
             <Badge variant={type}>
-              {type === 'target' ? 'input' : 'output'}
+              {variant === 'container'
+                ? type === 'target'
+                  ? 'output'
+                  : 'input'
+                : type === 'target'
+                  ? 'input'
+                  : 'output'}
             </Badge>
           </div>
           <div className="mb-1">
