@@ -6,6 +6,7 @@ import {
   getBezierPath,
   Position,
   EdgeProps,
+  useStore,
   useViewport,
 } from '@xyflow/react';
 import {
@@ -42,7 +43,7 @@ export const CustomEdge = ({
 
   const { setEdges, activeHandle } = useEditorAreaContext();
 
-  const isFlowActive =
+  const isHandleFlowActive =
     !!activeHandle &&
     ((activeHandle.type === 'source' &&
       activeHandle.nodeId === source &&
@@ -50,6 +51,15 @@ export const CustomEdge = ({
       (activeHandle.type === 'target' &&
         activeHandle.nodeId === target &&
         activeHandle.handleId === (targetHandleId ?? '')));
+
+  const isSourceSelected = useStore(
+    (s) => s.nodeLookup.get(source)?.selected ?? false,
+  );
+  const isTargetSelected = useStore(
+    (s) => s.nodeLookup.get(target)?.selected ?? false,
+  );
+
+  const isFlowActive = isHandleFlowActive || isSourceSelected || isTargetSelected;
 
   useEffect(() => {
     setEdges((eds) =>
