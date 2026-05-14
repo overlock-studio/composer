@@ -155,9 +155,13 @@ export const EditorAreaSidebar = () => {
           <SidebarGroup className="h-full">
             <SidebarGroupContent className="h-full">
               <div className="flex flex-col h-full">
+                <h2 className="px-2 pt-2 pb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Block library
+                </h2>
                 <Accordion
                   type="single"
                   collapsible
+                  className="flex flex-col gap-2"
                   onValueChange={async (v) => {
                     const provider = providers.find((pr) => pr._id === v);
                     if (provider && provider.url) {
@@ -169,12 +173,16 @@ export const EditorAreaSidebar = () => {
                   }}
                 >
                   {providers.map((pr) => (
-                    <AccordionItem value={pr._id} key={pr._id}>
-                      <AccordionTrigger className="justify-start gap-3 pl-2 no-underline hover:no-underline">
+                    <AccordionItem
+                      value={pr._id}
+                      key={pr._id}
+                      className="border border-sidebar-border rounded-md px-2 last:border-b"
+                    >
+                      <AccordionTrigger className="justify-start gap-3 no-underline hover:no-underline py-3">
                         {getProviderDisplayName(pr)}
                       </AccordionTrigger>
 
-                      <AccordionContent className="flex flex-col gap-3">
+                      <AccordionContent className="flex flex-col gap-3 pb-3">
                         <div className="relative py-1">
                           <Filter className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                           <Input
@@ -199,10 +207,11 @@ export const EditorAreaSidebar = () => {
                               )?.blockTypes || [],
                               pr._id,
                             ).map((blockType) =>
-                              blockType.title && blockType.description ? (
+                              blockType.title ? (
                                 <BlockCard
                                   key={blockType.name}
                                   title={blockType.title}
+                                  apiVersion={blockType.apiVersion}
                                   description={blockType.description}
                                   icon={blockType.icon}
                                   onDragStart={(e) => onDragStart(e, blockType)}

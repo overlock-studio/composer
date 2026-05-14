@@ -515,7 +515,7 @@ const ContainerNodeComponent = ({
       >
         <div className="inner relative">
           <div className="text-center align-middle border-b-[2px] border-muted-foreground/20 px-2 py-1.5 bg-muted rounded-t-lg">
-            <div className="text-[0.7em]">{name}</div>
+            <div className="text-sm font-medium">{name}</div>
             {apiVersion && (
               <div className="text-[0.625rem] text-muted-foreground">
                 {apiVersion}
