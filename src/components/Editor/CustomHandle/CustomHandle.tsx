@@ -4,6 +4,7 @@ import {
   HandleProps,
   useNodeConnections,
   useNodeId,
+  useStore,
 } from '@xyflow/react';
 import {
   Tooltip,
@@ -44,16 +45,21 @@ export const CustomHandle = ({
 
   const nodeId = useNodeId();
   const { activeHandle, setActiveHandle } = useEditorAreaContext();
-  const isHandleActive =
+  const isOwnerSelected = useStore((s) =>
+    nodeId ? (s.nodeLookup.get(nodeId)?.selected ?? false) : false,
+  );
+  const isActiveByClick =
     !!activeHandle &&
     activeHandle.nodeId === nodeId &&
     activeHandle.handleId === (id ?? '') &&
     activeHandle.type === type;
+  const isActiveBySelection = isOwnerSelected && connections.length > 0;
+  const isHandleActive = isActiveByClick || isActiveBySelection;
 
   const handleClick = (e: React.MouseEvent) => {
     if (!nodeId) return;
     e.stopPropagation();
-    if (isHandleActive) {
+    if (isActiveByClick) {
       setActiveHandle(null);
     } else {
       setActiveHandle({
