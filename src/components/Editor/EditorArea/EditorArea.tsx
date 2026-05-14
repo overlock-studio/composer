@@ -29,7 +29,19 @@ import { Spinner } from '../../Spinner';
 import { Block } from '../../../api/types';
 import logger from '../../../lib/logger';
 
-const getUnique = (str: string) => `${str}-${Date.now()}`;
+const sanitizeBaseName = (s: string): string =>
+  s.replace(/[^a-z0-9-]/gi, '').toLowerCase() || 'block';
+
+const nextUniqueNodeName = (
+  existingNodes: { id: string }[],
+  blockType: { kind?: string; name?: string },
+): string => {
+  const base = sanitizeBaseName(blockType.kind || blockType.name || 'block');
+  const ids = new Set(existingNodes.map((n) => n.id));
+  let counter = 1;
+  while (ids.has(`${base}${counter}`)) counter++;
+  return `${base}${counter}`;
+};
 
 export const EditorArea = () => {
   const reactFlowRef = useRef<HTMLDivElement | null>(null);
@@ -209,7 +221,7 @@ export const EditorArea = () => {
       y: event.clientY,
     });
 
-    const id = getUnique(selectedBlockType.name);
+    const id = nextUniqueNodeName(nodes, selectedBlockType);
     let newNode: Node | null = null;
 
     if (selectedBlockType.leaf) {

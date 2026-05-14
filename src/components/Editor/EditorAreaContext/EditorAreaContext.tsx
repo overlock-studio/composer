@@ -108,23 +108,29 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
     [blockTypeRegistry],
   );
 
-  const getUnique = (str: string) => `${str}-${Date.now()}`;
+  const sanitizeBaseName = (s: string): string =>
+    s.replace(/[^a-z0-9-]/gi, '').toLowerCase() || 'block';
 
   const addNodeToCanvas = (blockType: BlockType) => {
-    const id = getUnique(blockType.name);
+    if (blockType.leaf) return;
 
-    // Add node at center of viewport for mobile
     const position = { x: 100, y: 100 };
+    const base = sanitizeBaseName(blockType.kind || blockType.name);
 
-    let newNode: Node | null = null;
-
-    if (!blockType.leaf) {
-      newNode = {
-        id,
+    setNodes((current) => {
+      const existing = new Set(current.map((n) => n.id));
+      let counter = 1;
+      let candidate = `${base}${counter}`;
+      while (existing.has(candidate)) {
+        counter++;
+        candidate = `${base}${counter}`;
+      }
+      const newNode: Node = {
+        id: candidate,
         position,
         type: 'container',
         data: {
-          name: id,
+          name: candidate,
           connectors: [],
           childBlocks: [],
           reactFlowRef: null,
@@ -133,11 +139,8 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
           apiVersion: blockType.apiVersion,
         },
       };
-    }
-
-    if (newNode) {
-      setNodes((nds) => nds.concat(newNode));
-    }
+      return current.concat(newNode);
+    });
   };
 
   return (

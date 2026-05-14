@@ -188,6 +188,7 @@ const buildCompositionInputs = (
       metadata: { name: compName },
       compositeTypeRef,
       connectors: ownConnectors,
+      originalName: c.id !== compName ? c.id : undefined,
     };
   }
   return out;

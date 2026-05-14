@@ -28,6 +28,7 @@ export type SerializerCompositionInput = {
   metadata?: { name: string };
   compositeTypeRef?: { apiVersion: string; kind: string };
   connectors?: Connector[];
+  originalName?: string;
 };
 
 export type SerializerInput = {
@@ -160,6 +161,47 @@ const replaceConfigurationDependsOn = (
   }
   const node = doc.createNode(list) as YAMLSeq;
   (spec as YAMLMap).set('dependsOn', node);
+};
+
+const pluralize = (kind: string): string => {
+  const lower = kind.toLowerCase();
+  if (lower.endsWith('s') || lower.endsWith('x') || lower.endsWith('z'))
+    return `${lower}es`;
+  if (lower.endsWith('y') && !/[aeiou]y$/.test(lower))
+    return `${lower.slice(0, -1)}ies`;
+  return `${lower}s`;
+};
+
+const buildNewXrdDoc = (
+  compositeTypeRef: { apiVersion: string; kind: string },
+  connectors: Connector[] | undefined,
+): string => {
+  const [group, version] = compositeTypeRef.apiVersion.split('/');
+  const kind = compositeTypeRef.kind;
+  const plural = pluralize(kind);
+
+  const doc = new Document({
+    apiVersion: 'apiextensions.crossplane.io/v1',
+    kind: 'CompositeResourceDefinition',
+    metadata: { name: `${plural}.${group}` },
+    spec: {
+      group,
+      names: { kind, plural },
+      versions: [
+        {
+          name: version,
+          served: true,
+          referenceable: true,
+          schema: {
+            openAPIV3Schema: { type: 'object', properties: {} },
+          },
+        },
+      ],
+    },
+  });
+
+  replaceXrdSchema(doc, connectors ?? []);
+  return doc.toString(STRINGIFY_OPTIONS);
 };
 
 const buildNewCompositionDoc = (
@@ -326,8 +368,12 @@ const replaceXrdSchema = (doc: Document, connectors: Connector[]): void => {
 export const serializeCrossplaneFiles = (
   input: SerializerInput,
 ): Record<string, string> => {
+  const sanitizeFilename = (s: string): string =>
+    s.replace(/[^a-zA-Z0-9._-]/g, '_');
+
   const knownCompositionFile = (name: string): string =>
-    input.origin.compositions[name] ?? input.crossplaneFile;
+    input.origin.compositions[name] ??
+    `${sanitizeFilename(name)}-composition.yaml`;
 
   const docsByFile = new Map<string, Document[]>();
   for (const f of input.files) {
@@ -360,12 +406,35 @@ export const serializeCrossplaneFiles = (
     }
   }
 
+  const findCompositionInput = (
+    docMetadataName: string,
+  ): { name: string; comp: SerializerCompositionInput } | null => {
+    if (input.compositions[docMetadataName]) {
+      return {
+        name: docMetadataName,
+        comp: input.compositions[docMetadataName],
+      };
+    }
+    for (const [currentName, comp] of Object.entries(input.compositions)) {
+      if (comp.originalName === docMetadataName) {
+        return { name: currentName, comp };
+      }
+    }
+    return null;
+  };
+
   for (const [, docs] of docsByFile) {
     for (const doc of docs) {
       const kind = docKind(doc);
       const name = docName(doc);
-      if (kind === 'Composition' && name && input.compositions[name]) {
-        replaceCompositionResources(doc, input.compositions[name]);
+      if (kind === 'Composition' && name) {
+        const match = findCompositionInput(name);
+        if (match) {
+          if (match.name !== name) {
+            doc.setIn(['metadata', 'name'], match.name);
+          }
+          replaceCompositionResources(doc, match.comp);
+        }
       } else if (kind === 'Configuration') {
         replaceConfigurationDependsOn(doc, input.providers, input.functions);
       } else if (kind === 'CompositeResourceDefinition') {
@@ -399,6 +468,19 @@ export const serializeCrossplaneFiles = (
     if (handledCompositions.has(name)) continue;
     const targetFile = knownCompositionFile(name);
     const fresh = buildNewCompositionDoc(name, comp).trim();
+    if (!fresh) continue;
+    const existing = output[targetFile] ?? '';
+    output[targetFile] = existing
+      ? `${existing.replace(/\n+$/, '')}\n---\n${fresh}\n`
+      : `${fresh}\n`;
+  }
+
+  for (const [name, comp] of Object.entries(input.compositions)) {
+    if (!comp.compositeTypeRef) continue;
+    const ref = `${comp.compositeTypeRef.apiVersion}|${comp.compositeTypeRef.kind}`;
+    if (xrdsByRef.has(ref)) continue;
+    const targetFile = `${sanitizeFilename(name)}-xrd.yaml`;
+    const fresh = buildNewXrdDoc(comp.compositeTypeRef, comp.connectors).trim();
     if (!fresh) continue;
     const existing = output[targetFile] ?? '';
     output[targetFile] = existing
