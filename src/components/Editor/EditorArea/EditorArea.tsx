@@ -17,7 +17,6 @@ import { useEditorAreaContext } from '../EditorAreaContext';
 import {
   buildTreeData,
   EDGE_TYPES,
-  getHandlesFromSchema,
   NODE_TYPES,
   RESOURCE_NODE_WIDTH,
   MIN_CONTAINER_HEIGHT,
@@ -247,7 +246,6 @@ export const EditorArea = () => {
       };
 
       const schema = selectedBlockType.schema;
-      const initialHandles = getHandlesFromSchema({ schema });
       const treeData = buildTreeData(schema);
 
       newNode = {
@@ -262,7 +260,7 @@ export const EditorArea = () => {
           name: id,
           treeData,
           setEdges,
-          initialHandles,
+          initialHandles: [],
           blockType: selectedBlockType,
         },
       };
