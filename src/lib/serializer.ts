@@ -40,7 +40,11 @@ export type SerializerInput = {
   functions: PackageDependency[];
 };
 
-const STRINGIFY_OPTIONS = { lineWidth: 0 } as const;
+const STRINGIFY_OPTIONS = {
+  lineWidth: 0,
+  collectionStyle: 'block',
+} as const;
+const NEW_DOC_OPTIONS = { aliasDuplicateObjects: false } as const;
 
 const buildPatchesForResource = (
   edges: ResourceEdgeInput[] | undefined,
@@ -180,25 +184,28 @@ const buildNewXrdDoc = (
   const kind = compositeTypeRef.kind;
   const plural = pluralize(kind);
 
-  const doc = new Document({
-    apiVersion: 'apiextensions.crossplane.io/v1',
-    kind: 'CompositeResourceDefinition',
-    metadata: { name: `${plural}.${group}` },
-    spec: {
-      group,
-      names: { kind, plural },
-      versions: [
-        {
-          name: version,
-          served: true,
-          referenceable: true,
-          schema: {
-            openAPIV3Schema: { type: 'object', properties: {} },
+  const doc = new Document(
+    {
+      apiVersion: 'apiextensions.crossplane.io/v1',
+      kind: 'CompositeResourceDefinition',
+      metadata: { name: `${plural}.${group}` },
+      spec: {
+        group,
+        names: { kind, plural },
+        versions: [
+          {
+            name: version,
+            served: true,
+            referenceable: true,
+            schema: {
+              openAPIV3Schema: { type: 'object', properties: {} },
+            },
           },
-        },
-      ],
+        ],
+      },
     },
-  });
+    NEW_DOC_OPTIONS,
+  );
 
   replaceXrdSchema(doc, connectors ?? []);
   return doc.toString(STRINGIFY_OPTIONS);
@@ -233,7 +240,7 @@ const buildNewCompositionDoc = (
   } else {
     composition.spec = { resources };
   }
-  const doc = new Document(composition);
+  const doc = new Document(composition, NEW_DOC_OPTIONS);
   return doc.toString(STRINGIFY_OPTIONS);
 };
 
