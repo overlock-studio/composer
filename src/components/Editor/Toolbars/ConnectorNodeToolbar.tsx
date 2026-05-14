@@ -4,7 +4,6 @@ import { Button } from '../../ui/button';
 import { Position, NodeToolbar as ReactFlowNodeToolbar } from '@xyflow/react';
 import { ConnectorNodeToolbarProps } from '../../../lib/types';
 import { Ellipsis, Pencil, Trash2 } from 'lucide-react';
-import { ConnectorNodeDeletionDialog } from '../ConfirmDeletionDialog';
 import {
   Popover,
   PopoverContent,
@@ -21,8 +20,8 @@ import { EditConnectorsMenu } from '../Menus';
 export const ConnectorNodeToolbar = ({
   connector,
   setConnectors,
+  onRequestDelete,
 }: ConnectorNodeToolbarProps) => {
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [editOpen, setEditOpen] = useState<boolean>(false);
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
@@ -57,8 +56,8 @@ export const ConnectorNodeToolbar = ({
           <Button
             variant="ghost"
             onClick={() => {
-              setOpenDeleteDialog(true);
               setMenuOpen(false);
+              onRequestDelete();
             }}
             className="w-full text-destructive"
           >
@@ -67,13 +66,6 @@ export const ConnectorNodeToolbar = ({
           </Button>
         </PopoverContent>
       </Popover>
-
-      <ConnectorNodeDeletionDialog
-        open={openDeleteDialog}
-        nodeId={connector.path}
-        setOpen={setOpenDeleteDialog}
-        setConnectors={setConnectors}
-      />
     </ReactFlowNodeToolbar>
   );
 };

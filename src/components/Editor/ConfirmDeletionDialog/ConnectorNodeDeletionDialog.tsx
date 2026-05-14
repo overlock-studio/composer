@@ -39,10 +39,10 @@ export const ConnectorNodeDeletionDialog = ({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button onClick={handleCancelDelete} color="primary">
+          <Button onClick={handleCancelDelete} variant="outline">
             Cancel
           </Button>
-          <Button onClick={handleConfirmDelete} color="primary">
+          <Button onClick={handleConfirmDelete} variant="destructive">
             Delete
           </Button>
         </DialogFooter>

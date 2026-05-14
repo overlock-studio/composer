@@ -34,10 +34,10 @@ export const EdgeDeletionDialog = ({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button onClick={() => setOpen(false)} color="primary">
+          <Button onClick={() => setOpen(false)} variant="outline">
             Cancel
           </Button>
-          <Button onClick={handleConfirmDelete} color="primary">
+          <Button onClick={handleConfirmDelete} variant="destructive">
             Delete
           </Button>
         </DialogFooter>

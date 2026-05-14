@@ -15,8 +15,10 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import { ResourceNodeToolbar } from '../Toolbars';
+import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { CustomHandle } from '../CustomHandle';
 import { useEditorAreaContext } from '../EditorAreaContext';
+import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 import {
   buildTreeData,
   moveIntersectingNodes,
@@ -30,7 +32,10 @@ const ResourceNodeComponent = ({
   id,
   data,
   parentId,
+  selected,
 }: NodeProps<Node<ResourceNodeData>>) => {
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  useNodeDeleteShortcut(selected, () => setOpenDeleteDialog(true));
   const [handles, setHandles] = useState<Handle[]>(
     data.currentHandles || data.initialHandles,
   );
@@ -184,6 +189,7 @@ const ResourceNodeComponent = ({
         </div>
         <ResourceNodeToolbar
           nodeId={id}
+          onRequestDelete={() => setOpenDeleteDialog(true)}
           handlesStates={{
             setHandles,
             handles,
@@ -236,6 +242,11 @@ const ResourceNodeComponent = ({
           </div>
         </div>
       </div>
+      <NodeDeletionDialog
+        open={openDeleteDialog}
+        nodeId={id}
+        setOpen={setOpenDeleteDialog}
+      />
     </div>
   );
 };

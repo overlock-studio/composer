@@ -17,22 +17,20 @@ import { EditConnectorsMenu } from '../Menus';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { ContainerNodeToolbarProps } from '../../../lib/types';
-import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 
 export const ContainerNodeToolbar = ({
   setConnectors,
-  id,
   name,
   onNameChange,
   kind,
   apiVersion,
   onKindChange,
   onApiVersionChange,
+  onRequestDelete,
 }: ContainerNodeToolbarProps) => {
   const [addOpen, setAddOpen] = useState<boolean>(false);
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [editOpen, setEditOpen] = useState<boolean>(false);
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [editName, setEditName] = useState<string>(name || '');
   const [editKind, setEditKind] = useState<string>(kind || '');
   const [editApiVersion, setEditApiVersion] = useState<string>(
@@ -132,8 +130,8 @@ export const ContainerNodeToolbar = ({
           <Button
             variant="ghost"
             onClick={() => {
-              setOpenDeleteDialog(true);
               setMenuOpen(false);
+              onRequestDelete();
             }}
             className="w-full text-destructive"
           >
@@ -142,11 +140,6 @@ export const ContainerNodeToolbar = ({
           </Button>
         </PopoverContent>
       </Popover>
-      <NodeDeletionDialog
-        open={openDeleteDialog}
-        nodeId={id}
-        setOpen={setOpenDeleteDialog}
-      />
     </ReactFlowNodeToolbar>
   );
 };

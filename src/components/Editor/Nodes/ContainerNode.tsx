@@ -12,6 +12,8 @@ import {
   type NodeDimensionChange,
 } from '@xyflow/react';
 import { ContainerNodeToolbar } from '../Toolbars/ContainerNodeToolbar';
+import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
+import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 import { ContainerNodeFooter } from './ContainerNodeFooter';
 import {
   buildTreeData,
@@ -32,7 +34,10 @@ const CONNECTOR_HEIGHT = 50;
 const ContainerNodeComponent = ({
   id: containerId,
   data,
+  selected,
 }: NodeProps<Node<ContainerNodeData>>) => {
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  useNodeDeleteShortcut(selected, () => setOpenDeleteDialog(true));
   const [nodeHeight, setNodeHeight] = useState<number>(data.initialHeight!);
   const [nodeWidth, setNodeWidth] = useState<number>(data.initialWidth!);
   const [connectors, setConnectors] = useState<Connector[]>(data.connectors);
@@ -526,10 +531,16 @@ const ContainerNodeComponent = ({
             apiVersion={apiVersion}
             onKindChange={handleKindChange}
             onApiVersionChange={handleApiVersionChange}
+            onRequestDelete={() => setOpenDeleteDialog(true)}
           />
           <ContainerNodeFooter functions={functions} />
         </div>
       </div>
+      <NodeDeletionDialog
+        open={openDeleteDialog}
+        nodeId={containerId}
+        setOpen={setOpenDeleteDialog}
+      />
     </>
   );
 };
