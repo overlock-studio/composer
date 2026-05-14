@@ -1,3 +1,14 @@
+export {
+  ComposerEditor,
+  type ComposerEditorHandle,
+  type ComposerEditorProps,
+  type ComposerSavePayload,
+} from './components/Editor/ComposerEditor';
+export {
+  CROSSPLANE_CORE_URL,
+  isCrossplaneCoreUrl,
+  crossplaneCoreBlockTypes,
+} from './lib/crossplaneCore';
 export { EditorArea } from './components/Editor/EditorArea';
 export { MonitoringArea } from './components/Editor/MonitoringArea';
 export {

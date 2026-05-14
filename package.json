@@ -19,6 +19,11 @@
         "import": "./dist/lib/parser.js",
         "require": "./dist/lib/parser.cjs"
       },
+      "./oci": {
+        "types": "./dist/oci/client.d.ts",
+        "import": "./dist/oci/client.js",
+        "require": "./dist/oci/client.cjs"
+      },
       "./styles/editor.css": "./dist/styles/editor.css",
       "./package.json": "./package.json"
     }
@@ -29,6 +34,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./lib/parser": "./src/lib/parser.ts",
+    "./oci": "./src/oci/client.ts",
     "./styles/editor.css": "./src/styles/editor.css",
     "./package.json": "./package.json"
   },
@@ -68,18 +74,24 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "js-yaml": "4.1.0",
     "lucide-react": "^0.468.0",
     "pino": "^9.6.0",
     "react-hook-form": "^7.54.2",
     "react-use": "^17.2.4",
+    "semver": "^7.6.0",
     "tailwind-merge": "^2.5.5",
+    "tar-stream": "^3.1.7",
     "yaml": "^2.7.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "24.2.1",
     "@types/react": "19.1.10",
     "@types/react-dom": "19.0.2",
+    "@types/semver": "^7.5.8",
+    "@types/tar-stream": "3.1.3",
     "@xyflow/react": "^12.10.0",
     "esbuild": "^0.24.0",
     "react": "19.0.0",
