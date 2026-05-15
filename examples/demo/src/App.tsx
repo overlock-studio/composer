@@ -29,7 +29,6 @@ export default function App() {
   const handleSave = (payload: ComposerSavePayload) => {
     setLastSave(payload);
     setShowPayload(true);
-    // eslint-disable-next-line no-console
     console.log('[composer-demo] onSave payload', payload);
   };
 

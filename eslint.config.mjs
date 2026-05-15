@@ -6,13 +6,20 @@ import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', '.yarn/**', '.claude/**'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '.yarn/**',
+      '.claude/**',
+      'examples/**/dist/**',
+      'examples/**/node_modules/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   react.configs.flat.recommended,
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'examples/**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
