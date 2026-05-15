@@ -41,7 +41,7 @@ const pkg = JSON.parse(
 const external = [
   ...Object.keys(pkg.dependencies ?? {}),
   ...Object.keys(pkg.peerDependencies ?? {}),
-  /^node:/,
+  'node:*',
 ];
 
 const common = {
