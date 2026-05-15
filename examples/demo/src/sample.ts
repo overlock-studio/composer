@@ -1,6 +1,8 @@
-import type {
-  CrossplaneFile,
-  LayoutByComposition,
+import {
+  parseCrossplaneDependencies,
+  type CrossplaneFile,
+  type LayoutByComposition,
+  type PackageDependency,
 } from '@overlock-studio/composer';
 
 import crossplaneYaml from './samples/crossplane.yaml?raw';
@@ -22,3 +24,6 @@ export const sampleHashes: Record<string, string> = {
   'xrd.yaml': 'h-xrd-1',
   'composition.yaml': 'h-composition-1',
 };
+
+export const sampleDependencies: PackageDependency[] =
+  parseCrossplaneDependencies(crossplaneYaml);
