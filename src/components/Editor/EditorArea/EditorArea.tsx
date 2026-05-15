@@ -232,81 +232,104 @@ export const EditorArea = () => {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
+  const performDrop = useCallback(
+    (opts: {
+      clientX: number;
+      clientY: number;
+      target: EventTarget | null;
+    }) => {
+      if (!selectedBlockType) return;
+      const { clientX, clientY, target } = opts;
+
+      const position = screenToFlowPosition({ x: clientX, y: clientY });
+      const id = nextUniqueNodeName(nodes, selectedBlockType);
+      let newNode: Node | null = null;
+
+      if (selectedBlockType.leaf) {
+        const targetEl = target as HTMLElement | null;
+        const parentNode = targetEl?.closest?.(
+          '[data-parent-id]',
+        ) as HTMLElement | null;
+        const parentNodeId = parentNode?.dataset.parentId;
+        if (!parentNodeId) return;
+
+        const containerNode = nodes.find((n) => n.id === parentNodeId);
+        if (!containerNode) return;
+
+        const relativePosition = {
+          x: position.x - containerNode.position.x,
+          y: position.y - containerNode.position.y,
+        };
+
+        const treeData = buildTreeData(selectedBlockType.schema);
+
+        newNode = {
+          id,
+          position: relativePosition,
+          type: 'resource',
+          extent: 'parent',
+          parentId: parentNodeId,
+          style: { width: RESOURCE_NODE_WIDTH },
+          draggable: true,
+          data: {
+            name: id,
+            treeData,
+            setEdges,
+            initialHandles: [],
+            blockType: selectedBlockType,
+          },
+        };
+      } else {
+        newNode = {
+          id,
+          position,
+          type: 'container',
+          data: {
+            name: id,
+            connectors: [],
+            childBlocks: [],
+            reactFlowRef,
+            blockType: selectedBlockType,
+            initialWidth: MIN_CONTAINER_WIDTH,
+            initialHeight: MIN_CONTAINER_HEIGHT,
+            kind: selectedBlockType.kind,
+            apiVersion: selectedBlockType.apiVersion,
+          },
+        };
+      }
+      if (newNode) {
+        setNodes((nds) => nds.concat(newNode));
+      }
+    },
+    [selectedBlockType, nodes, screenToFlowPosition, setNodes, setEdges],
+  );
+
   const onDrop = (event: React.DragEvent) => {
     event.preventDefault();
-    if (!selectedBlockType) return;
-
-    const position = screenToFlowPosition({
-      x: event.clientX,
-      y: event.clientY,
+    performDrop({
+      clientX: event.clientX,
+      clientY: event.clientY,
+      target: event.target,
     });
-
-    const id = nextUniqueNodeName(nodes, selectedBlockType);
-    let newNode: Node | null = null;
-
-    if (selectedBlockType.leaf) {
-      const target = event.target as HTMLElement;
-      const parentNode = target.closest(
-        '[data-parent-id]',
-      ) as HTMLElement | null;
-      const parentNodeId = parentNode?.dataset.parentId;
-
-      if (!parentNodeId) return;
-
-      const containerNode = nodes.find((n) => n.id === parentNodeId);
-      if (!containerNode) return;
-
-      const flowPosition = screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
-
-      const relativePosition = {
-        x: flowPosition.x - containerNode.position.x,
-        y: flowPosition.y - containerNode.position.y,
-      };
-
-      const schema = selectedBlockType.schema;
-      const treeData = buildTreeData(schema);
-
-      newNode = {
-        id,
-        position: relativePosition,
-        type: 'resource',
-        extent: 'parent',
-        parentId: parentNodeId,
-        style: { width: RESOURCE_NODE_WIDTH },
-        draggable: true,
-        data: {
-          name: id,
-          treeData,
-          setEdges,
-          initialHandles: [],
-          blockType: selectedBlockType,
-        },
-      };
-    } else {
-      newNode = {
-        id,
-        position,
-        type: 'container',
-        data: {
-          name: id,
-          connectors: [],
-          childBlocks: [],
-          reactFlowRef,
-          blockType: selectedBlockType,
-          initialWidth: MIN_CONTAINER_WIDTH,
-          initialHeight: MIN_CONTAINER_HEIGHT,
-          kind: selectedBlockType.kind,
-          apiVersion: selectedBlockType.apiVersion,
-        },
-      };
-    }
-    if (newNode) {
-      setNodes((nds) => nds.concat(newNode));
-    }
   };
+
+  const performDropRef = useRef(performDrop);
+  useEffect(() => {
+    performDropRef.current = performDrop;
+  }, [performDrop]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as {
+        clientX: number;
+        clientY: number;
+        target: EventTarget | null;
+      };
+      performDropRef.current(detail);
+    };
+    document.addEventListener('composer-touch-drop', handler);
+    return () => document.removeEventListener('composer-touch-drop', handler);
+  }, []);
 
   const updateEdgeHoverState = useCallback(
     (edgeId: string, isHovered: boolean) => {
