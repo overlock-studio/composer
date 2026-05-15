@@ -4,38 +4,28 @@
   "description": "Visual editor library for Crossplane configurations. Node-based canvas with parsers and serializers for YAML round-trip.",
   "license": "MIT",
   "publishConfig": {
-    "access": "public",
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.js",
-        "require": "./dist/index.cjs"
-      },
-      "./lib/parser": {
-        "types": "./dist/lib/parser.d.ts",
-        "import": "./dist/lib/parser.js",
-        "require": "./dist/lib/parser.cjs"
-      },
-      "./oci": {
-        "types": "./dist/oci/client.d.ts",
-        "import": "./dist/oci/client.js",
-        "require": "./dist/oci/client.cjs"
-      },
-      "./styles/editor.css": "./dist/styles/editor.css",
-      "./package.json": "./package.json"
-    }
+    "access": "public"
   },
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./lib/parser": "./src/lib/parser.ts",
-    "./oci": "./src/oci/client.ts",
-    "./styles/editor.css": "./src/styles/editor.css",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./lib/parser": {
+      "types": "./dist/lib/parser.d.ts",
+      "import": "./dist/lib/parser.js",
+      "require": "./dist/lib/parser.cjs"
+    },
+    "./oci": {
+      "types": "./dist/oci/client.d.ts",
+      "import": "./dist/oci/client.js",
+      "require": "./dist/oci/client.cjs"
+    },
+    "./styles/editor.css": "./dist/styles/editor.css",
     "./package.json": "./package.json"
   },
   "files": [
