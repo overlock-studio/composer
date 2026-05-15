@@ -12,17 +12,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Enable Corepack
+        run: |
+          corepack enable
+          corepack prepare yarn@4.4.1 --activate
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
           cache: 'yarn'
-
-      - name: Enable Corepack
-        run: |
-          corepack enable
-          corepack prepare yarn@4.4.1 --activate
 
       - name: Verify tag matches package.json version
         run: |
