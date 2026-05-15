@@ -99,6 +99,23 @@ yarn typecheck  # type-only check
 
 Outputs land in `dist/`: ESM (`.js`), CJS (`.cjs`), declarations (`.d.ts`), and the editor stylesheet.
 
+## Demo app
+
+A tiny Vite playground lives in [`examples/demo`](./examples/demo). It mounts
+`<ComposerEditor />` against a stub adapter with a minimal XRD + Composition so
+you can drive the UI end-to-end without a host application. It's wired up as a
+Yarn workspace, so `yarn install` at the repo root sets it up alongside the
+library.
+
+```bash
+yarn install        # installs the library + demo workspace
+yarn demo           # starts the Vite dev server
+yarn demo:build     # production build of the demo
+```
+
+The demo imports the library straight from `../../src`, so editing files under
+`src/` hot-reloads inside the demo.
+
 ## License
 
 MIT

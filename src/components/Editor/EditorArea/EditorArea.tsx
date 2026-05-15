@@ -28,6 +28,26 @@ import { Spinner } from '../../Spinner';
 import { Block } from '../../../api/types';
 import logger from '../../../lib/logger';
 
+const useDocumentColorMode = (): 'light' | 'dark' => {
+  const [mode, setMode] = useState<'light' | 'dark'>(() =>
+    typeof document !== 'undefined' &&
+    document.documentElement.classList.contains('dark')
+      ? 'dark'
+      : 'light',
+  );
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    const update = (): void =>
+      setMode(root.classList.contains('dark') ? 'dark' : 'light');
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+  return mode;
+};
+
 const sanitizeBaseName = (s: string): string =>
   s.replace(/[^a-z0-9-]/gi, '').toLowerCase() || 'block';
 
@@ -44,6 +64,7 @@ const nextUniqueNodeName = (
 
 export const EditorArea = () => {
   const reactFlowRef = useRef<HTMLDivElement | null>(null);
+  const colorMode = useDocumentColorMode();
   const {
     selectedBlockType,
     nodes,
@@ -355,7 +376,7 @@ export const EditorArea = () => {
     <>
       {!blocksLoading ? (
         <ReactFlow
-          colorMode="dark"
+          colorMode={colorMode}
           nodes={nodes}
           edges={edges}
           onConnect={onConnect}

@@ -32,6 +32,9 @@
     "dist",
     "src"
   ],
+  "workspaces": [
+    "examples/*"
+  ],
   "sideEffects": [
     "*.css"
   ],
@@ -43,7 +46,9 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "demo": "yarn workspace @overlock-studio/composer-demo dev",
+    "demo:build": "yarn workspace @overlock-studio/composer-demo build"
   },
   "peerDependencies": {
     "@xyflow/react": "^12.10.0",

@@ -1,0 +1,28 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xdemoapps.demo.example.org
+spec:
+  group: demo.example.org
+  names:
+    kind: XDemoApp
+    plural: xdemoapps
+  claimNames:
+    kind: DemoApp
+    plural: demoapps
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                size:
+                  type: string
+                  description: t-shirt size of the app
+              required:
+                - size
