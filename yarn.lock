@@ -809,6 +809,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@neodrag/react@npm:^2.3.1":
+  version: 2.3.1
+  resolution: "@neodrag/react@npm:2.3.1"
+  checksum: 10c0/c2f07c0f1ced55fca916c15af7cb85ff9b992399bf31e1d2380f94a331438d4cfc18ba3e7760881e8d95dba82bd1b05fdbcb06c2cb474dff6b575c8d3ed18e0f
+  languageName: node
+  linkType: hard
+
 "@nodelib/fs.scandir@npm:2.1.5":
   version: 2.1.5
   resolution: "@nodelib/fs.scandir@npm:2.1.5"
@@ -861,6 +868,7 @@ __metadata:
   dependencies:
     "@eslint/js": "npm:^9.0.0"
     "@hookform/resolvers": "npm:^3.9.1"
+    "@neodrag/react": "npm:^2.3.1"
     "@radix-ui/react-accordion": "npm:^1.2.2"
     "@radix-ui/react-checkbox": "npm:^1.1.2"
     "@radix-ui/react-dialog": "npm:^1.1.6"

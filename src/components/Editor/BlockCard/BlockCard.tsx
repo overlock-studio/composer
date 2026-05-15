@@ -6,6 +6,8 @@ import {
   TooltipTrigger,
 } from '../../ui/tooltip';
 import { Plus } from 'lucide-react';
+import { RefObject, useEffect, useRef, useState } from 'react';
+import { useDraggable } from '@neodrag/react';
 
 export const BlockCard = ({
   title,
@@ -19,16 +21,75 @@ export const BlockCard = ({
   apiVersion?: string;
   description?: string;
   icon?: string;
-  onDragStart: (e: React.DragEvent) => void;
+  onDragStart: () => void;
   onMobileAdd?: () => void;
 }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const rafRef = useRef<number | null>(null);
+  const pendingPosRef = useRef({ x: 0, y: 0 });
+
+  const onDragStartRef = useRef(onDragStart);
+  useEffect(() => {
+    onDragStartRef.current = onDragStart;
+  }, [onDragStart]);
+
+  useDraggable(cardRef as RefObject<HTMLDivElement>, {
+    position,
+    cancel: buttonRef as RefObject<HTMLElement>,
+    onDragStart: ({ rootNode }) => {
+      const rect = rootNode.getBoundingClientRect();
+      rootNode.style.position = 'fixed';
+      rootNode.style.top = `${rect.top}px`;
+      rootNode.style.left = `${rect.left}px`;
+      rootNode.style.width = `${rect.width}px`;
+      rootNode.style.zIndex = '9999';
+      onDragStartRef.current();
+    },
+    onDrag: ({ offsetX, offsetY }) => {
+      pendingPosRef.current = { x: offsetX, y: offsetY };
+      if (rafRef.current !== null) return;
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        setPosition(pendingPosRef.current);
+      });
+    },
+    onDragEnd: ({ event, currentNode, rootNode }) => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      const prev = currentNode.style.visibility;
+      currentNode.style.visibility = 'hidden';
+      const target = document.elementFromPoint(event.clientX, event.clientY);
+      currentNode.style.visibility = prev;
+      rootNode.style.position = '';
+      rootNode.style.top = '';
+      rootNode.style.left = '';
+      rootNode.style.width = '';
+      rootNode.style.zIndex = '';
+      setPosition({ x: 0, y: 0 });
+      document.dispatchEvent(
+        new CustomEvent('composer-touch-drop', {
+          detail: {
+            clientX: event.clientX,
+            clientY: event.clientY,
+            target,
+          },
+        }),
+      );
+    },
+  });
+
   const card = (
     <div
-      className="relative flex cursor-pointer items-center space-x-3 rounded-md border p-3 hover:bg-sidebar-accent"
-      onDragStart={onDragStart}
-      draggable
+      ref={cardRef}
+      className="relative flex cursor-grab items-center space-x-3 rounded-md border p-3 hover:bg-sidebar-accent touch-none select-none active:cursor-grabbing"
     >
-      {icon && <img src={icon} alt="" width={24} height={24} />}
+      {icon && (
+        <img src={icon} alt="" width={24} height={24} draggable={false} />
+      )}
       <div className="flex-1 space-y-1 min-w-0">
         <p className="truncate text-xs font-medium">{title}</p>
         {apiVersion && (
@@ -40,6 +101,7 @@ export const BlockCard = ({
 
       {onMobileAdd && (
         <Button
+          ref={buttonRef}
           variant="secondary"
           size="icon"
           className="absolute top-2 right-2 size-6 md:hidden"

@@ -42,12 +42,8 @@ export const EditorAreaSidebar = () => {
   >({});
   const { entity, entityId } = entityRef;
 
-  const onDragStart = (
-    event: React.DragEvent,
-    blockType: BlockType | undefined,
-  ) => {
+  const onDragStart = (blockType: BlockType) => {
     setSelectedBlockType(blockType);
-    event.dataTransfer.effectAllowed = 'move';
   };
 
   const fetchConfiguration = async () => {
@@ -214,18 +210,15 @@ export const EditorAreaSidebar = () => {
                                   apiVersion={blockType.apiVersion}
                                   description={blockType.description}
                                   icon={blockType.icon}
-                                  onDragStart={(e) => onDragStart(e, blockType)}
+                                  onDragStart={() => onDragStart(blockType)}
                                   onMobileAdd={() => addNodeToCanvas(blockType)}
                                 />
                               ) : (
-                                <div
+                                <BlockCard
                                   key={blockType.name}
-                                  className="truncate px-2 py-2 text-sm cursor-pointer hover:bg-sidebar-accent"
-                                  onDragStart={(e) => onDragStart(e, blockType)}
-                                  draggable
-                                >
-                                  {blockType.name}
-                                </div>
+                                  title={blockType.name}
+                                  onDragStart={() => onDragStart(blockType)}
+                                />
                               ),
                             )
                           ) : (
