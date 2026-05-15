@@ -253,7 +253,7 @@ function ComposerEditorBody({
   return (
     <SidebarProvider defaultLeftOpen={false} defaultRightOpen={false}>
       <SidebarInset>
-        <header className="sticky top-0 z-50 flex h-10 shrink-0 items-center justify-end gap-2 border-b px-2 backdrop-blur">
+        <header className="sticky top-0 z-50 flex h-10 shrink-0 items-center justify-end gap-2 border-b border-border/60 px-2 backdrop-blur">
           <Button
             variant="ghost"
             size="icon"

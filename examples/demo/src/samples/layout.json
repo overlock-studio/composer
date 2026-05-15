@@ -1,0 +1,6 @@
+{
+  "demo-app-composition": {
+    "_self": { "x": 80, "y": 80, "width": 480, "height": 360 },
+    "nop-resource": { "x": 40, "y": 80 }
+  }
+}

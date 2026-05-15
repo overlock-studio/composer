@@ -54,6 +54,8 @@
   --node-border-radius: 10px;
   --node-box-shadow:
     5px 0 15px rgba(42, 138, 246, 0.2), -5px 0 15px rgba(233, 42, 103, 0.2);
+  --bg-color: hsl(var(--card));
+  --text-color: hsl(var(--foreground));
   color: var(--text-color);
 
   &.dark {

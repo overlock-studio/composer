@@ -1,0 +1,23 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: demo-app-composition
+spec:
+  compositeTypeRef:
+    apiVersion: demo.example.org/v1alpha1
+    kind: XDemoApp
+  resources:
+    - name: nop-resource
+      base:
+        apiVersion: nop.crossplane.io/v1alpha1
+        kind: NopResource
+        spec:
+          forProvider:
+            conditionAfter:
+              - conditionType: Ready
+                conditionStatus: "True"
+                time: 5s
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: spec.size
+          toFieldPath: spec.forProvider.fields.size

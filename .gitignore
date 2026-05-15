@@ -2,6 +2,8 @@ node_modules
 dist
 *.tsbuildinfo
 
+examples/**/dist
+
 .DS_Store
 Thumbs.db
 
@@ -11,4 +13,3 @@ Thumbs.db
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
-.pnp.*
