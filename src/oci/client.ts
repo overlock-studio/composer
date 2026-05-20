@@ -279,7 +279,7 @@ export type CrdLike = {
   };
 };
 
-export async function fetchPackageCrds(image: string): Promise<CrdLike[]> {
+async function fetchPackageDocs(image: string): Promise<unknown[]> {
   const ref = parseImageRef(image);
   const cacheKey = `${ref.registry}/${ref.repository}`;
 
@@ -310,13 +310,35 @@ export async function fetchPackageCrds(image: string): Promise<CrdLike[]> {
     const docs = await extractYamlDocs(blob);
     allDocs.push(...docs);
   }
+  return allDocs;
+}
 
-  return allDocs.filter(
-    (d): d is CrdLike =>
-      !!d &&
-      typeof d === 'object' &&
-      (d as { kind?: string }).kind === 'CustomResourceDefinition',
-  );
+const isCrd = (d: unknown): d is CrdLike =>
+  !!d &&
+  typeof d === 'object' &&
+  (d as { kind?: string }).kind === 'CustomResourceDefinition';
+
+// Icon URL from the Upbound marketplace metadata extension on the package
+// meta object (kind Provider/Configuration in meta.pkg.crossplane.io).
+const PACKAGE_ICON_ANNOTATION = 'meta.crossplane.io/iconURI';
+
+const extractPackageIcon = (docs: unknown[]): string | undefined => {
+  for (const d of docs) {
+    if (!d || typeof d !== 'object') continue;
+    const obj = d as {
+      apiVersion?: string;
+      metadata?: { annotations?: Record<string, string> };
+    };
+    if (!obj.apiVersion?.startsWith('meta.pkg.crossplane.io')) continue;
+    const icon = obj.metadata?.annotations?.[PACKAGE_ICON_ANNOTATION];
+    if (icon) return icon;
+  }
+  return undefined;
+};
+
+export async function fetchPackageCrds(image: string): Promise<CrdLike[]> {
+  const docs = await fetchPackageDocs(image);
+  return docs.filter(isCrd);
 }
 
 export type BlockTypeLike = {
@@ -392,6 +414,8 @@ export async function fetchBlockTypes(image: string): Promise<BlockType[]> {
   if (isCrossplaneCoreUrl(image)) {
     return crossplaneCoreBlockTypes;
   }
-  const crds = await fetchPackageCrds(image);
-  return crdsToBlockTypes(crds) as BlockType[];
+  const docs = await fetchPackageDocs(image);
+  const icon = extractPackageIcon(docs);
+  const blockTypes = crdsToBlockTypes(docs.filter(isCrd)) as BlockType[];
+  return icon ? blockTypes.map((bt) => ({ ...bt, icon })) : blockTypes;
 }

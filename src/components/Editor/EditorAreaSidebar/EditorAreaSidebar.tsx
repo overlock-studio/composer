@@ -172,16 +172,25 @@ export const EditorAreaSidebar = () => {
                     }
                   }}
                 >
-                  {providers.map((pr) => (
+                  {providers.map((pr) => {
+                    const providerFullUrl = pr.version
+                      ? `${pr.url}:${pr.version}`
+                      : pr.url;
+                    const headerIcon =
+                      pr.icon ||
+                      providerBlockTypes
+                        .find((bt) => bt.key === providerFullUrl)
+                        ?.blockTypes.find((b) => b.icon)?.icon;
+                    return (
                     <AccordionItem
                       value={pr._id}
                       key={pr._id}
                       className="border border-sidebar-border rounded-md px-2 last:border-b"
                     >
                       <AccordionTrigger className="justify-start gap-3 no-underline hover:no-underline py-3">
-                        {pr.icon && (
+                        {headerIcon && (
                           <img
-                            src={pr.icon}
+                            src={headerIcon}
                             alt=""
                             width={20}
                             height={20}
@@ -206,9 +215,6 @@ export const EditorAreaSidebar = () => {
                         </div>
 
                         {(() => {
-                          const providerFullUrl = pr.version
-                            ? `${pr.url}:${pr.version}`
-                            : pr.url;
                           return !blockTypesLoadingMap[providerFullUrl] ? (
                             filterBlockTypes(
                               providerBlockTypes.find(
@@ -239,7 +245,8 @@ export const EditorAreaSidebar = () => {
                         })()}
                       </AccordionContent>
                     </AccordionItem>
-                  ))}
+                    );
+                  })}
                 </Accordion>
               </div>
             </SidebarGroupContent>
