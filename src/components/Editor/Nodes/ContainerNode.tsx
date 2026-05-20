@@ -11,10 +11,19 @@ import {
   useReactFlow,
   type NodeDimensionChange,
 } from '@xyflow/react';
-import { ContainerNodeToolbar } from '../Toolbars/ContainerNodeToolbar';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 import { ContainerNodeFooter } from './ContainerNodeFooter';
+import { Button } from '../../ui/button';
+import { Input } from '../../ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../../ui/dialog';
+import { EditConnectorsMenu } from '../Menus';
 import {
   buildTreeData,
   getHandleByPath,
@@ -37,6 +46,8 @@ const ContainerNodeComponent = ({
   selected,
 }: NodeProps<Node<ContainerNodeData>>) => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [addOpen, setAddOpen] = useState<boolean>(false);
+  const [editOpen, setEditOpen] = useState<boolean>(false);
   useNodeDeleteShortcut(selected, () => setOpenDeleteDialog(true));
   const [nodeHeight, setNodeHeight] = useState<number>(data.initialHeight!);
   const [nodeWidth, setNodeWidth] = useState<number>(data.initialWidth!);
@@ -103,6 +114,30 @@ const ContainerNodeComponent = ({
           : node,
       ),
     );
+  };
+
+  const [editName, setEditName] = useState<string>('');
+  const [editKind, setEditKind] = useState<string>('');
+  const [editApiVersion, setEditApiVersion] = useState<string>('');
+
+  const openEditDialog = () => {
+    setEditName(name || '');
+    setEditKind(kind || '');
+    setEditApiVersion(apiVersion || '');
+    setEditOpen(true);
+  };
+
+  const handleEditSave = () => {
+    if (editName.trim() && editName !== name) {
+      handleNameChange(editName.trim());
+    }
+    if (editKind.trim() !== kind) {
+      handleKindChange(editKind.trim());
+    }
+    if (editApiVersion.trim() !== apiVersion) {
+      handleApiVersionChange(editApiVersion.trim());
+    }
+    setEditOpen(false);
   };
 
   const checkAndMoveIntersectingNodes = useCallback(
@@ -241,7 +276,7 @@ const ContainerNodeComponent = ({
           newNodes.push({
             id: connectorNodeId,
             type: 'connector',
-            position: { x: -23, y: (index + 1) * SPACE_BETWEEN_CONNECTORS },
+            position: { x: -25, y: (index + 1) * SPACE_BETWEEN_CONNECTORS },
             parentId: containerId,
             draggable: false,
             data: { connector, setConnectors, label: connectorLabels[connector.path] },
@@ -256,7 +291,7 @@ const ContainerNodeComponent = ({
             id: connectorNodeId,
             type: 'connector',
             position: {
-              x: nodeWidth - CONNECTOR_HEIGHT + 20,
+              x: nodeWidth - CONNECTOR_HEIGHT + 22,
               y: (index + 1) * SPACE_BETWEEN_CONNECTORS,
             },
             parentId: containerId,
@@ -299,7 +334,7 @@ const ContainerNodeComponent = ({
             return {
               ...updatedNode,
               position: {
-                x: -23,
+                x: -25,
                 y: inputCount * SPACE_BETWEEN_CONNECTORS,
               },
             };
@@ -308,7 +343,7 @@ const ContainerNodeComponent = ({
           return {
             ...updatedNode,
             position: {
-              x: nodeWidth - SPACE_BETWEEN_CONNECTORS + 29,
+              x: nodeWidth - SPACE_BETWEEN_CONNECTORS + 31,
               y: outputCount * SPACE_BETWEEN_CONNECTORS,
             },
           };
@@ -509,12 +544,23 @@ const ContainerNodeComponent = ({
         }}
       />
       <div
-        className="wrapper gradient"
+        className="node-body relative"
         data-parent-id={containerId}
         style={{ width: '100%', height: '100%' }}
       >
-        <div className="inner relative">
-          <div className="text-center align-middle border-b-[2px] border-muted-foreground/20 px-2 py-1.5 bg-muted rounded-t-lg">
+        <div className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 py-1 rounded-t-lg">
+          <div className="w-14 flex items-center">
+            {blockType?.icon && (
+              <img
+                src={blockType.icon}
+                alt=""
+                width={20}
+                height={20}
+                draggable={false}
+              />
+            )}
+          </div>
+          <div className="flex-1 text-center">
             <div className="text-sm font-medium">{name}</div>
             {apiVersion && (
               <div className="text-[0.625rem] text-muted-foreground">
@@ -522,19 +568,84 @@ const ContainerNodeComponent = ({
               </div>
             )}
           </div>
-          <ContainerNodeToolbar
-            setConnectors={setConnectors}
-            id={containerId}
-            name={name}
-            onNameChange={handleNameChange}
-            kind={kind}
-            apiVersion={apiVersion}
-            onKindChange={handleKindChange}
-            onApiVersionChange={handleApiVersionChange}
-            onRequestDelete={() => setOpenDeleteDialog(true)}
-          />
-          <ContainerNodeFooter functions={functions} />
+          <div className="flex gap-0.5">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 [&_svg]:size-3.5"
+              onClick={() => setAddOpen(true)}
+            >
+              <Plus />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 [&_svg]:size-3.5"
+              onClick={openEditDialog}
+            >
+              <Pencil />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 [&_svg]:size-3.5 hover:text-red-400"
+              onClick={() => setOpenDeleteDialog(true)}
+            >
+              <Trash2 />
+            </Button>
+          </div>
         </div>
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Add Connector</DialogTitle>
+            </DialogHeader>
+            <EditConnectorsMenu
+              setOpen={setAddOpen}
+              setConnectors={setConnectors}
+            />
+          </DialogContent>
+        </Dialog>
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit Composition</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Composition Name</label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Enter composition name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Kind</label>
+                <Input
+                  value={editKind}
+                  onChange={(e) => setEditKind(e.target.value)}
+                  placeholder="Enter kind (e.g. XMyResource)"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">API Version</label>
+                <Input
+                  value={editApiVersion}
+                  onChange={(e) => setEditApiVersion(e.target.value)}
+                  placeholder="Enter API version (e.g. example.org/v1alpha1)"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleEditSave}>Save</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <ContainerNodeFooter functions={functions} />
       </div>
       <NodeDeletionDialog
         open={openDeleteDialog}
