@@ -50,13 +50,12 @@ const ResourceNodeComponent = ({
   const { setNodes, resolveBlockType } = useEditorAreaContext();
   const { getIntersectingNodes, getNode } = useReactFlow();
 
-  const resolvedSchema = useMemo(() => {
-    const resolved = resolveBlockType(
-      data.blockType?.apiVersion,
-      data.blockType?.kind,
-    );
-    return resolved?.schema ?? data.blockType?.schema;
-  }, [data.blockType, resolveBlockType]);
+  const resolvedBlockType = useMemo(
+    () => resolveBlockType(data.blockType?.apiVersion, data.blockType?.kind),
+    [data.blockType, resolveBlockType],
+  );
+  const resolvedSchema = resolvedBlockType?.schema ?? data.blockType?.schema;
+  const icon = resolvedBlockType?.icon ?? data.blockType?.icon;
 
   const treeData = useMemo(
     () => (resolvedSchema ? buildTreeData(resolvedSchema) : data.treeData),
@@ -181,9 +180,9 @@ const ResourceNodeComponent = ({
     >
       <div className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 py-1 rounded-t-lg">
         <div className="w-14 flex items-center">
-          {data.blockType?.icon && (
+          {icon && (
             <img
-              src={data.blockType.icon}
+              src={icon}
               alt=""
               width={20}
               height={20}

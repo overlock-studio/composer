@@ -14,6 +14,7 @@ import {
 } from '../api/types';
 import { extractConnectors } from './editorUtils';
 import { JsonObject } from './types';
+import crossplaneIcon from '../assets/crossplane-icon.svg';
 
 const BLOCK_WIDTH = 300;
 const MIN_CONTAINER_WIDTH = 500;
@@ -84,6 +85,7 @@ const syntheticBlockType = (
     apiVersion: apiVersion ?? '',
     title: name,
     description: '',
+    ...(leaf ? {} : { icon: crossplaneIcon }),
   };
 };
 
@@ -112,6 +114,7 @@ const xrdToBlockType = (
     leaf: false,
     kind: names.kind ?? '',
     apiVersion: group ? `${group}/${versionName}` : versionName,
+    icon: crossplaneIcon,
   };
 };
 

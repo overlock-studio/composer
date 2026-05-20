@@ -55,7 +55,8 @@ const ContainerNodeComponent = ({
   const [minRequiredHeight, setMinRequiredHeight] =
     useState<number>(MIN_CONTAINER_HEIGHT);
   const [isUserResizing, setIsUserResizing] = useState<boolean>(false);
-  const { nodes, setNodes, setEdges } = useEditorAreaContext();
+  const { nodes, setNodes, setEdges, resolveBlockType } =
+    useEditorAreaContext();
 
   const connectorLabels = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -85,6 +86,11 @@ const ContainerNodeComponent = ({
   const { childBlocks, name, reactFlowRef, blockType, functions } = data;
   const kind = data.kind ?? blockType?.kind ?? '';
   const apiVersion = data.apiVersion ?? blockType?.apiVersion ?? '';
+  const resolvedBlockType = useMemo(
+    () => resolveBlockType(apiVersion, kind),
+    [apiVersion, kind, resolveBlockType],
+  );
+  const icon = resolvedBlockType?.icon ?? blockType?.icon;
 
   const handleNameChange = (newName: string) => {
     setNodes((nds) =>
@@ -550,9 +556,9 @@ const ContainerNodeComponent = ({
       >
         <div className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 py-1 rounded-t-lg">
           <div className="w-14 flex items-center">
-            {blockType?.icon && (
+            {icon && (
               <img
-                src={blockType.icon}
+                src={icon}
                 alt=""
                 width={20}
                 height={20}

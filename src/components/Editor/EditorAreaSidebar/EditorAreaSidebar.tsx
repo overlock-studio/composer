@@ -97,12 +97,15 @@ export const EditorAreaSidebar = () => {
     return [defaultProvider, ...matchedProviders];
   }, [allProviders, configuration?.providers]);
 
-  const fetchBlockTypes = async (url: string) => {
+  const fetchBlockTypes = async (url: string, providerIcon?: string) => {
     if (providerBlockTypes.some((pc) => pc.key === url)) return;
 
     setBlockTypesLoadingMap((prev) => ({ ...prev, [url]: true }));
     try {
-      const blockTypes = await adapter.getBlockTypes(url);
+      const fetched = await adapter.getBlockTypes(url);
+      const blockTypes = providerIcon
+        ? fetched.map((bt) => ({ ...bt, icon: bt.icon ?? providerIcon }))
+        : fetched;
       setProviderBlockTypes((prev) => [...prev, { key: url, blockTypes }]);
       registerBlockTypes(blockTypes);
     } finally {
@@ -114,7 +117,7 @@ export const EditorAreaSidebar = () => {
     providers.forEach((pr) => {
       if (!pr.url) return;
       const fullUrl = pr.version ? `${pr.url}:${pr.version}` : pr.url;
-      fetchBlockTypes(fullUrl);
+      fetchBlockTypes(fullUrl, pr.icon);
     });
   }, [providers]);
 
