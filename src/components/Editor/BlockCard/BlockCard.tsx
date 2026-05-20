@@ -83,7 +83,7 @@ export const BlockCard = ({
   const card = (
     <div
       ref={cardRef}
-      className="relative flex cursor-grab items-center space-x-3 rounded-md border p-3 hover:bg-sidebar-accent touch-none select-none active:cursor-grabbing"
+      className="relative flex cursor-grab items-center space-x-3 rounded-md border bg-black/5 p-3 hover:bg-sidebar-accent dark:bg-white/[0.06] touch-none select-none active:cursor-grabbing"
     >
       <div className="flex-1 space-y-1 min-w-0">
         <p className="truncate text-xs font-medium">{title}</p>
