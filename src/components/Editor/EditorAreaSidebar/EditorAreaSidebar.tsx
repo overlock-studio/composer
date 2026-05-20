@@ -21,6 +21,7 @@ import { BlockType } from '../../../api/types';
 import { BlockCard } from '../BlockCard';
 import { ConfigurationDB, CrossplaneProviderDB } from '../../../api/typesDB';
 import { Filter } from 'lucide-react';
+import crossplaneIcon from '../../../assets/crossplane-icon.svg';
 
 export const EditorAreaSidebar = () => {
   const {
@@ -91,18 +92,21 @@ export const EditorAreaSidebar = () => {
       version: 'v0.0.1',
       description: 'default crossplane block',
       family: 'crossplane',
-      icon: './crp1.png',
+      icon: crossplaneIcon,
     };
 
     return [defaultProvider, ...matchedProviders];
   }, [allProviders, configuration?.providers]);
 
-  const fetchBlockTypes = async (url: string) => {
+  const fetchBlockTypes = async (url: string, providerIcon?: string) => {
     if (providerBlockTypes.some((pc) => pc.key === url)) return;
 
     setBlockTypesLoadingMap((prev) => ({ ...prev, [url]: true }));
     try {
-      const blockTypes = await adapter.getBlockTypes(url);
+      const fetched = await adapter.getBlockTypes(url);
+      const blockTypes = providerIcon
+        ? fetched.map((bt) => ({ ...bt, icon: bt.icon ?? providerIcon }))
+        : fetched;
       setProviderBlockTypes((prev) => [...prev, { key: url, blockTypes }]);
       registerBlockTypes(blockTypes);
     } finally {
@@ -114,7 +118,7 @@ export const EditorAreaSidebar = () => {
     providers.forEach((pr) => {
       if (!pr.url) return;
       const fullUrl = pr.version ? `${pr.url}:${pr.version}` : pr.url;
-      fetchBlockTypes(fullUrl);
+      fetchBlockTypes(fullUrl, pr.icon);
     });
   }, [providers]);
 
@@ -168,13 +172,31 @@ export const EditorAreaSidebar = () => {
                     }
                   }}
                 >
-                  {providers.map((pr) => (
+                  {providers.map((pr) => {
+                    const providerFullUrl = pr.version
+                      ? `${pr.url}:${pr.version}`
+                      : pr.url;
+                    const headerIcon =
+                      pr.icon ||
+                      providerBlockTypes
+                        .find((bt) => bt.key === providerFullUrl)
+                        ?.blockTypes.find((b) => b.icon)?.icon;
+                    return (
                     <AccordionItem
                       value={pr._id}
                       key={pr._id}
                       className="border border-sidebar-border rounded-md px-2 last:border-b"
                     >
                       <AccordionTrigger className="justify-start gap-3 no-underline hover:no-underline py-3">
+                        {headerIcon && (
+                          <img
+                            src={headerIcon}
+                            alt=""
+                            width={20}
+                            height={20}
+                            draggable={false}
+                          />
+                        )}
                         {getProviderDisplayName(pr)}
                       </AccordionTrigger>
 
@@ -193,9 +215,6 @@ export const EditorAreaSidebar = () => {
                         </div>
 
                         {(() => {
-                          const providerFullUrl = pr.version
-                            ? `${pr.url}:${pr.version}`
-                            : pr.url;
                           return !blockTypesLoadingMap[providerFullUrl] ? (
                             filterBlockTypes(
                               providerBlockTypes.find(
@@ -209,7 +228,6 @@ export const EditorAreaSidebar = () => {
                                   title={blockType.title}
                                   apiVersion={blockType.apiVersion}
                                   description={blockType.description}
-                                  icon={blockType.icon}
                                   onDragStart={() => onDragStart(blockType)}
                                   onMobileAdd={() => addNodeToCanvas(blockType)}
                                 />
@@ -227,7 +245,8 @@ export const EditorAreaSidebar = () => {
                         })()}
                       </AccordionContent>
                     </AccordionItem>
-                  ))}
+                    );
+                  })}
                 </Accordion>
               </div>
             </SidebarGroupContent>

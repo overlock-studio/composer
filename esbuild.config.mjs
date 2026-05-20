@@ -54,7 +54,7 @@ const common = {
   platform: 'neutral',
   external,
   plugins: [aliasPlugin],
-  loader: { '.css': 'copy' },
+  loader: { '.css': 'copy', '.svg': 'dataurl' },
   resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.css'],
 };
 

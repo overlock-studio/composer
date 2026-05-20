@@ -17,7 +17,11 @@ spec:
               - conditionType: Ready
                 conditionStatus: "True"
                 time: 5s
+            fields: "11"
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: spec.size
-          toFieldPath: spec.forProvider.fields.size
+          toFieldPath: spec.forProvider.fields
+        - type: ToCompositeFieldPath
+          fromFieldPath: status.atProvider.fields
+          toFieldPath: status.size

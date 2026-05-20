@@ -1,4 +1,5 @@
 import type { BlockType } from '../api/types';
+import crossplaneIcon from '../assets/crossplane-icon.svg';
 
 export const CROSSPLANE_CORE_URL = 'xpkg.crossplane/crossplane/crossplane';
 
@@ -17,6 +18,7 @@ export const crossplaneCoreBlockTypes: BlockType[] = [
     title: 'Composition',
     description:
       'A Crossplane Composition defines how composite resources are built from managed resources.',
+    icon: crossplaneIcon,
     schema: {
       properties: {
         spec: { type: 'object' },

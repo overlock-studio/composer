@@ -14,11 +14,13 @@ import {
   useConnection,
   useReactFlow,
 } from '@xyflow/react';
-import { ResourceNodeToolbar } from '../Toolbars';
+import { Plus, Trash2 } from 'lucide-react';
 import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { CustomHandle } from '../CustomHandle';
 import { useEditorAreaContext } from '../EditorAreaContext';
 import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
+import { Button } from '../../ui/button';
+import { EditHandlesMenu } from '../Menus';
 import {
   buildTreeData,
   moveIntersectingNodes,
@@ -35,6 +37,7 @@ const ResourceNodeComponent = ({
   selected,
 }: NodeProps<Node<ResourceNodeData>>) => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [editOpen, setEditOpen] = useState<boolean>(false);
   useNodeDeleteShortcut(selected, () => setOpenDeleteDialog(true));
   const [handles, setHandles] = useState<Handle[]>(
     data.currentHandles || data.initialHandles,
@@ -47,13 +50,12 @@ const ResourceNodeComponent = ({
   const { setNodes, resolveBlockType } = useEditorAreaContext();
   const { getIntersectingNodes, getNode } = useReactFlow();
 
-  const resolvedSchema = useMemo(() => {
-    const resolved = resolveBlockType(
-      data.blockType?.apiVersion,
-      data.blockType?.kind,
-    );
-    return resolved?.schema ?? data.blockType?.schema;
-  }, [data.blockType, resolveBlockType]);
+  const resolvedBlockType = useMemo(
+    () => resolveBlockType(data.blockType?.apiVersion, data.blockType?.kind),
+    [data.blockType, resolveBlockType],
+  );
+  const resolvedSchema = resolvedBlockType?.schema ?? data.blockType?.schema;
+  const icon = resolvedBlockType?.icon ?? data.blockType?.icon;
 
   const treeData = useMemo(
     () => (resolvedSchema ? buildTreeData(resolvedSchema) : data.treeData),
@@ -172,12 +174,23 @@ const ResourceNodeComponent = ({
 
   return (
     <div
-      className="wrapper gradient"
+      className="node-body"
       data-parent-id={parentId}
       style={{ minHeight: nodeHeight }}
     >
-      <div className="inner">
-        <div className="text-center align-middle border-b-[2px] border-muted-foreground/20 px-2 py-1.5 bg-muted rounded-t-lg">
+      <div className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 py-1 rounded-t-lg">
+        <div className="w-14 flex items-center">
+          {icon && (
+            <img
+              src={icon}
+              alt=""
+              width={20}
+              height={20}
+              draggable={false}
+            />
+          )}
+        </div>
+        <div className="flex-1 text-center">
           <div className="text-sm font-medium">
             {data.blockType?.title || data.label}
           </div>
@@ -187,59 +200,75 @@ const ResourceNodeComponent = ({
             </div>
           )}
         </div>
-        <ResourceNodeToolbar
-          nodeId={id}
-          onRequestDelete={() => setOpenDeleteDialog(true)}
-          handlesStates={{
-            setHandles,
-            handles,
-          }}
-          treeData={treeData}
-        />
-        <div className="flex flex-row justify-between">
-          <div className="flex flex-col">
-            {handles
-              .filter((handle) => handle.type === 'target')
-              .map((targetHandle, index) => (
-                <CustomHandle
-                  key={targetHandle.path}
-                  type="target"
-                  position={Position.Left}
-                  id={targetHandle.path}
-                  style={{ top: `${SPACE_BETWEEN_HANDLES * (index + 2)}px` }}
-                  isConnectableStart={targetHandle.path.endsWith('ref.name')}
-                  connectionCount={
-                    targetHandle.path.endsWith('ref.name') ? 1 : 0
-                  }
-                  inactiveClass={'opacity-30'}
-                  description={targetHandle.description}
-                  path={targetHandle.path}
-                  label={handleLabels[targetHandle.path]}
-                  variant="block"
-                  {...getIsConnectable(targetHandle.path, 'target')}
-                />
-              ))}
-          </div>
-          <div className="flex flex-col">
-            {handles
-              .filter((handle) => handle.type === 'source')
-              .map((sourceHandle, index) => (
-                <CustomHandle
-                  key={sourceHandle.path}
-                  type="source"
-                  position={Position.Right}
-                  id={sourceHandle.path}
-                  style={{ top: `${SPACE_BETWEEN_HANDLES * (index + 2)}px` }}
-                  isConnectableEnd={false}
-                  inactiveClass={'opacity-30'}
-                  description={sourceHandle.description}
-                  path={sourceHandle.path}
-                  label={handleLabels[sourceHandle.path]}
-                  variant="block"
-                  {...getIsConnectable(sourceHandle.path, 'source')}
-                />
-              ))}
-          </div>
+        <div className="flex gap-0.5">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6 [&_svg]:size-3.5"
+            onClick={() => setEditOpen(true)}
+          >
+            <Plus />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6 [&_svg]:size-3.5 hover:text-red-400"
+            onClick={() => setOpenDeleteDialog(true)}
+          >
+            <Trash2 />
+          </Button>
+        </div>
+      </div>
+      <EditHandlesMenu
+        nodeId={id}
+        handlesStates={{ setHandles, handles }}
+        treeData={treeData}
+        open={editOpen}
+        setMenuOpen={setEditOpen}
+      />
+      <div className="flex flex-row justify-between">
+        <div className="flex flex-col">
+          {handles
+            .filter((handle) => handle.type === 'target')
+            .map((targetHandle, index) => (
+              <CustomHandle
+                key={targetHandle.path}
+                type="target"
+                position={Position.Left}
+                id={targetHandle.path}
+                style={{ top: `${SPACE_BETWEEN_HANDLES * (index + 2)}px` }}
+                isConnectableStart={targetHandle.path.endsWith('ref.name')}
+                connectionCount={
+                  targetHandle.path.endsWith('ref.name') ? 1 : 0
+                }
+                inactiveClass={'opacity-30'}
+                description={targetHandle.description}
+                path={targetHandle.path}
+                label={handleLabels[targetHandle.path]}
+                variant="block"
+                {...getIsConnectable(targetHandle.path, 'target')}
+              />
+            ))}
+        </div>
+        <div className="flex flex-col">
+          {handles
+            .filter((handle) => handle.type === 'source')
+            .map((sourceHandle, index) => (
+              <CustomHandle
+                key={sourceHandle.path}
+                type="source"
+                position={Position.Right}
+                id={sourceHandle.path}
+                style={{ top: `${SPACE_BETWEEN_HANDLES * (index + 2)}px` }}
+                isConnectableEnd={false}
+                inactiveClass={'opacity-30'}
+                description={sourceHandle.description}
+                path={sourceHandle.path}
+                label={handleLabels[sourceHandle.path]}
+                variant="block"
+                {...getIsConnectable(sourceHandle.path, 'source')}
+              />
+            ))}
         </div>
       </div>
       <NodeDeletionDialog

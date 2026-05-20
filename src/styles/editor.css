@@ -52,8 +52,7 @@
 
 .custom-editor.react-flow {
   --node-border-radius: 10px;
-  --node-box-shadow:
-    5px 0 15px rgba(42, 138, 246, 0.2), -5px 0 15px rgba(233, 42, 103, 0.2);
+  --node-box-shadow: none;
   --bg-color: hsl(var(--card));
   --text-color: hsl(var(--foreground));
   color: var(--text-color);
@@ -83,11 +82,6 @@
     font-weight: 500;
     letter-spacing: -0.2px;
     box-shadow: var(--node-box-shadow);
-
-    &.selected {
-      --node-box-shadow:
-        5px 0 15px rgba(42, 138, 246, 0.5), -5px 0 15px rgba(233, 42, 103, 0.5);
-    }
 
     .react-flow__handle {
       width: 15px;
@@ -121,21 +115,14 @@
 
     &.react-flow__node-container {
       z-index: 10002;
-      .wrapper {
-        padding: 2px;
-        .inner {
-          display: block;
-        }
+      .node-body {
+        display: block;
       }
     }
 
     &.react-flow__node-resource {
-      .wrapper {
+      .node-body {
         overflow: visible;
-        padding: 2px;
-        &.gradient:before {
-          border-radius: var(--node-border-radius);
-        }
       }
     }
 
@@ -145,11 +132,6 @@
       border-radius: 100%;
       background: transparent;
       box-shadow: none;
-      .wrapper {
-        border-radius: 100%;
-        padding: 0px;
-        background: transparent;
-      }
       .connector-no-glow {
         box-shadow: none !important;
       }
@@ -164,79 +146,22 @@
       }
     }
 
-    .wrapper {
-      overflow: hidden;
-      display: flex;
-      border-radius: var(--node-border-radius);
-      flex-grow: 1;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 3px;
-    }
-
-    .gradient:before {
-      content: '';
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(to right, #a853ba, #2a8af6);
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-
-    .inner {
+    .node-body {
       background: var(--bg-color);
-      padding: 0;
+      outline: 2px solid hsl(var(--muted-foreground) / 0.3);
       border-radius: var(--node-border-radius);
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       flex-grow: 1;
       height: 100%;
       width: 100%;
-      z-index: 1;
     }
 
-    .icon {
-      margin-right: 8px;
-    }
-
-    .title {
-      font-size: 10px;
-      padding-bottom: 2px;
-      line-height: 1;
-    }
-
-    .subline {
-      font-size: 12px;
-      color: #777;
-    }
-
-    .cloud {
-      border-radius: 100%;
-      width: 30px;
-      height: 30px;
-      right: 0;
-      position: absolute;
-      top: 0;
-      transform: translate(50%, -50%);
-      display: flex;
-      transform-origin: center center;
-      padding: 2px;
-      overflow: hidden;
-      box-shadow: var(--node-box-shadow);
-      z-index: 1;
-    }
-
-    .cloud div {
-      background-color: var(--bg-color);
-      flex-grow: 1;
-      border-radius: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
+    &.selected {
+      .node-body {
+        outline-color: #8b5cf6;
+      }
     }
 
     &:focus {

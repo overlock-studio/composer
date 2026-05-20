@@ -26,3 +26,9 @@ spec:
                   description: t-shirt size of the app
               required:
                 - size
+            status:
+              type: object
+              properties:
+                size:
+                  type: string
+                  description: t-shirt size of the app

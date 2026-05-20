@@ -166,27 +166,6 @@ export type HandlesStates = {
   setHandles: HandlesSetter;
 };
 
-export type ResourceNodeToolbarProps = {
-  enableDeleteNode?: boolean;
-  addHandles?: (id: string | null) => void;
-  handlesStates?: HandlesStates;
-  nodeId: string;
-  treeData: HandleTreeNode[];
-  onRequestDelete: () => void;
-};
-
-export type ContainerNodeToolbarProps = {
-  setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
-  id: string;
-  name: string;
-  onNameChange: (newName: string) => void;
-  kind?: string;
-  apiVersion?: string;
-  onKindChange: (newKind: string) => void;
-  onApiVersionChange: (newApiVersion: string) => void;
-  onRequestDelete: () => void;
-};
-
 export type ConnectorNodeToolbarProps = {
   connector: Connector;
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
