@@ -13,14 +13,12 @@ export const BlockCard = ({
   title,
   apiVersion,
   description,
-  icon,
   onDragStart,
   onMobileAdd,
 }: {
   title: string;
   apiVersion?: string;
   description?: string;
-  icon?: string;
   onDragStart: () => void;
   onMobileAdd?: () => void;
 }) => {
@@ -87,9 +85,6 @@ export const BlockCard = ({
       ref={cardRef}
       className="relative flex cursor-grab items-center space-x-3 rounded-md border p-3 hover:bg-sidebar-accent touch-none select-none active:cursor-grabbing"
     >
-      {icon && (
-        <img src={icon} alt="" width={24} height={24} draggable={false} />
-      )}
       <div className="flex-1 space-y-1 min-w-0">
         <p className="truncate text-xs font-medium">{title}</p>
         {apiVersion && (

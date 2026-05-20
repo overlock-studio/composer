@@ -21,6 +21,7 @@ import { BlockType } from '../../../api/types';
 import { BlockCard } from '../BlockCard';
 import { ConfigurationDB, CrossplaneProviderDB } from '../../../api/typesDB';
 import { Filter } from 'lucide-react';
+import crossplaneIcon from '../../../assets/crossplane-icon.svg';
 
 export const EditorAreaSidebar = () => {
   const {
@@ -91,7 +92,7 @@ export const EditorAreaSidebar = () => {
       version: 'v0.0.1',
       description: 'default crossplane block',
       family: 'crossplane',
-      icon: './crp1.png',
+      icon: crossplaneIcon,
     };
 
     return [defaultProvider, ...matchedProviders];
@@ -178,6 +179,15 @@ export const EditorAreaSidebar = () => {
                       className="border border-sidebar-border rounded-md px-2 last:border-b"
                     >
                       <AccordionTrigger className="justify-start gap-3 no-underline hover:no-underline py-3">
+                        {pr.icon && (
+                          <img
+                            src={pr.icon}
+                            alt=""
+                            width={20}
+                            height={20}
+                            draggable={false}
+                          />
+                        )}
                         {getProviderDisplayName(pr)}
                       </AccordionTrigger>
 
@@ -212,7 +222,6 @@ export const EditorAreaSidebar = () => {
                                   title={blockType.title}
                                   apiVersion={blockType.apiVersion}
                                   description={blockType.description}
-                                  icon={blockType.icon}
                                   onDragStart={() => onDragStart(blockType)}
                                   onMobileAdd={() => addNodeToCanvas(blockType)}
                                 />
