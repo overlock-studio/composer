@@ -74,7 +74,7 @@ const XrdTreeRow = ({
         </span>
         <CustomHandle
           id={node.value}
-          type="target"
+          type={node.value.startsWith('status') ? 'target' : 'source'}
           position={Position.Right}
           path={node.value}
           description={node.title ?? ''}
