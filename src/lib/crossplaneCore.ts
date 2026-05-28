@@ -1,4 +1,6 @@
+import * as yaml from 'js-yaml';
 import type { BlockType } from '../api/types';
+import type { JSONSchemaProps } from './jsonSchema';
 import crossplaneIcon from '../assets/crossplane-icon.svg';
 
 export const CROSSPLANE_CORE_URL = 'xpkg.crossplane/crossplane/crossplane';
@@ -9,6 +11,49 @@ export const isCrossplaneCoreUrl = (url: string): boolean =>
   url.startsWith(`${CROSSPLANE_CORE_URL}@`);
 
 export const CROSSPLANE_XRD_KIND = 'CompositeResourceDefinition';
+
+export type ParsedXrd = {
+  name?: string;
+  schema: JSONSchemaProps;
+};
+
+export const parseXrdYaml = (source: string): ParsedXrd => {
+  const doc = yaml.load(source) as
+    | {
+        kind?: string;
+        apiVersion?: string;
+        metadata?: { name?: string };
+        spec?: {
+          versions?: Array<{
+            name?: string;
+            referenceable?: boolean;
+            schema?: { openAPIV3Schema?: JSONSchemaProps };
+          }>;
+          names?: { kind?: string };
+        };
+      }
+    | undefined;
+
+  if (!doc || typeof doc !== 'object') {
+    throw new Error('Invalid YAML document');
+  }
+  if (doc.kind !== CROSSPLANE_XRD_KIND) {
+    throw new Error(`Expected kind ${CROSSPLANE_XRD_KIND}, got ${doc.kind}`);
+  }
+
+  const versions = doc.spec?.versions ?? [];
+  const preferred =
+    versions.find((v) => v.referenceable) ?? versions[0];
+  const schema = preferred?.schema?.openAPIV3Schema;
+  if (!schema) {
+    throw new Error('XRD is missing spec.versions[].schema.openAPIV3Schema');
+  }
+
+  return {
+    name: doc.spec?.names?.kind ?? doc.metadata?.name,
+    schema,
+  };
+};
 
 export const crossplaneCoreBlockTypes: BlockType[] = [
   {

@@ -141,6 +141,8 @@ export type XrdNodeData = {
   name: string;
   blockType: BlockType;
   treeData: HandleTreeNode[];
+  xrdSource?: string;
+  xrdName?: string;
   initialWidth?: number;
   initialHeight?: number;
 };
