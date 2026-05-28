@@ -20,7 +20,7 @@ import useAsync from 'react-use/esm/useAsync';
 import { BlockType } from '../../../api/types';
 import { BlockCard } from '../BlockCard';
 import { ConfigurationDB, CrossplaneProviderDB } from '../../../api/typesDB';
-import { Filter } from 'lucide-react';
+import { Box, Filter } from 'lucide-react';
 import crossplaneIcon from '../../../assets/crossplane-icon.svg';
 
 export const EditorAreaSidebar = () => {
@@ -188,13 +188,19 @@ export const EditorAreaSidebar = () => {
                       className="border border-sidebar-border rounded-md px-2 last:border-b"
                     >
                       <AccordionTrigger className="justify-start gap-3 no-underline hover:no-underline py-3">
-                        {headerIcon && (
+                        {headerIcon ? (
                           <img
                             src={headerIcon}
                             alt=""
                             width={20}
                             height={20}
                             draggable={false}
+                          />
+                        ) : (
+                          <Box
+                            className="text-muted-foreground"
+                            width={24}
+                            height={24}
                           />
                         )}
                         {getProviderDisplayName(pr)}

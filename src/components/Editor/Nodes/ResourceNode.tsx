@@ -14,7 +14,7 @@ import {
   useConnection,
   useReactFlow,
 } from '@xyflow/react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Box, Plus, Trash2 } from 'lucide-react';
 import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { CustomHandle } from '../CustomHandle';
 import { useEditorAreaContext } from '../EditorAreaContext';
@@ -180,13 +180,19 @@ const ResourceNodeComponent = ({
     >
       <div className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 py-1 rounded-t-lg">
         <div className="w-14 flex items-center">
-          {icon && (
+          {icon ? (
             <img
               src={icon}
               alt=""
               width={20}
               height={20}
               draggable={false}
+            />
+          ) : (
+            <Box
+              className="text-muted-foreground"
+              width={20}
+              height={20}
             />
           )}
         </div>
