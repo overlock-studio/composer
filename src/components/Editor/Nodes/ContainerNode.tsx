@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { ConnectorNodeData, ContainerNodeData } from '../../../lib/types';
+import { ContainerNodeData } from '../../../lib/types';
 import {
   addEdge,
   Node,
@@ -11,7 +11,7 @@ import {
   useReactFlow,
   type NodeDimensionChange,
 } from '@xyflow/react';
-import { Box, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Box, Pencil, Trash2 } from 'lucide-react';
 import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 import { ContainerNodeFooter } from './ContainerNodeFooter';
@@ -23,7 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../ui/dialog';
-import { EditConnectorsMenu } from '../Menus';
 import {
   buildTreeData,
   getHandleByPath,
@@ -35,10 +34,6 @@ import {
   moveIntersectingNodes,
 } from '../../../lib/editorUtils';
 import { useEditorAreaContext } from '../EditorAreaContext/EditorAreaContext';
-import { Connector } from '../../../api/types';
-
-const SPACE_BETWEEN_CONNECTORS = 52.5;
-const CONNECTOR_HEIGHT = 50;
 
 const ContainerNodeComponent = ({
   id: containerId,
@@ -46,37 +41,16 @@ const ContainerNodeComponent = ({
   selected,
 }: NodeProps<Node<ContainerNodeData>>) => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [addOpen, setAddOpen] = useState<boolean>(false);
   const [editOpen, setEditOpen] = useState<boolean>(false);
   useNodeDeleteShortcut(selected, () => setOpenDeleteDialog(true));
   const [nodeHeight, setNodeHeight] = useState<number>(data.initialHeight!);
   const [nodeWidth, setNodeWidth] = useState<number>(data.initialWidth!);
-  const [connectors, setConnectors] = useState<Connector[]>(data.connectors);
   const [minRequiredHeight, setMinRequiredHeight] =
     useState<number>(MIN_CONTAINER_HEIGHT);
   const [isUserResizing, setIsUserResizing] = useState<boolean>(false);
   const { nodes, setNodes, setEdges, resolveBlockType } =
     useEditorAreaContext();
 
-  const connectorLabels = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const c of connectors || []) {
-      const last = c.path.split('.').pop() || c.path;
-      counts[last] = (counts[last] || 0) + 1;
-    }
-    const labels: Record<string, string> = {};
-    for (const c of connectors || []) {
-      const segments = c.path.split('.');
-      const last = segments[segments.length - 1] || c.path;
-      if (counts[last] > 1) {
-        const parent = segments[segments.length - 2];
-        labels[c.path] = parent ? `${parent}.${last}` : last;
-      } else {
-        labels[c.path] = last;
-      }
-    }
-    return labels;
-  }, [connectors]);
   const nodesInitialized = useNodesInitialized({
     includeHiddenNodes: false,
   });
@@ -174,39 +148,9 @@ const ContainerNodeComponent = ({
   /* eslint-disable */
   useEffect(() => {
     if (nodesInitialized) {
-      const inputConnectors = [];
-      const outputConnectors = [];
-
-      connectors?.forEach((conn) => {
-        if (conn.connection !== 'output') {
-          inputConnectors.push(conn);
-        } else {
-          outputConnectors.push(conn);
-        }
-      });
-
-      const maxConnectorsCount = Math.max(
-        inputConnectors.length,
-        outputConnectors.length,
-      );
-      const calculatedHeight =
-        (maxConnectorsCount + 1) * SPACE_BETWEEN_CONNECTORS +
-        CONNECTOR_HEIGHT / 2;
-
-      const requiredHeight = Math.max(calculatedHeight, MIN_CONTAINER_HEIGHT);
-      setMinRequiredHeight(requiredHeight);
-
-      if (calculatedHeight > nodeHeight) {
-        setNodeHeight(calculatedHeight);
-        setIsUserResizing(true);
-      }
+      setMinRequiredHeight(MIN_CONTAINER_HEIGHT);
     }
-  }, [
-    nodesInitialized,
-    connectors,
-    containerId,
-    checkAndMoveIntersectingNodes,
-  ]);
+  }, [nodesInitialized, containerId, checkAndMoveIntersectingNodes]);
 
   useEffect(() => {
     const { triggerNodeChanges } = store.getState();
@@ -250,118 +194,15 @@ const ContainerNodeComponent = ({
   ]);
 
   useEffect(() => {
-    const connectorNodeIds =
-      connectors?.map((conn) => `${containerId}-${conn.path}`) || [];
-
-    setNodes((nds) => {
-      const filteredNodes = nds.filter(
+    setNodes((nds) =>
+      nds.filter(
         (node) =>
-          !(
-            node.parentId === containerId &&
-            node.type === 'connector' &&
-            !connectorNodeIds.includes(node.id)
-          ),
-      );
-
-      const inputConnectors: Connector[] = [];
-      const outputConnectors: Connector[] = [];
-
-      connectors?.forEach((conn) => {
-        if (conn.connection !== 'output') {
-          inputConnectors.push(conn);
-        } else {
-          outputConnectors.push(conn);
-        }
-      });
-
-      const newNodes: Node[] = [];
-
-      inputConnectors.forEach((connector, index) => {
-        const connectorNodeId = `${containerId}-${connector.path}`;
-        if (!filteredNodes.some((n) => n.id === connectorNodeId)) {
-          newNodes.push({
-            id: connectorNodeId,
-            type: 'connector',
-            position: { x: -25, y: (index + 1) * SPACE_BETWEEN_CONNECTORS },
-            parentId: containerId,
-            draggable: false,
-            data: { connector, setConnectors, label: connectorLabels[connector.path] },
-          });
-        }
-      });
-
-      outputConnectors.forEach((connector, index) => {
-        const connectorNodeId = `${containerId}-${connector.path}`;
-        if (!filteredNodes.some((n) => n.id === connectorNodeId)) {
-          newNodes.push({
-            id: connectorNodeId,
-            type: 'connector',
-            position: {
-              x: nodeWidth - CONNECTOR_HEIGHT + 22,
-              y: (index + 1) * SPACE_BETWEEN_CONNECTORS,
-            },
-            parentId: containerId,
-            draggable: false,
-            data: { connector, setConnectors, label: connectorLabels[connector.path] },
-          });
-        }
-      });
-
-      return [...filteredNodes, ...newNodes];
-    });
-  }, [connectors, containerId, nodeWidth, connectorLabels]);
+          !(node.parentId === containerId && node.type === 'connector'),
+      ),
+    );
+  }, [containerId, setNodes]);
 
   useEffect(() => {
-    setNodes((nds) => {
-      let inputCount = 0;
-      let outputCount = 0;
-
-      return nds.map((node) => {
-        if (node.parentId === containerId && node.type === 'connector') {
-          const currentNode = node as Node<ConnectorNodeData>;
-          const currentConnector = currentNode.data.connector;
-          const updatedConnector = connectors.find(
-            (c) => c.path === currentConnector.path,
-          );
-
-          const updatedNode: Node<ConnectorNodeData> = {
-            ...currentNode,
-            data: {
-              ...currentNode.data,
-              connector: updatedConnector
-                ? updatedConnector
-                : currentNode.data.connector,
-              label: connectorLabels[currentConnector.path],
-            },
-          };
-
-          if (updatedNode.data.connector.connection !== 'output') {
-            inputCount++;
-            return {
-              ...updatedNode,
-              position: {
-                x: -25,
-                y: inputCount * SPACE_BETWEEN_CONNECTORS,
-              },
-            };
-          }
-          outputCount++;
-          return {
-            ...updatedNode,
-            position: {
-              x: nodeWidth - SPACE_BETWEEN_CONNECTORS + 31,
-              y: outputCount * SPACE_BETWEEN_CONNECTORS,
-            },
-          };
-        }
-        return node;
-      });
-    });
-  }, [containerId, connectors, nodeWidth, connectorLabels]);
-
-  useEffect(() => {
-    const newConnectors = [...(connectors || [])];
-
     childBlocks.forEach((block) => {
       const {
         id: childBlockId,
@@ -426,10 +267,6 @@ const ContainerNodeComponent = ({
           }
         }
       });
-
-      if (newConnectors && newConnectors.length > (connectors?.length || 0)) {
-        setConnectors(Array.from(newConnectors));
-      }
 
       setNodes((prev) => {
         if (prev.some((node) => node.id === childBlockId)) {
@@ -576,14 +413,6 @@ const ContainerNodeComponent = ({
               size="icon"
               variant="ghost"
               className="h-6 w-6 [&_svg]:size-3.5"
-              onClick={() => setAddOpen(true)}
-            >
-              <Plus />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6 [&_svg]:size-3.5"
               onClick={openEditDialog}
             >
               <Pencil />
@@ -598,17 +427,6 @@ const ContainerNodeComponent = ({
             </Button>
           </div>
         </div>
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Add Connector</DialogTitle>
-            </DialogHeader>
-            <EditConnectorsMenu
-              setOpen={setAddOpen}
-              setConnectors={setConnectors}
-            />
-          </DialogContent>
-        </Dialog>
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
