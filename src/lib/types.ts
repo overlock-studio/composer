@@ -137,6 +137,14 @@ export type ResourceNodeData = {
   blockType: BlockType;
 };
 
+export type XrdNodeData = {
+  name: string;
+  blockType: BlockType;
+  treeData: HandleTreeNode[];
+  initialWidth?: number;
+  initialHeight?: number;
+};
+
 export type HandlesSetter = React.Dispatch<React.SetStateAction<Handle[]>>;
 
 export type ContainerNodeData = {

@@ -20,7 +20,7 @@ interface IHandleProps extends HandleProps {
   inactiveClass?: string;
   path: string;
   description: string;
-  variant?: 'block' | 'container';
+  variant?: 'block' | 'container' | 'inline';
   label?: string;
 }
 

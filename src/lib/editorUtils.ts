@@ -13,6 +13,7 @@ import { ResourceNode } from '../components/Editor/Nodes/ResourceNode';
 import { CustomEdge } from '../components/Editor/CustomEdge';
 import { ContainerNode } from '../components/Editor/Nodes/ContainerNode';
 import { ConnectorNode } from '../components/Editor/Nodes/ConnectorNode';
+import { XrdNode } from '../components/Editor/Nodes/XrdNode';
 import { Connector } from '../api/types';
 import { JSONSchemaProps } from './jsonSchema';
 
@@ -20,6 +21,7 @@ export const NODE_TYPES: NodeTypes = {
   resource: ResourceNode,
   container: ContainerNode,
   connector: ConnectorNode,
+  xrd: XrdNode,
 };
 
 export const EDGE_TYPES = {

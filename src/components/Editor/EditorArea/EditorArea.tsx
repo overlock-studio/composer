@@ -26,6 +26,7 @@ import {
 import { useToast } from '../../../hooks/use-toast';
 import { Spinner } from '../../Spinner';
 import { Block } from '../../../api/types';
+import { CROSSPLANE_XRD_KIND } from '../../../lib/crossplaneCore';
 import logger from '../../../lib/logger';
 
 const useDocumentColorMode = (): 'light' | 'dark' => {
@@ -277,6 +278,20 @@ export const EditorArea = () => {
             setEdges,
             initialHandles: [],
             blockType: selectedBlockType,
+          },
+        };
+      } else if (selectedBlockType.kind === CROSSPLANE_XRD_KIND) {
+        const treeData = selectedBlockType.schema
+          ? buildTreeData(selectedBlockType.schema)
+          : [];
+        newNode = {
+          id,
+          position,
+          type: 'xrd',
+          data: {
+            name: id,
+            blockType: selectedBlockType,
+            treeData,
           },
         };
       } else {

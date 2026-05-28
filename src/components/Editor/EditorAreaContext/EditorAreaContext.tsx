@@ -8,6 +8,8 @@ import {
 import { Edge, Node, useEdgesState, useNodesState } from '@xyflow/react';
 import { Block, BlockType } from '../../../api/types';
 import type { EditorDataAdapter } from '../../../api/adapter';
+import { CROSSPLANE_XRD_KIND } from '../../../lib/crossplaneCore';
+import { buildTreeData } from '../../../lib/editorUtils';
 
 const blockTypeKey = (
   apiVersion: string | undefined,
@@ -116,6 +118,7 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
 
     const position = { x: 100, y: 100 };
     const base = sanitizeBaseName(blockType.kind || blockType.name);
+    const isXrd = blockType.kind === CROSSPLANE_XRD_KIND;
 
     setNodes((current) => {
       const existing = new Set(current.map((n) => n.id));
@@ -125,20 +128,33 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
         counter++;
         candidate = `${base}${counter}`;
       }
-      const newNode: Node = {
-        id: candidate,
-        position,
-        type: 'container',
-        data: {
-          name: candidate,
-          connectors: [],
-          childBlocks: [],
-          reactFlowRef: null,
-          blockType: blockType,
-          kind: blockType.kind,
-          apiVersion: blockType.apiVersion,
-        },
-      };
+      const newNode: Node = isXrd
+        ? {
+            id: candidate,
+            position,
+            type: 'xrd',
+            data: {
+              name: candidate,
+              blockType,
+              treeData: blockType.schema
+                ? buildTreeData(blockType.schema)
+                : [],
+            },
+          }
+        : {
+            id: candidate,
+            position,
+            type: 'container',
+            data: {
+              name: candidate,
+              connectors: [],
+              childBlocks: [],
+              reactFlowRef: null,
+              blockType: blockType,
+              kind: blockType.kind,
+              apiVersion: blockType.apiVersion,
+            },
+          };
       return current.concat(newNode);
     });
   };
