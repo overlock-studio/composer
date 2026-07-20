@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useEditorAreaContext } from '../EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext';
 import {
   Sidebar,
   SidebarContent,
@@ -30,7 +30,7 @@ export const EditorAreaSidebar = () => {
     adapter,
     entityRef,
     registerBlockTypes,
-  } = useEditorAreaContext();
+  } = useEditorActions();
   const [providerBlockTypes, setProviderBlockTypes] = useState<
     { key: string; blockTypes: BlockType[] }[]
   >([]);

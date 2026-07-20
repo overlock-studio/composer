@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
 } from '../../ui/tooltip';
 import { Badge } from '../../ui/badge';
-import { useEditorAreaContext } from '../EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext';
 
 interface IHandleProps extends HandleProps {
   connectionCount?: number;
@@ -24,7 +24,7 @@ interface IHandleProps extends HandleProps {
   label?: string;
 }
 
-export const CustomHandle = ({
+const CustomHandleComponent = ({
   id,
   type,
   isConnectable,
@@ -44,7 +44,7 @@ export const CustomHandle = ({
   });
 
   const nodeId = useNodeId();
-  const { activeHandle, setActiveHandle } = useEditorAreaContext();
+  const { activeHandle, setActiveHandle } = useEditorActions();
   const isOwnerSelected = useStore((s) =>
     nodeId ? (s.nodeLookup.get(nodeId)?.selected ?? false) : false,
   );
@@ -137,3 +137,5 @@ export const CustomHandle = ({
     </TooltipProvider>
   );
 };
+
+export const CustomHandle = React.memo(CustomHandleComponent);

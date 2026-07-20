@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '../../ui/select';
 import { Settings, FileText, Check, X } from 'lucide-react';
-import { useEditorAreaContext } from '../EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext';
 
 export const EditConnectorsMenu = ({
   setOpen,
@@ -102,7 +102,7 @@ export const EditConnectorsMenu = ({
     setOpen(false);
   }, [setOpen]);
 
-  const { setEdges } = useEditorAreaContext();
+  const { setEdges } = useEditorActions();
 
   const onSubmit = (data: EditConnectorsFormValues) => {
     const connection = data.connection;

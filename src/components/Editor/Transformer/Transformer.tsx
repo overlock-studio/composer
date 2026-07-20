@@ -6,7 +6,7 @@ import { TransformerToolbar } from '../Toolbars';
 import { Popover, PopoverTrigger } from '../../ui/popover';
 import { PopoverContent } from '@radix-ui/react-popover';
 import { useViewport } from '@xyflow/react';
-import { useEditorAreaContext } from '../EditorAreaContext/EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext/EditorAreaContext';
 
 export const Transformer = ({
   edgeId,
@@ -18,7 +18,7 @@ export const Transformer = ({
   setOpenTransformerToolbar,
 }: TransformerProps) => {
   const { zoom } = useViewport();
-  const { setEdges } = useEditorAreaContext();
+  const { setEdges } = useEditorActions();
 
   const [open, isOpen] = useState(false);
 

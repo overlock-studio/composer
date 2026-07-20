@@ -11,7 +11,7 @@ import {
 } from '../../ui/dialog';
 import { ScrollArea } from '../../ui/scroll-area';
 import { EditHandlesMenuProps, Handle, HandleTreeNode } from '../../../lib/types';
-import { useEditorAreaContext } from '../EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext';
 import { HandlesTree } from './HandlesTree';
 
 const collectLeafNodes = (nodes: HandleTreeNode[]): HandleTreeNode[] => {
@@ -35,7 +35,7 @@ export const EditHandlesMenu = ({
   setMenuOpen,
 }: EditHandlesMenuProps) => {
   const updateNodeInternals = useUpdateNodeInternals();
-  const { setEdges } = useEditorAreaContext();
+  const { setEdges } = useEditorActions();
 
   const [checked, setChecked] = useState<string[]>(
     handles.map((handle) => handle.path),

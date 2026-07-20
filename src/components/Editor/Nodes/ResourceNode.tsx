@@ -17,7 +17,7 @@ import {
 import { Box, Plus, Trash2 } from 'lucide-react';
 import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { CustomHandle } from '../CustomHandle';
-import { useEditorAreaContext } from '../EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext';
 import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 import { Button } from '../../ui/button';
 import { EditHandlesMenu } from '../Menus';
@@ -47,7 +47,7 @@ const ResourceNodeComponent = ({
     data.currentHandles || data.initialHandles,
   );
   const connection = useConnection();
-  const { setNodes, resolveBlockType } = useEditorAreaContext();
+  const { setNodes, resolveBlockType } = useEditorActions();
   const { getIntersectingNodes, getNode } = useReactFlow();
 
   const resolvedBlockType = useMemo(

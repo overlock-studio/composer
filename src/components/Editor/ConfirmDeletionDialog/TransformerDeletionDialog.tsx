@@ -10,7 +10,7 @@ import {
 } from '../../ui/dialog';
 import { TransformerDeletionDialogProps } from '../../../lib/types';
 import { Button } from '../../ui/button';
-import { useEditorAreaContext } from '../EditorAreaContext/EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext/EditorAreaContext';
 
 export const TransformerDeletionDialog = ({
   open,
@@ -20,7 +20,7 @@ export const TransformerDeletionDialog = ({
   setOpenTransformerToolbar,
   edgeId,
 }: TransformerDeletionDialogProps) => {
-  const { setEdges } = useEditorAreaContext();
+  const { setEdges } = useEditorActions();
 
   const handleCancelDelete = () => {
     setOpen(false);

@@ -17,9 +17,9 @@ import {
 import { generateBezierPoints } from '../../../lib/editorUtils';
 import { CustomEdgeToolbar } from '../Toolbars';
 import { Transformer } from '../Transformer';
-import { useEditorAreaContext } from '../EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext';
 
-export const CustomEdge = ({
+const CustomEdgeComponent = ({
   id,
   source,
   target,
@@ -41,7 +41,7 @@ export const CustomEdge = ({
     ApiTransformer[] | undefined
   >(data?.transformers);
 
-  const { setEdges, activeHandle } = useEditorAreaContext();
+  const { setEdges, activeHandle } = useEditorActions();
 
   const isHandleFlowActive =
     !!activeHandle &&
@@ -213,3 +213,5 @@ export const CustomEdge = ({
     </>
   );
 };
+
+export const CustomEdge = React.memo(CustomEdgeComponent);

@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import {
   ReactFlowProvider,
+  useReactFlow,
   type Edge as RFEdge,
   type Node as RFNode,
 } from '@xyflow/react';
@@ -33,7 +34,7 @@ import {
 import { Button } from '../../ui/button';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '../../ui/sidebar';
 import { EditorArea } from '../EditorArea';
-import { EditorAreaProvider, useEditorAreaContext } from '../EditorAreaContext';
+import { EditorAreaProvider, useEditorActions } from '../EditorAreaContext';
 import { EditorAreaSidebar } from '../EditorAreaSidebar';
 
 const DEFAULT_ENTITY_ID = 'composer';
@@ -195,7 +196,7 @@ const buildCompositionInputs = (
 };
 
 function DocSync({ parsed }: { parsed: ParsedDoc }) {
-  const { setBlocks, setNodes, setEdges } = useEditorAreaContext();
+  const { setBlocks, setNodes, setEdges } = useEditorActions();
   useEffect(() => {
     setNodes([]);
     setEdges([]);
@@ -217,9 +218,11 @@ function ComposerEditorBody({
   onSave,
   forwardedRef,
 }: InnerProps) {
-  const { nodes, edges } = useEditorAreaContext();
+  const { getNodes, getEdges } = useReactFlow();
 
   const triggerSave = useCallback(() => {
+    const nodes = getNodes();
+    const edges = getEdges();
     const layout = collectPositions(nodes);
     const compositions = buildCompositionInputs(
       nodes as RFNode[],
@@ -244,7 +247,7 @@ function ComposerEditorBody({
       .map(([name, content]) => ({ name, content }));
 
     onSave({ files: changedFiles, hashes, layout });
-  }, [nodes, edges, parsed, files, crossplaneFile, hashes, onSave]);
+  }, [getNodes, getEdges, parsed, files, crossplaneFile, hashes, onSave]);
 
   useImperativeHandle(forwardedRef, () => ({ save: triggerSave }), [
     triggerSave,

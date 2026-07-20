@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { EdgeDeletionDialogProps } from '../../../lib/types';
-import { useEditorAreaContext } from '../EditorAreaContext/EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext/EditorAreaContext';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ export const EdgeDeletionDialog = ({
   edgeId,
   setOpen,
 }: EdgeDeletionDialogProps) => {
-  const { setEdges } = useEditorAreaContext();
+  const { setEdges } = useEditorActions();
 
   const handleConfirmDelete = () => {
     setEdges((eds) => eds.filter((ed) => ed.id !== edgeId));

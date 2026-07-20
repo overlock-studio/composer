@@ -27,7 +27,7 @@ import {
 
 import { ConfigurationImportData } from '../../../api/types';
 import { useToast } from '../../../hooks/use-toast';
-import { useEditorAreaContext } from '../EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext';
 import logger from '../../../lib/logger';
 
 export function ImportConfiguration({
@@ -42,7 +42,7 @@ export function ImportConfiguration({
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
 
   const { toast } = useToast();
-  const { adapter } = useEditorAreaContext();
+  const { adapter } = useEditorActions();
 
   const importConfiguration = async (
     name: string,
