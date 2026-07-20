@@ -15,7 +15,7 @@ import {
 } from '../../ui/popover';
 import { Button } from '../../ui/button';
 import { TRANSFORMERS_DEFAULT } from '../../../lib/editorUtils';
-import { useEditorAreaContext } from '../EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext';
 
 export const CustomEdgeToolbar = ({
   edgeId,
@@ -32,7 +32,7 @@ export const CustomEdgeToolbar = ({
   const [openAddTransformers, setOpenAddTransformers] =
     useState<boolean>(false);
 
-  const { setEdges } = useEditorAreaContext();
+  const { setEdges } = useEditorActions();
 
   const addTransformersClose = useCallback(() => {
     setEdges((eds) =>

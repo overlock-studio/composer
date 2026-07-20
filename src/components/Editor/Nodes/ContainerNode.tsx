@@ -34,7 +34,7 @@ import {
   connectorToHandle,
   moveIntersectingNodes,
 } from '../../../lib/editorUtils';
-import { useEditorAreaContext } from '../EditorAreaContext/EditorAreaContext';
+import { useEditorActions } from '../EditorAreaContext/EditorAreaContext';
 import { Connector } from '../../../api/types';
 
 const SPACE_BETWEEN_CONNECTORS = 52.5;
@@ -55,8 +55,7 @@ const ContainerNodeComponent = ({
   const [minRequiredHeight, setMinRequiredHeight] =
     useState<number>(MIN_CONTAINER_HEIGHT);
   const [isUserResizing, setIsUserResizing] = useState<boolean>(false);
-  const { nodes, setNodes, setEdges, resolveBlockType } =
-    useEditorAreaContext();
+  const { setNodes, setEdges, resolveBlockType } = useEditorActions();
 
   const connectorLabels = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -81,7 +80,7 @@ const ContainerNodeComponent = ({
     includeHiddenNodes: false,
   });
   const store = useStoreApi();
-  const { getIntersectingNodes, getNode } = useReactFlow();
+  const { getIntersectingNodes, getNode, getNodes } = useReactFlow();
 
   const { childBlocks, name, reactFlowRef, blockType, functions } = data;
   const kind = data.kind ?? blockType?.kind ?? '';
@@ -373,7 +372,7 @@ const ContainerNodeComponent = ({
 
       if (!blockType || !blockType.schema) return;
 
-      const nodeExists = nodes.some((node) => node.id === childBlockId);
+      const nodeExists = getNodes().some((node) => node.id === childBlockId);
 
       if (nodeExists) return;
 

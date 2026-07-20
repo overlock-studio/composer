@@ -108,6 +108,21 @@ export type EditorAreaContextType = {
   ) => BlockType | undefined;
 };
 
+// Stable, non-reactive slice: setters, adapter, block-type registry, etc.
+// This value stays referentially stable while nodes/edges change (e.g. during
+// a drag), so components subscribing only to it do not re-render per frame.
+export type EditorActionsContextType = Omit<
+  EditorAreaContextType,
+  'nodes' | 'edges'
+>;
+
+// Fast-changing slice: the node/edge arrays. Only components that truly need to
+// react to graph changes should subscribe to this.
+export type EditorGraphContextType = Pick<
+  EditorAreaContextType,
+  'nodes' | 'edges'
+>;
+
 export type EditorAreaProviderProps = {
   children: ReactNode;
   adapter: EditorDataAdapter;

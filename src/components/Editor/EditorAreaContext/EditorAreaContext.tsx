@@ -1,9 +1,17 @@
 'use client';
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from 'react';
 import {
   ActiveHandle,
+  EditorActionsContextType,
   EditorAreaContextType,
   EditorAreaProviderProps,
+  EditorGraphContextType,
 } from '../../../lib/types';
 import { Edge, Node, useEdgesState, useNodesState } from '@xyflow/react';
 import { Block, BlockType } from '../../../api/types';
@@ -48,13 +56,11 @@ const noopAdapter: EditorDataAdapter = {
   createFunctionsFromUrls: async () => [],
 };
 
-const EditorAreaContext = createContext<EditorAreaContextType>({
+const EditorActionsContext = createContext<EditorActionsContextType>({
   selectedBlockType: undefined,
   setSelectedBlockType: () => undefined,
-  nodes: [],
   setNodes: () => undefined,
   onNodesChange: () => undefined,
-  edges: [],
   setEdges: () => undefined,
   onEdgesChange: () => undefined,
   blocks: [],
@@ -68,6 +74,11 @@ const EditorAreaContext = createContext<EditorAreaContextType>({
   entityRef: { entity: null, entityId: null },
   registerBlockTypes: () => undefined,
   resolveBlockType: () => undefined,
+});
+
+const EditorGraphContext = createContext<EditorGraphContextType>({
+  nodes: [],
+  edges: [],
 });
 
 export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
@@ -108,11 +119,12 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
     [blockTypeRegistry],
   );
 
-  const sanitizeBaseName = (s: string): string =>
-    s.replace(/[^a-z0-9-]/gi, '').toLowerCase() || 'block';
-
-  const addNodeToCanvas = (blockType: BlockType) => {
+  const addNodeToCanvas = useCallback(
+    (blockType: BlockType) => {
     if (blockType.leaf) return;
+
+    const sanitizeBaseName = (s: string): string =>
+      s.replace(/[^a-z0-9-]/gi, '').toLowerCase() || 'block';
 
     const position = { x: 100, y: 100 };
     const base = sanitizeBaseName(blockType.kind || blockType.name);
@@ -141,39 +153,83 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
       };
       return current.concat(newNode);
     });
-  };
+    },
+    [setNodes],
+  );
+
+  // Stable slice — referentially stable while nodes/edges churn (drags), so
+  // node/handle/edge components subscribing here do not re-render per frame.
+  const actionsValue = useMemo<EditorActionsContextType>(
+    () => ({
+      selectedBlockType,
+      setSelectedBlockType,
+      setNodes,
+      onNodesChange,
+      setEdges,
+      onEdgesChange,
+      blocks,
+      setBlocks,
+      blocksLoading,
+      setBlocksLoading,
+      addNodeToCanvas,
+      activeHandle,
+      setActiveHandle,
+      adapter,
+      entityRef,
+      registerBlockTypes,
+      resolveBlockType,
+    }),
+    [
+      selectedBlockType,
+      setNodes,
+      onNodesChange,
+      setEdges,
+      onEdgesChange,
+      blocks,
+      setBlocks,
+      blocksLoading,
+      addNodeToCanvas,
+      activeHandle,
+      adapter,
+      entityRef,
+      registerBlockTypes,
+      resolveBlockType,
+    ],
+  );
+
+  const graphValue = useMemo<EditorGraphContextType>(
+    () => ({ nodes, edges }),
+    [nodes, edges],
+  );
 
   return (
-    <EditorAreaContext.Provider
-      value={{
-        selectedBlockType,
-        setSelectedBlockType,
-        nodes,
-        setNodes,
-        onNodesChange,
-        edges,
-        setEdges,
-        onEdgesChange,
-        blocks,
-        setBlocks,
-        blocksLoading,
-        setBlocksLoading,
-        addNodeToCanvas,
-        activeHandle,
-        setActiveHandle,
-        adapter,
-        entityRef,
-        registerBlockTypes,
-        resolveBlockType,
-      }}
-    >
-      {children}
-    </EditorAreaContext.Provider>
+    <EditorActionsContext.Provider value={actionsValue}>
+      <EditorGraphContext.Provider value={graphValue}>
+        {children}
+      </EditorGraphContext.Provider>
+    </EditorActionsContext.Provider>
   );
 };
 
-export const useEditorAreaContext = (): EditorAreaContextType => {
-  return useContext(EditorAreaContext);
+/**
+ * Stable subset of the editor context (setters, adapter, block-type registry,
+ * activeHandle). Prefer this in components rendered per-node/edge/handle — it
+ * does NOT change when nodes/edges change, so it won't re-render on every drag
+ * frame. It intentionally does not expose `nodes`/`edges`; read those
+ * non-reactively via React Flow's `getNodes()`/`getEdges()` when needed.
+ */
+export const useEditorActions = (): EditorActionsContextType => {
+  return useContext(EditorActionsContext);
 };
 
-export default EditorAreaContext;
+/**
+ * Full editor context including reactive `nodes`/`edges`. Use only where you
+ * must re-render on graph changes (e.g. the ReactFlow host, serialization).
+ */
+export const useEditorAreaContext = (): EditorAreaContextType => {
+  const actions = useContext(EditorActionsContext);
+  const graph = useContext(EditorGraphContext);
+  return { ...actions, ...graph };
+};
+
+export default EditorActionsContext;

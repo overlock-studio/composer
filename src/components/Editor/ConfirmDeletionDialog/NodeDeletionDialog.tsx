@@ -9,7 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../ui/dialog';
-import { useEditorAreaContext } from '../EditorAreaContext/EditorAreaContext';
+import { useReactFlow } from '@xyflow/react';
+import { useEditorActions } from '../EditorAreaContext/EditorAreaContext';
 import { Button } from '../../ui/button';
 
 export const NodeDeletionDialog = ({
@@ -17,10 +18,11 @@ export const NodeDeletionDialog = ({
   nodeId,
   setOpen,
 }: NodeDeletionDialogProps) => {
-  const { onNodesChange, nodes } = useEditorAreaContext();
+  const { onNodesChange } = useEditorActions();
+  const { getNodes } = useReactFlow();
 
   const getAllChildNodeIds = (parentId: string): string[] => {
-    const children = nodes.filter((n) => n.parentId === parentId);
+    const children = getNodes().filter((n) => n.parentId === parentId);
     return children.flatMap((child) => [
       child.id,
       ...getAllChildNodeIds(child.id),
