@@ -52,6 +52,10 @@ export const MIN_RESOURCE_NODE_SPACING = 25;
 export const MIN_CONTAINER_HEIGHT = 300;
 export const MIN_CONTAINER_WIDTH = 500;
 
+// Height of the container node header. Child nodes are kept below this so they
+// don't overlap the header (title/actions) when placed or dragged.
+export const CONTAINER_HEADER_HEIGHT = 44;
+
 export function getHandlesFromSchema(props: {
   schema: JSONSchemaProps;
   path?: string[];
