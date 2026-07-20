@@ -10,6 +10,7 @@ import {
   Connection,
   Edge,
   Node,
+  NodeChange,
   useNodesInitialized,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -21,6 +22,7 @@ import {
   RESOURCE_NODE_WIDTH,
   MIN_CONTAINER_HEIGHT,
   MIN_CONTAINER_WIDTH,
+  CONTAINER_HEADER_HEIGHT,
   resolveNodeCollisions,
 } from '../../../lib/editorUtils';
 import { useToast } from '../../../hooks/use-toast';
@@ -258,7 +260,10 @@ export const EditorArea = () => {
 
         const relativePosition = {
           x: position.x - containerNode.position.x,
-          y: position.y - containerNode.position.y,
+          y: Math.max(
+            position.y - containerNode.position.y,
+            CONTAINER_HEADER_HEIGHT,
+          ),
         };
 
         const treeData = buildTreeData(selectedBlockType.schema);
@@ -367,6 +372,27 @@ export const EditorArea = () => {
     [nodes, setNodes],
   );
 
+  // Keep child nodes below the container header while dragging/placing them, so
+  // they never overlap the header (title/actions) area.
+  const handleNodesChange = useCallback(
+    (changes: NodeChange<Node>[]) => {
+      const clamped = changes.map((change) => {
+        if (change.type === 'position' && change.position) {
+          const node = nodes.find((n) => n.id === change.id);
+          if (node?.parentId && change.position.y < CONTAINER_HEADER_HEIGHT) {
+            return {
+              ...change,
+              position: { ...change.position, y: CONTAINER_HEADER_HEIGHT },
+            };
+          }
+        }
+        return change;
+      });
+      onNodesChange(clamped);
+    },
+    [nodes, onNodesChange],
+  );
+
   const onNodesDelete = useCallback(
     (deleted: Node[]) => {
       const deletedIds = new Set(deleted.map((d) => d.id));
@@ -403,7 +429,7 @@ export const EditorArea = () => {
           nodes={nodes}
           edges={edges}
           onConnect={onConnect}
-          onNodesChange={onNodesChange}
+          onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
           onNodesDelete={onNodesDelete}
           onNodeDragStop={onNodeDragStop}
