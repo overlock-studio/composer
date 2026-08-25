@@ -10,19 +10,14 @@ import {
   Connection,
   Edge,
   Node,
-  NodeChange,
   useNodesInitialized,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useEditorAreaContext } from '../EditorAreaContext';
 import {
-  buildTreeData,
   EDGE_TYPES,
   NODE_TYPES,
-  RESOURCE_NODE_WIDTH,
-  MIN_CONTAINER_HEIGHT,
-  MIN_CONTAINER_WIDTH,
-  CONTAINER_HEADER_HEIGHT,
+  CONTAINER_NODE_WIDTH,
   resolveNodeCollisions,
 } from '../../../lib/editorUtils';
 import { useToast } from '../../../hooks/use-toast';
@@ -141,7 +136,7 @@ export const EditorArea = () => {
     const COMPOSITION_SPACING = 200;
 
     containerNodes.forEach((container) => {
-      const { blockType, id, connectors, name, position, size } = container;
+      const { blockType, id, connectors, name, position } = container;
       // Extract kind and apiVersion from block (set by CompositionService) or fallback to blockType
       const kind = (container as any).kind ?? blockType?.kind;
       const apiVersion = (container as any).apiVersion ?? blockType?.apiVersion;
@@ -149,13 +144,6 @@ export const EditorArea = () => {
       if (nodes.some((node) => node.id === id)) return;
 
       const childBlocks = blocks.filter((block) => block.parentId === id);
-
-      const initialWidth = size
-        ? Math.max(size.width, MIN_CONTAINER_WIDTH)
-        : MIN_CONTAINER_WIDTH;
-      const initialHeight = size
-        ? Math.max(size.height, MIN_CONTAINER_HEIGHT)
-        : MIN_CONTAINER_HEIGHT;
 
       // Use saved position if exists and is not default (0,0), otherwise position horizontally
       const hasCustomPosition =
@@ -166,21 +154,20 @@ export const EditorArea = () => {
 
       // Update offset for next composition
       if (!hasCustomPosition) {
-        horizontalOffset += initialWidth + COMPOSITION_SPACING;
+        horizontalOffset += CONTAINER_NODE_WIDTH + COMPOSITION_SPACING;
       }
 
       const nodeData: any = {
         id,
         position: nodePosition,
         type: 'container',
+        style: { width: CONTAINER_NODE_WIDTH },
         data: {
           name: name || id,
           connectors,
           childBlocks,
           reactFlowRef,
           blockType,
-          initialWidth,
-          initialHeight,
           kind,
           apiVersion,
           functions: container.functions || [],
@@ -241,72 +228,42 @@ export const EditorArea = () => {
       target: EventTarget | null;
     }) => {
       if (!selectedBlockType) return;
-      const { clientX, clientY, target } = opts;
+      const { clientX, clientY } = opts;
 
       const position = screenToFlowPosition({ x: clientX, y: clientY });
       const id = nextUniqueNodeName(nodes, selectedBlockType);
       let newNode: Node | null = null;
 
+      // Provider blocks live inside a container, which is edited on its own
+      // canvas, so they cannot be dropped on the container-level graph.
       if (selectedBlockType.leaf) {
-        const targetEl = target as HTMLElement | null;
-        const parentNode = targetEl?.closest?.(
-          '[data-parent-id]',
-        ) as HTMLElement | null;
-        const parentNodeId = parentNode?.dataset.parentId;
-        if (!parentNodeId) return;
-
-        const containerNode = nodes.find((n) => n.id === parentNodeId);
-        if (!containerNode) return;
-
-        const relativePosition = {
-          x: position.x - containerNode.position.x,
-          y: Math.max(
-            position.y - containerNode.position.y,
-            CONTAINER_HEADER_HEIGHT,
-          ),
-        };
-
-        const treeData = buildTreeData(selectedBlockType.schema);
-
-        newNode = {
-          id,
-          position: relativePosition,
-          type: 'resource',
-          extent: 'parent',
-          parentId: parentNodeId,
-          style: { width: RESOURCE_NODE_WIDTH },
-          draggable: true,
-          data: {
-            name: id,
-            treeData,
-            setEdges,
-            initialHandles: [],
-            blockType: selectedBlockType,
-          },
-        };
-      } else {
-        newNode = {
-          id,
-          position,
-          type: 'container',
-          data: {
-            name: id,
-            connectors: [],
-            childBlocks: [],
-            reactFlowRef,
-            blockType: selectedBlockType,
-            initialWidth: MIN_CONTAINER_WIDTH,
-            initialHeight: MIN_CONTAINER_HEIGHT,
-            kind: selectedBlockType.kind,
-            apiVersion: selectedBlockType.apiVersion,
-          },
-        };
+        toast({
+          title: 'Blocks belong inside a container',
+          description: 'Open a container to add provider blocks to it.',
+        });
+        return;
       }
+
+      newNode = {
+        id,
+        position,
+        type: 'container',
+        style: { width: CONTAINER_NODE_WIDTH },
+        data: {
+          name: id,
+          connectors: [],
+          childBlocks: [],
+          reactFlowRef,
+          blockType: selectedBlockType,
+          kind: selectedBlockType.kind,
+          apiVersion: selectedBlockType.apiVersion,
+        },
+      };
       if (newNode) {
         setNodes((nds) => nds.concat(newNode));
       }
     },
-    [selectedBlockType, nodes, screenToFlowPosition, setNodes, setEdges],
+    [selectedBlockType, nodes, screenToFlowPosition, setNodes, toast],
   );
 
   const onDrop = (event: React.DragEvent) => {
@@ -372,53 +329,19 @@ export const EditorArea = () => {
     [nodes, setNodes],
   );
 
-  // Keep child nodes below the container header while dragging/placing them, so
-  // they never overlap the header (title/actions) area.
-  const handleNodesChange = useCallback(
-    (changes: NodeChange<Node>[]) => {
-      const clamped = changes.map((change) => {
-        if (change.type === 'position' && change.position) {
-          const node = nodes.find((n) => n.id === change.id);
-          if (node?.parentId && change.position.y < CONTAINER_HEADER_HEIGHT) {
-            return {
-              ...change,
-              position: { ...change.position, y: CONTAINER_HEADER_HEIGHT },
-            };
-          }
-        }
-        return change;
-      });
-      onNodesChange(clamped);
-    },
-    [nodes, onNodesChange],
-  );
-
   const onNodesDelete = useCallback(
     (deleted: Node[]) => {
       const deletedIds = new Set(deleted.map((d) => d.id));
 
-      const getAllChildIds = (parentIds: Set<string>): Set<string> => {
-        const newChildIds = nodes
-          .filter((n) => parentIds.has(n.parentId || ''))
-          .map((n) => n.id);
-
-        if (newChildIds.length === 0) return parentIds;
-
-        const all = new Set([...parentIds, ...newChildIds]);
-        return getAllChildIds(all);
-      };
-
-      const allToDelete = getAllChildIds(deletedIds);
-
-      setNodes((nds) => nds.filter((n) => !allToDelete.has(n.id)));
+      setNodes((nds) => nds.filter((n) => !deletedIds.has(n.id)));
 
       setEdges((eds) =>
         eds.filter(
-          (e) => !allToDelete.has(e.source) && !allToDelete.has(e.target),
+          (e) => !deletedIds.has(e.source) && !deletedIds.has(e.target),
         ),
       );
     },
-    [nodes, setNodes, edges, setEdges],
+    [setNodes, setEdges],
   );
 
   return (
@@ -429,7 +352,7 @@ export const EditorArea = () => {
           nodes={nodes}
           edges={edges}
           onConnect={onConnect}
-          onNodesChange={handleNodesChange}
+          onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodesDelete={onNodesDelete}
           onNodeDragStop={onNodeDragStop}

@@ -116,7 +116,7 @@
     &.react-flow__node-container {
       z-index: 10002;
       .node-body {
-        display: block;
+        overflow: visible;
       }
     }
 

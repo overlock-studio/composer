@@ -161,8 +161,6 @@ export type ContainerNodeData = {
   connectors: Connector[];
   childBlocks: Block[];
   reactFlowRef: React.MutableRefObject<HTMLDivElement | null>;
-  initialWidth?: number;
-  initialHeight?: number;
   kind?: string;
   apiVersion?: string;
   blockType?: BlockType;
