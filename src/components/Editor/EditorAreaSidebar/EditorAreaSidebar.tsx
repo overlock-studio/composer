@@ -30,6 +30,7 @@ export const EditorAreaSidebar = () => {
     adapter,
     entityRef,
     registerBlockTypes,
+    editorMode,
   } = useEditorActions();
   const [providerBlockTypes, setProviderBlockTypes] = useState<
     { key: string; blockTypes: BlockType[] }[]
@@ -122,14 +123,21 @@ export const EditorAreaSidebar = () => {
     });
   }, [providers]);
 
+  // The container-level canvas only takes containers; provider blocks are
+  // added inside a container, on its own canvas.
+  const blockTypesForMode = (blockTypes: BlockType[]): BlockType[] =>
+    blockTypes.filter((blockType) =>
+      editorMode === 'containers' ? !blockType.leaf : blockType.leaf,
+    );
+
   const filterBlockTypes = (
     blockTypes: BlockType[],
     providerId: string,
   ): BlockType[] => {
     const filterText = filterByProvider[providerId]?.toLowerCase() || '';
-    if (!filterText) return blockTypes;
+    if (!filterText) return blockTypesForMode(blockTypes);
 
-    return blockTypes.filter((blockType) => {
+    return blockTypesForMode(blockTypes).filter((blockType) => {
       const title = blockType.title?.toLowerCase() || '';
       const description = blockType.description?.toLowerCase() || '';
       const name = blockType.name?.toLowerCase() || '';
@@ -156,7 +164,7 @@ export const EditorAreaSidebar = () => {
             <SidebarGroupContent className="h-full">
               <div className="flex flex-col h-full">
                 <h2 className="px-2 pt-2 pb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Block library
+                  {editorMode === 'containers' ? 'Containers' : 'Block library'}
                 </h2>
                 <Accordion
                   type="single"
@@ -176,11 +184,17 @@ export const EditorAreaSidebar = () => {
                     const providerFullUrl = pr.version
                       ? `${pr.url}:${pr.version}`
                       : pr.url;
+                    const loaded = providerBlockTypes.find(
+                      (bt) => bt.key === providerFullUrl,
+                    );
+                    if (
+                      loaded &&
+                      blockTypesForMode(loaded.blockTypes).length === 0
+                    ) {
+                      return null;
+                    }
                     const headerIcon =
-                      pr.icon ||
-                      providerBlockTypes
-                        .find((bt) => bt.key === providerFullUrl)
-                        ?.blockTypes.find((b) => b.icon)?.icon;
+                      pr.icon || loaded?.blockTypes.find((b) => b.icon)?.icon;
                     return (
                     <AccordionItem
                       value={pr._id}
@@ -223,9 +237,7 @@ export const EditorAreaSidebar = () => {
                         {(() => {
                           return !blockTypesLoadingMap[providerFullUrl] ? (
                             filterBlockTypes(
-                              providerBlockTypes.find(
-                                (bt) => bt.key === providerFullUrl,
-                              )?.blockTypes || [],
+                              loaded?.blockTypes || [],
                               pr._id,
                             ).map((blockType) =>
                               blockType.title ? (
