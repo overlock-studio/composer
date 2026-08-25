@@ -16,7 +16,7 @@ export const ContainerNodeFooter: React.FC<ContainerNodeFooterProps> = ({
   }
 
   return (
-    <div className="absolute bottom-[2px] left-[2px] right-[2px] border-t border-muted-foreground/20 p-2 bg-muted/50 rounded-b-lg">
+    <div className="border-t border-muted-foreground/20 p-2 bg-muted/50 rounded-b-lg">
       <div className="flex flex-col gap-1">
         {functions.map((fn, index) => (
           <Button

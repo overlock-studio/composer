@@ -17,7 +17,11 @@ import {
   MonitoringAreaProvider,
   useMonitoringAreaContext,
 } from '../MonitoringAreaContext';
-import { EDGE_TYPES, NODE_TYPES } from '../../../lib/editorUtils';
+import {
+  CONTAINER_NODE_WIDTH,
+  EDGE_TYPES,
+  NODE_TYPES,
+} from '../../../lib/editorUtils';
 import { Block } from '../../../api/types';
 import { useToast } from '../../../hooks/use-toast';
 import { Spinner } from '../../Spinner';
@@ -79,7 +83,8 @@ const MonitoringAreaContent = ({
         id,
         position: { x: 0, y: 0 },
         type: 'container',
-        data: { label: id, connectors, childBlocks, reactFlowRef, blockType },
+        style: { width: CONTAINER_NODE_WIDTH },
+        data: { name: id, connectors, childBlocks, reactFlowRef, blockType },
       });
     });
 

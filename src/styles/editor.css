@@ -117,6 +117,7 @@
       z-index: 10002;
       .node-body {
         display: block;
+        overflow: visible;
       }
     }
 
