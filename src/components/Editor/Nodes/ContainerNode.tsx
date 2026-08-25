@@ -16,7 +16,10 @@ import {
   DialogTitle,
 } from '../../ui/dialog';
 import { EditConnectorsMenu } from '../Menus';
-import { CONTAINER_HANDLE_SPACING } from '../../../lib/editorUtils';
+import {
+  CONTAINER_HANDLE_SPACING,
+  CONTAINER_NODE_WIDTH,
+} from '../../../lib/editorUtils';
 import { useEditorActions } from '../EditorAreaContext/EditorAreaContext';
 import { Connector } from '../../../api/types';
 
@@ -118,7 +121,9 @@ const ContainerNodeComponent = ({
   const isConnecting = !!connection?.inProgress;
 
   return (
-    <div className="node-body">
+    // A container is at least square, so it keeps a block-like footprint even
+    // with few connectors.
+    <div className="node-body" style={{ minHeight: CONTAINER_NODE_WIDTH }}>
       <div className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 py-1 rounded-t-lg">
         <div className="w-14 flex items-center">
           {icon ? (
