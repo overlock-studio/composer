@@ -11,15 +11,22 @@ import {
   Edge,
   Node,
   useNodesInitialized,
+  type Viewport,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useEditorAreaContext } from '../EditorAreaContext';
 import {
+  buildTreeData,
   EDGE_TYPES,
   NODE_TYPES,
   CONTAINER_NODE_WIDTH,
+  RESOURCE_NODE_WIDTH,
   resolveNodeCollisions,
 } from '../../../lib/editorUtils';
+import {
+  buildContainerGraph,
+  collectContainerBlocks,
+} from '../../../lib/containerGraph';
 import { useToast } from '../../../hooks/use-toast';
 import { Spinner } from '../../Spinner';
 import { Block } from '../../../api/types';
@@ -76,12 +83,21 @@ export const EditorArea = () => {
     setBlocksLoading,
     adapter,
     entityRef,
+    editorMode,
+    activeContainerId,
   } = useEditorAreaContext();
-  const { screenToFlowPosition, fitView } = useReactFlow();
+  const { screenToFlowPosition, fitView, getViewport, setViewport } =
+    useReactFlow();
   const nodesInitialized = useNodesInitialized();
   const { entity, entityId } = entityRef;
   const { toast } = useToast();
   const [hasInitialFitView, setHasInitialFitView] = useState(false);
+  // Graph of the container level, parked while a container is being edited.
+  const containerLevelGraph = useRef<{
+    nodes: Node[];
+    edges: Edge[];
+    viewport: Viewport;
+  } | null>(null);
 
   const fetchBlocks = async () => {
     setEdges([]);
@@ -127,6 +143,8 @@ export const EditorArea = () => {
 
   const createNodesFromBlocks = useCallback(() => {
     if (!blocks) return;
+    // The container canvas is not what is on screen while a container is open.
+    if (activeContainerId) return;
 
     const containerNodes = blocks.filter((block) => block.parentId === '');
     const newNodes: Node[] = [];
@@ -180,7 +198,7 @@ export const EditorArea = () => {
     if (newNodes.length) {
       setNodes((prev) => [...prev, ...newNodes]);
     }
-  }, [blocks, setNodes]);
+  }, [blocks, setNodes, activeContainerId]);
 
   useEffect(() => {
     createNodesFromBlocks();
@@ -205,6 +223,58 @@ export const EditorArea = () => {
     hasInitialFitView,
     blocksLoading,
     nodes.length,
+  ]);
+
+  // Opening a container parks the container-level graph and swaps in the
+  // blocks of that container; closing it folds the blocks back and restores
+  // what was on screen before.
+  const openedContainerId = useRef<string | null>(null);
+  useEffect(() => {
+    const previous = openedContainerId.current;
+    if (previous === activeContainerId) return;
+    openedContainerId.current = activeContainerId;
+
+    if (activeContainerId) {
+      const container = nodes.find((node) => node.id === activeContainerId);
+      if (!container) return;
+      containerLevelGraph.current = {
+        nodes,
+        edges,
+        viewport: getViewport(),
+      };
+      const graph = buildContainerGraph(container, reactFlowRef);
+      setNodes(graph.nodes);
+      setEdges(graph.edges);
+      setHasInitialFitView(false);
+      return;
+    }
+
+    const parked = containerLevelGraph.current;
+    containerLevelGraph.current = null;
+    if (!parked || !previous) return;
+
+    const container = parked.nodes.find((node) => node.id === previous);
+    const childBlocks = container
+      ? collectContainerBlocks(container, nodes)
+      : null;
+
+    setNodes(
+      parked.nodes.map((node) =>
+        node.id === previous && childBlocks
+          ? { ...node, data: { ...node.data, childBlocks } }
+          : node,
+      ),
+    );
+    setEdges(parked.edges);
+    setViewport(parked.viewport);
+  }, [
+    activeContainerId,
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+    getViewport,
+    setViewport,
   ]);
 
   const onConnect = useCallback(
@@ -234,36 +304,61 @@ export const EditorArea = () => {
       const id = nextUniqueNodeName(nodes, selectedBlockType);
       let newNode: Node | null = null;
 
-      // Provider blocks live inside a container, which is edited on its own
-      // canvas, so they cannot be dropped on the container-level graph.
-      if (selectedBlockType.leaf) {
-        toast({
-          title: 'Blocks belong inside a container',
-          description: 'Open a container to add provider blocks to it.',
-        });
-        return;
-      }
+      // Each canvas takes its own kind of block: containers at the container
+      // level, provider blocks inside a container.
+      if (editorMode === 'container') {
+        if (!selectedBlockType.leaf) return;
+        newNode = {
+          id,
+          position,
+          type: 'resource',
+          style: { width: RESOURCE_NODE_WIDTH },
+          draggable: true,
+          data: {
+            label: id,
+            name: id,
+            treeData: buildTreeData(selectedBlockType.schema),
+            initialHandles: [],
+            blockType: selectedBlockType,
+          },
+        };
+      } else {
+        if (selectedBlockType.leaf) {
+          toast({
+            title: 'Blocks belong inside a container',
+            description: 'Open a container to add provider blocks to it.',
+          });
+          return;
+        }
 
-      newNode = {
-        id,
-        position,
-        type: 'container',
-        style: { width: CONTAINER_NODE_WIDTH },
-        data: {
-          name: id,
-          connectors: [],
-          childBlocks: [],
-          reactFlowRef,
-          blockType: selectedBlockType,
-          kind: selectedBlockType.kind,
-          apiVersion: selectedBlockType.apiVersion,
-        },
-      };
+        newNode = {
+          id,
+          position,
+          type: 'container',
+          style: { width: CONTAINER_NODE_WIDTH },
+          data: {
+            name: id,
+            connectors: [],
+            childBlocks: [],
+            reactFlowRef,
+            blockType: selectedBlockType,
+            kind: selectedBlockType.kind,
+            apiVersion: selectedBlockType.apiVersion,
+          },
+        };
+      }
       if (newNode) {
         setNodes((nds) => nds.concat(newNode));
       }
     },
-    [selectedBlockType, nodes, screenToFlowPosition, setNodes, toast],
+    [
+      selectedBlockType,
+      nodes,
+      screenToFlowPosition,
+      setNodes,
+      toast,
+      editorMode,
+    ],
   );
 
   const onDrop = (event: React.DragEvent) => {

@@ -22,7 +22,7 @@ export const collectPositions = (
     type?: string;
     position?: { x: number; y: number } | null;
     measured?: { width?: number; height?: number };
-    data?: { name?: unknown };
+    data?: { name?: unknown; childBlocks?: Block[] };
     id: string;
   }[],
   previous: LayoutByComposition,
@@ -41,10 +41,27 @@ export const collectPositions = (
         : { x, y };
 
     const compName = (node.data?.name as string | undefined) ?? node.id;
-    // Blocks are laid out on the container's own canvas, so their saved
-    // positions are carried over untouched.
+    // Blocks are laid out on the container's own canvas, so their positions
+    // come from the blocks the container carries, falling back to what was
+    // loaded for containers that were never opened.
     const carried = previous[node.id] ?? previous[compName] ?? {};
-    out[compName] = { ...carried, [SELF_POSITION_KEY]: entry };
+    const blockEntries: Record<string, LayoutEntry> = {};
+    for (const block of node.data?.childBlocks ?? []) {
+      if (!block.position) continue;
+      const resourceName = stripCompositionPrefix(block.name ?? block.id, [
+        node.id,
+        compName,
+      ]);
+      blockEntries[resourceName] = {
+        x: Math.round(block.position.x),
+        y: Math.round(block.position.y),
+      };
+    }
+    out[compName] = {
+      ...carried,
+      ...blockEntries,
+      [SELF_POSITION_KEY]: entry,
+    };
   }
   return out;
 };
