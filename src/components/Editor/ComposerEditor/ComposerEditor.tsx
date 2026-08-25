@@ -29,6 +29,7 @@ import {
 } from '../../../lib/compositionInputs';
 import { Button } from '../../ui/button';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '../../ui/sidebar';
+import { Breadcrumbs } from '../Breadcrumbs';
 import { EditorArea } from '../EditorArea';
 import { EditorAreaProvider, useEditorActions } from '../EditorAreaContext';
 import { EditorAreaSidebar } from '../EditorAreaSidebar';
@@ -120,7 +121,9 @@ function ComposerEditorBody({
   return (
     <SidebarProvider defaultLeftOpen={false} defaultRightOpen={false}>
       <SidebarInset>
-        <header className="sticky top-0 z-50 flex h-10 shrink-0 items-center justify-end gap-2 border-b border-border/60 px-2 backdrop-blur">
+        <header className="sticky top-0 z-50 flex h-10 shrink-0 items-center gap-2 border-b border-border/60 px-2 backdrop-blur">
+          <Breadcrumbs />
+          <div className="flex-1" />
           <Button
             variant="ghost"
             size="icon"

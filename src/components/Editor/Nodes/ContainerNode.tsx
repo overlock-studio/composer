@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { ContainerNodeData } from '../../../lib/types';
 import { Node, NodeProps, Position, useConnection } from '@xyflow/react';
-import { Box, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Box, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
 import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 import { ContainerNodeFooter } from './ContainerNodeFooter';
@@ -33,7 +33,7 @@ const ContainerNodeComponent = ({
   const [editOpen, setEditOpen] = useState<boolean>(false);
   useNodeDeleteShortcut(selected, () => setOpenDeleteDialog(true));
   const [connectors, setConnectors] = useState<Connector[]>(data.connectors);
-  const { setNodes, resolveBlockType } = useEditorActions();
+  const { setNodes, resolveBlockType, openContainer } = useEditorActions();
   const connection = useConnection();
 
   const connectorLabels = useMemo(() => {
@@ -154,6 +154,16 @@ const ContainerNodeComponent = ({
             variant="ghost"
             className="h-6 w-6 [&_svg]:size-3.5"
             onClick={openEditDialog}
+            aria-label="Composition settings"
+          >
+            <Settings />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6 [&_svg]:size-3.5"
+            onClick={() => openContainer(containerId)}
+            aria-label="Edit container"
           >
             <Pencil />
           </Button>
