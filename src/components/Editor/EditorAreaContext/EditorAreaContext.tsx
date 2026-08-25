@@ -12,6 +12,7 @@ import {
   EditorAreaContextType,
   EditorAreaProviderProps,
   EditorGraphContextType,
+  EditorMode,
 } from '../../../lib/types';
 import { Edge, Node, useEdgesState, useNodesState } from '@xyflow/react';
 import { Block, BlockType } from '../../../api/types';
@@ -73,6 +74,10 @@ const EditorActionsContext = createContext<EditorActionsContextType>({
   adapter: noopAdapter,
   entityRef: { entity: null, entityId: null },
   registerBlockTypes: () => undefined,
+  editorMode: 'containers',
+  activeContainerId: null,
+  openContainer: () => undefined,
+  closeContainer: () => undefined,
   resolveBlockType: () => undefined,
 });
 
@@ -95,6 +100,18 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
   const [blockTypeRegistry, setBlockTypeRegistry] = useState<
     Record<string, BlockType>
   >({});
+  const [activeContainerId, setActiveContainerId] = useState<string | null>(
+    null,
+  );
+  const editorMode: EditorMode = activeContainerId ? 'container' : 'containers';
+
+  const openContainer = useCallback((containerId: string) => {
+    setActiveContainerId(containerId);
+  }, []);
+
+  const closeContainer = useCallback(() => {
+    setActiveContainerId(null);
+  }, []);
 
   const registerBlockTypes = useCallback((types: BlockType[]) => {
     if (!types.length) return;
@@ -177,6 +194,10 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
       adapter,
       entityRef,
       registerBlockTypes,
+      editorMode,
+      activeContainerId,
+      openContainer,
+      closeContainer,
       resolveBlockType,
     }),
     [
@@ -193,6 +214,10 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
       adapter,
       entityRef,
       registerBlockTypes,
+      editorMode,
+      activeContainerId,
+      openContainer,
+      closeContainer,
       resolveBlockType,
     ],
   );

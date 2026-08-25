@@ -83,6 +83,10 @@ export type ActiveHandle = {
   type: 'source' | 'target';
 };
 
+// The editor shows either the container-level graph or the blocks of a single
+// container. Both surfaces share one node/edge store.
+export type EditorMode = 'containers' | 'container';
+
 export type EditorAreaContextType = {
   selectedBlockType: BlockType | undefined;
   setSelectedBlockType: Dispatch<SetStateAction<BlockType | undefined>>;
@@ -102,6 +106,10 @@ export type EditorAreaContextType = {
   adapter: EditorDataAdapter;
   entityRef: EditorEntityRef;
   registerBlockTypes: (types: BlockType[]) => void;
+  editorMode: EditorMode;
+  activeContainerId: string | null;
+  openContainer: (containerId: string) => void;
+  closeContainer: () => void;
   resolveBlockType: (
     apiVersion: string | undefined,
     kind: string | undefined,
