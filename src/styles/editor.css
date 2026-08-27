@@ -183,6 +183,27 @@
         text-align: center;
         color: hsl(var(--muted-foreground));
       }
+
+      /* Structural, not wired by hand: muted rather than the block palette. */
+      .react-flow__handle.pipeline-group-handle {
+        width: 9px;
+        height: 9px;
+        border: 2px solid hsl(var(--muted-foreground) / 0.7);
+        background: hsl(var(--background));
+        cursor: default;
+        animation: none;
+
+        &.target {
+          left: -5px;
+        }
+        &.source {
+          right: -5px;
+        }
+        &:hover {
+          animation: none;
+          border-color: hsl(var(--muted-foreground) / 0.7);
+        }
+      }
     }
 
     .node-body {
@@ -205,6 +226,18 @@
 
     &:focus {
       outline: none;
+    }
+  }
+
+  /* Chain between consecutive pipeline steps: structural, so it reads as a
+     hint rather than a data edge. */
+  .react-flow__edge.pipeline-step-edge {
+    pointer-events: none;
+
+    .react-flow__edge-path {
+      stroke: hsl(var(--muted-foreground) / 0.85);
+      stroke-width: 1.5;
+      stroke-dasharray: 5 4;
     }
   }
 

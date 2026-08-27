@@ -76,6 +76,10 @@ export const PIPELINE_GROUP_MIN_WIDTH = 380;
 export const PIPELINE_GROUP_MIN_HEIGHT = 220;
 export const PIPELINE_GROUP_GAP = 80;
 
+// Handles carrying the chain from one pipeline step to the next.
+export const PIPELINE_IN_HANDLE = 'pipeline-in';
+export const PIPELINE_OUT_HANDLE = 'pipeline-out';
+
 // Height of the container node header. Child nodes are kept below this so they
 // don't overlap the header (title/actions) when placed or dragged.
 export const CONTAINER_HEADER_HEIGHT = 44;

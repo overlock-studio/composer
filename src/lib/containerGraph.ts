@@ -25,6 +25,8 @@ import {
   PIPELINE_GROUP_MIN_HEIGHT,
   PIPELINE_GROUP_MIN_WIDTH,
   PIPELINE_GROUP_PADDING,
+  PIPELINE_IN_HANDLE,
+  PIPELINE_OUT_HANDLE,
   RESOURCE_NODE_WIDTH,
 } from './editorUtils';
 
@@ -185,7 +187,7 @@ const patchGroupBox = (blockNodes: RFNode[]): Box => {
 const buildPipelineGroups = (
   functions: Pipeline[] | undefined,
   blockNodes: RFNode[],
-): { groups: RFNode[]; children: RFNode[] } => {
+): { groups: RFNode[]; children: RFNode[]; edges: RFEdge[] } => {
   const steps = pipelineSteps(functions);
   const patchIndex = steps.findIndex(
     (fn) => fn.step === PATCH_AND_TRANSFORM_STEP,
@@ -247,7 +249,24 @@ const buildPipelineGroups = (
     },
   }));
 
-  return { groups, children };
+  // The pipeline runs its steps in order, so consecutive groups are chained.
+  // That order is the composition's, not something wired by hand, so these
+  // edges are not selectable, deletable or reconnectable.
+  const edges: RFEdge[] = groups.slice(1).map((group, index) => ({
+    id: `pipeline-${groups[index].id}-${group.id}`,
+    source: groups[index].id,
+    sourceHandle: PIPELINE_OUT_HANDLE,
+    target: group.id,
+    targetHandle: PIPELINE_IN_HANDLE,
+    type: 'smoothstep',
+    selectable: false,
+    deletable: false,
+    focusable: false,
+    reconnectable: false,
+    className: 'pipeline-step-edge',
+  }));
+
+  return { groups, children, edges };
 };
 
 /**
@@ -389,7 +408,11 @@ export const buildContainerGraph = (
     }
   }
 
-  const { groups, children } = buildPipelineGroups(data.functions, nodes);
+  const {
+    groups,
+    children,
+    edges: pipelineEdges,
+  } = buildPipelineGroups(data.functions, nodes);
 
   return {
     // A group has to precede its children for React Flow to nest them.
@@ -398,7 +421,7 @@ export const buildContainerGraph = (
       ...children,
       ...buildConnectorNodes(connectors, setConnectors, groups),
     ],
-    edges,
+    edges: [...pipelineEdges, ...edges],
   };
 };
 
