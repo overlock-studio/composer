@@ -152,6 +152,39 @@
       }
     }
 
+    /* Pipeline steps are backdrops for the blocks they hold, so they sit behind
+       every other node and stay out of the way of pointer events. */
+    &.react-flow__node-pipelineGroup {
+      z-index: -1 !important;
+      box-shadow: none;
+
+      .pipeline-group {
+        width: 100%;
+        height: 100%;
+        border-radius: var(--node-border-radius);
+        border: 1px dashed hsl(var(--muted-foreground) / 0.4);
+        background: hsl(var(--muted-foreground) / 0.06);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .pipeline-group-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 10px;
+        border-bottom: 1px dashed hsl(var(--muted-foreground) / 0.3);
+      }
+
+      .pipeline-group-empty {
+        margin: auto;
+        padding: 0 16px;
+        font-size: 10px;
+        text-align: center;
+        color: hsl(var(--muted-foreground));
+      }
+    }
+
     .node-body {
       background: var(--bg-color);
       outline: 2px solid hsl(var(--muted-foreground) / 0.3);

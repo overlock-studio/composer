@@ -32,6 +32,7 @@ import {
 import { useToast } from '../../../hooks/use-toast';
 import { Spinner } from '../../Spinner';
 import { Block, Connector } from '../../../api/types';
+import type { PipelineGroupNodeData } from '../../../lib/types';
 import logger from '../../../lib/logger';
 
 const useDocumentColorMode = (): 'light' | 'dark' => {
@@ -56,6 +57,20 @@ const useDocumentColorMode = (): 'light' | 'dark' => {
 
 const sanitizeBaseName = (s: string): string =>
   s.replace(/[^a-z0-9-]/gi, '').toLowerCase() || 'block';
+
+const containsPoint = (
+  node: Node,
+  point: { x: number; y: number },
+): boolean => {
+  const width = Number(node.measured?.width ?? node.style?.width ?? 0);
+  const height = Number(node.measured?.height ?? node.style?.height ?? 0);
+  return (
+    point.x >= node.position.x &&
+    point.x <= node.position.x + width &&
+    point.y >= node.position.y &&
+    point.y <= node.position.y + height
+  );
+};
 
 const nextUniqueNodeName = (
   existingNodes: { id: string }[],
@@ -319,7 +334,7 @@ export const EditorArea = () => {
       ...buildConnectorNodes(
         connectors,
         setContainerConnectors,
-        prev.filter((node) => node.type === 'resource'),
+        prev.filter((node) => node.type === 'pipelineGroup'),
         prev.filter((node) => node.type === 'connectorGroup'),
       ),
     ]);
@@ -378,9 +393,30 @@ export const EditorArea = () => {
       // level, provider blocks inside a container.
       if (editorMode === 'container') {
         if (!selectedBlockType.leaf) return;
+
+        // Blocks belong to a pipeline step, so they are only ever dropped into
+        // the patch-and-transform group and are positioned relative to it.
+        const group = nodes.find(
+          (node) =>
+            node.type === 'pipelineGroup' &&
+            (node.data as PipelineGroupNodeData).holdsResources,
+        );
+        if (!group || !containsPoint(group, position)) {
+          toast({
+            title: 'Blocks belong to the patch-and-transform step',
+            description: 'Drop the block inside that group to add it.',
+          });
+          return;
+        }
+
         newNode = {
           id,
-          position,
+          position: {
+            x: position.x - group.position.x,
+            y: position.y - group.position.y,
+          },
+          parentId: group.id,
+          extent: 'parent',
           type: 'resource',
           style: { width: RESOURCE_NODE_WIDTH },
           draggable: true,

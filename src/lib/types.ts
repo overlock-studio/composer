@@ -190,6 +190,15 @@ export type ContainerNodeData = {
   functions?: Pipeline[];
 };
 
+// A pipeline step of the open container, drawn as a subflow group. Only the
+// patch-and-transform step holds resource blocks; the others are placeholders
+// until their own behaviour is built.
+export type PipelineGroupNodeData = {
+  step: string;
+  functionName?: string;
+  holdsResources: boolean;
+};
+
 export type ConnectorNodeData = {
   connector: Connector;
   nodeId: string;
