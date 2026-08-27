@@ -73,6 +73,9 @@ const ConnectorGroupNodeComponent = ({
   const inProgress = !!useConnection()?.inProgress;
 
   const labels = useMemo(() => connectorLabels(connectors), [connectors]);
+  // Connectors are the composite's own fields, so each node is named after the
+  // part of the schema it holds rather than the direction it points in.
+  const title = isInput ? 'Spec' : 'Status';
   const rowSide = isInput
     ? 'justify-end pr-[22px] pl-2'
     : 'justify-start pl-[22px] pr-2';
@@ -83,7 +86,7 @@ const ConnectorGroupNodeComponent = ({
       variant="ghost"
       className="h-6 w-6 [&_svg]:size-3.5"
       onClick={() => setAddOpen(true)}
-      aria-label={`Add ${connection}`}
+      aria-label={`Add ${title.toLowerCase()} field`}
     >
       <Plus />
     </Button>
@@ -103,9 +106,7 @@ const ConnectorGroupNodeComponent = ({
         {/* The + sits on the side the handles are on, so each node reads
             outwards from the blocks it wires to. */}
         {!isInput && addButton}
-        <div className="flex-1 text-center text-sm font-medium">
-          {isInput ? 'Inputs' : 'Outputs'}
-        </div>
+        <div className="flex-1 text-center text-sm font-medium">{title}</div>
         {isInput ? addButton : <div className="w-6" />}
       </div>
 
