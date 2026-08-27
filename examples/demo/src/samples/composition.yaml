@@ -6,22 +6,44 @@ spec:
   compositeTypeRef:
     apiVersion: demo.example.org/v1alpha1
     kind: XDemoApp
-  resources:
-    - name: nop-resource
-      base:
-        apiVersion: nop.crossplane.io/v1alpha1
-        kind: NopResource
+  mode: Pipeline
+  pipeline:
+    - step: fetch-environment
+      functionRef:
+        name: function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
         spec:
-          forProvider:
-            conditionAfter:
-              - conditionType: Ready
-                conditionStatus: "True"
-                time: 5s
-            fields: "11"
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: spec.size
-          toFieldPath: spec.forProvider.fields
-        - type: ToCompositeFieldPath
-          fromFieldPath: status.atProvider.fields
-          toFieldPath: status.size
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: demo-environment
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: nop-resource
+            base:
+              apiVersion: nop.crossplane.io/v1alpha1
+              kind: NopResource
+              spec:
+                forProvider:
+                  conditionAfter:
+                    - conditionType: Ready
+                      conditionStatus: "True"
+                      time: 5s
+                  fields: "11"
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.size
+                toFieldPath: spec.forProvider.fields
+              - type: ToCompositeFieldPath
+                fromFieldPath: status.atProvider.fields
+                toFieldPath: status.size
+    - step: auto-ready
+      functionRef:
+        name: function-auto-ready
