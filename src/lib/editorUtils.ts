@@ -14,6 +14,7 @@ import { CustomEdge } from '../components/Editor/CustomEdge';
 import { ContainerNode } from '../components/Editor/Nodes/ContainerNode';
 import { ConnectorNode } from '../components/Editor/Nodes/ConnectorNode';
 import { ConnectorGroupNode } from '../components/Editor/Nodes/ConnectorGroupNode';
+import { PipelineGroupNode } from '../components/Editor/Nodes/PipelineGroupNode';
 import { Connector } from '../api/types';
 import { JSONSchemaProps } from './jsonSchema';
 
@@ -22,6 +23,7 @@ export const NODE_TYPES: NodeTypes = {
   container: ContainerNode,
   connector: ConnectorNode,
   connectorGroup: ConnectorGroupNode,
+  pipelineGroup: PipelineGroupNode,
 };
 
 export const EDGE_TYPES = {
@@ -65,6 +67,18 @@ export const CONTAINER_HANDLE_SPACING = 30;
 export const CONNECTOR_GROUP_WIDTH = 200;
 export const CONNECTOR_GROUP_HEADER_HEIGHT = 32;
 export const CONNECTOR_GROUP_ROW_HEIGHT = 30;
+
+// Pipeline steps are drawn as subflow groups: a header strip plus padding
+// around whatever blocks the step holds.
+export const PIPELINE_GROUP_HEADER_HEIGHT = 30;
+export const PIPELINE_GROUP_PADDING = 28;
+export const PIPELINE_GROUP_MIN_WIDTH = 380;
+export const PIPELINE_GROUP_MIN_HEIGHT = 220;
+export const PIPELINE_GROUP_GAP = 80;
+
+// Handles carrying the chain from one pipeline step to the next.
+export const PIPELINE_IN_HANDLE = 'pipeline-in';
+export const PIPELINE_OUT_HANDLE = 'pipeline-out';
 
 // Height of the container node header. Child nodes are kept below this so they
 // don't overlap the header (title/actions) when placed or dragged.
@@ -408,16 +422,19 @@ function rectsIntersect(a: NodeRect, b: NodeRect, margin = 0): boolean {
   );
 }
 
-const isConnectorNode = (node: Node): boolean =>
-  node.type === 'connector' || node.type === 'connectorGroup';
+// Nodes that are laid out rather than jostled: connectors are placed by hand,
+// and a pipeline group's footprint follows the blocks it holds.
+const isNonCollidingNode = (node: Node): boolean =>
+  node.type === 'connector' ||
+  node.type === 'connectorGroup' ||
+  node.type === 'pipelineGroup';
 
 export function resolveNodeCollisions(
   draggedNode: Node,
   allNodes: Node[],
   setNodes: (updateFn: (nodes: Node[]) => Node[]) => void,
 ): void {
-  // Connectors are placed by hand and pushed around by nothing.
-  if (isConnectorNode(draggedNode)) return;
+  if (isNonCollidingNode(draggedNode)) return;
 
   const isResourceNode = draggedNode.type === 'resource';
   const spacing = isResourceNode ? MIN_RESOURCE_NODE_SPACING : MIN_NODE_SPACING;
@@ -425,7 +442,7 @@ export function resolveNodeCollisions(
 
   // Filter nodes that can collide with dragged node
   const collidableNodes = allNodes.filter((node) => {
-    if (isConnectorNode(node)) return false;
+    if (isNonCollidingNode(node)) return false;
 
     // Container nodes only collide with other container nodes
     if (draggedNode.type === 'container' && node.type !== 'container')
@@ -560,7 +577,7 @@ export function moveIntersectingNodes(
 
   intersectingNodes.forEach((node) => {
     if (node.id === resizedNode.id) return;
-    if (isConnectorNode(node)) return;
+    if (isNonCollidingNode(node)) return;
 
     if (resizedNode.type === 'container' && node.type !== 'container') return;
     if (isResourceNode && node.type !== 'resource') return;
