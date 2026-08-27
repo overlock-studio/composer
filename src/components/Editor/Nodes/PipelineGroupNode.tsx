@@ -1,10 +1,12 @@
 'use client';
 import React from 'react';
-import { Handle, Node, NodeProps, Position } from '@xyflow/react';
+import { Handle, Node, NodeProps, NodeResizer, Position } from '@xyflow/react';
 import { Layers } from 'lucide-react';
 import { PipelineGroupNodeData } from '../../../lib/types';
 import {
   PIPELINE_GROUP_HEADER_HEIGHT,
+  PIPELINE_GROUP_MIN_HEIGHT,
+  PIPELINE_GROUP_MIN_WIDTH,
   PIPELINE_IN_HANDLE,
   PIPELINE_OUT_HANDLE,
 } from '../../../lib/editorUtils';
@@ -29,8 +31,19 @@ const CHAIN_OUT_STYLE = { ...CHAIN_HANDLE_STYLE, top: 'unset', bottom: -5 };
 
 const PipelineGroupNodeComponent = ({
   data,
+  selected,
 }: NodeProps<Node<PipelineGroupNodeData>>) => (
   <div className="pipeline-group">
+    {/* A step is sized to fit its blocks on open; from there it is the user's
+        to resize. Children are kept inside, so the floor leaves room for a
+        block. */}
+    <NodeResizer
+      isVisible={selected}
+      minWidth={PIPELINE_GROUP_MIN_WIDTH}
+      minHeight={PIPELINE_GROUP_MIN_HEIGHT}
+      lineClassName="pipeline-group-resize-line"
+      handleClassName="pipeline-group-resize-handle"
+    />
     {/* Centred top and bottom, clear of the data edges that cross the group
         left to right. Set inline because the shared handle rules pin every
         handle to a side. */}

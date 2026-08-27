@@ -238,7 +238,8 @@ const buildPipelineGroups = (
       position: { x: box.x, y: box.y },
       style: { width: box.width, height: box.height },
       draggable: true,
-      selectable: false,
+      // Selectable so the resize handles have something to appear on.
+      selectable: true,
       data,
     } as RFNode;
   });
