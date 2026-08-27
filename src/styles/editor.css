@@ -152,18 +152,6 @@
       }
     }
 
-    /* Empty handle closing a connector list: the slot the add row fills. */
-    .connector-add-slot {
-      position: absolute;
-      width: 15px;
-      height: 15px;
-      border-radius: 100%;
-      border: 2px dashed hsl(var(--muted-foreground) / 0.6);
-      background: transparent;
-      transform: translateY(-50%);
-      pointer-events: none;
-    }
-
     .node-body {
       background: var(--bg-color);
       outline: 2px solid hsl(var(--muted-foreground) / 0.3);

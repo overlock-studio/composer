@@ -1,7 +1,7 @@
 'use client';
 import React, { useMemo, useState } from 'react';
 import { Node, NodeProps, Position, useConnection } from '@xyflow/react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { ConnectorGroupNodeData } from '../../../lib/types';
 import { Connector } from '../../../api/types';
 import { CustomHandle } from '../CustomHandle';
@@ -59,7 +59,7 @@ const ConnectorRowActions = ({
 /**
  * One of the two nodes a container's connectors live in while it is open:
  * inputs to the left of the blocks, outputs to their right. Each row is a
- * labelled handle, the whole list moves as one node, and the trailing row adds
+ * labelled handle, the whole list moves as one node, and the header's + adds
  * another connector.
  */
 const ConnectorGroupNodeComponent = ({
@@ -81,15 +81,26 @@ const ConnectorGroupNodeComponent = ({
     <div
       className="node-body"
       style={{
-        minHeight:
-          CONNECTOR_GROUP_HEADER_HEIGHT + CONNECTOR_GROUP_ROW_HEIGHT * 2,
+        minHeight: CONNECTOR_GROUP_HEADER_HEIGHT + CONNECTOR_GROUP_ROW_HEIGHT,
       }}
     >
       <div
-        className="flex items-center justify-center border-b-[2px] border-muted-foreground/20 rounded-t-lg text-sm font-medium"
+        className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 rounded-t-lg"
         style={{ height: CONNECTOR_GROUP_HEADER_HEIGHT }}
       >
-        {isInput ? 'Inputs' : 'Outputs'}
+        <div className="w-6" />
+        <div className="flex-1 text-center text-sm font-medium">
+          {isInput ? 'Inputs' : 'Outputs'}
+        </div>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-6 w-6 [&_svg]:size-3.5"
+          onClick={() => setAddOpen(true)}
+          aria-label={`Add ${connection}`}
+        >
+          <Plus />
+        </Button>
       </div>
 
       <div className="flex flex-col">
@@ -132,26 +143,7 @@ const ConnectorGroupNodeComponent = ({
             }
           />
         ))}
-
-        <button
-          type="button"
-          onClick={() => setAddOpen(true)}
-          aria-label={`Add ${connection}`}
-          className={`nodrag nopan flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground ${rowSide}`}
-          style={{ height: CONNECTOR_GROUP_ROW_HEIGHT }}
-        >
-          Add {connection}
-        </button>
       </div>
-
-      {/* Empty handle closing the list, so the add row reads as one more slot. */}
-      <span
-        className="connector-add-slot"
-        style={{
-          top: rowCentre(connectors.length),
-          ...(isInput ? { right: 0 } : { left: 0 }),
-        }}
-      />
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-[500px]">
