@@ -66,6 +66,11 @@ export const pipelineGroupId = (step: string): string =>
 export const isPipelineGroupId = (id: string): boolean =>
   id.startsWith(PIPELINE_GROUP_ID_PREFIX);
 
+/** The one pipeline group blocks live in — the connector columns line up with it. */
+export const holdsResourceBlocks = (node: RFNode): boolean =>
+  node.type === 'pipelineGroup' &&
+  !!(node.data as PipelineGroupNodeData | undefined)?.holdsResources;
+
 const functionName = (fn: Pipeline): string | undefined =>
   (fn.functionRef as { name?: string } | undefined)?.name;
 
@@ -179,10 +184,10 @@ const patchGroupBox = (blockNodes: RFNode[]): Box => {
 };
 
 /**
- * One group per pipeline step, in pipeline order: the patch-and-transform group
- * sized around the blocks it holds, the rest laid out either side of it at a
- * fixed size. Blocks become children of the patch-and-transform group, so
- * dragging it takes them along.
+ * One group per pipeline step, stacked top to bottom in pipeline order: the
+ * patch-and-transform group sized around the blocks it holds, the rest above
+ * and below it sharing its width so the column lines up. Blocks become children
+ * of the patch-and-transform group, so dragging it takes them along.
  */
 const buildPipelineGroups = (
   functions: Pipeline[] | undefined,
@@ -197,27 +202,27 @@ const buildPipelineGroups = (
   const boxes: Box[] = new Array(steps.length);
   boxes[patchIndex] = patchBox;
 
-  let left = patchBox.x;
+  let above = patchBox.y;
   for (let i = patchIndex - 1; i >= 0; i--) {
-    left -= PIPELINE_GROUP_GAP + PIPELINE_GROUP_MIN_WIDTH;
+    above -= PIPELINE_GROUP_GAP + PIPELINE_GROUP_MIN_HEIGHT;
     boxes[i] = {
-      x: left,
-      y: patchBox.y,
-      width: PIPELINE_GROUP_MIN_WIDTH,
+      x: patchBox.x,
+      y: above,
+      width: patchBox.width,
       height: PIPELINE_GROUP_MIN_HEIGHT,
     };
   }
 
-  let right = patchBox.x + patchBox.width;
+  let below = patchBox.y + patchBox.height;
   for (let i = patchIndex + 1; i < steps.length; i++) {
-    right += PIPELINE_GROUP_GAP;
+    below += PIPELINE_GROUP_GAP;
     boxes[i] = {
-      x: right,
-      y: patchBox.y,
-      width: PIPELINE_GROUP_MIN_WIDTH,
+      x: patchBox.x,
+      y: below,
+      width: patchBox.width,
       height: PIPELINE_GROUP_MIN_HEIGHT,
     };
-    right += PIPELINE_GROUP_MIN_WIDTH;
+    below += PIPELINE_GROUP_MIN_HEIGHT;
   }
 
   const groups = steps.map((fn, index) => {
@@ -249,7 +254,8 @@ const buildPipelineGroups = (
     },
   }));
 
-  // The pipeline runs its steps in order, so consecutive groups are chained.
+  // The pipeline runs its steps in order, so consecutive groups are chained
+  // down the column.
   // That order is the composition's, not something wired by hand, so these
   // edges are not selectable, deletable or reconnectable.
   const edges: RFEdge[] = groups.slice(1).map((group, index) => ({
@@ -419,7 +425,11 @@ export const buildContainerGraph = (
     nodes: [
       ...groups,
       ...children,
-      ...buildConnectorNodes(connectors, setConnectors, groups),
+      ...buildConnectorNodes(
+        connectors,
+        setConnectors,
+        groups.filter(holdsResourceBlocks),
+      ),
     ],
     edges: [...pipelineEdges, ...edges],
   };

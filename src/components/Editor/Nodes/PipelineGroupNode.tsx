@@ -15,30 +15,40 @@ import {
  * children, so dragging the group takes them with it. Every other step gets a
  * group of its own too, empty until its behaviour is built.
  *
- * The handles either side carry the chain between consecutive steps. Pipeline
- * order comes from the composition, so they are not wired by hand.
+ * The handles top and bottom carry the chain between consecutive steps, which
+ * run down the canvas in pipeline order. That order comes from the composition,
+ * so they are not wired by hand.
  */
+const CHAIN_HANDLE_STYLE = {
+  left: '50%',
+  right: 'unset',
+  transform: 'translateX(-50%)',
+} as const;
+const CHAIN_IN_STYLE = { ...CHAIN_HANDLE_STYLE, top: -5, bottom: 'unset' };
+const CHAIN_OUT_STYLE = { ...CHAIN_HANDLE_STYLE, top: 'unset', bottom: -5 };
+
 const PipelineGroupNodeComponent = ({
   data,
 }: NodeProps<Node<PipelineGroupNodeData>>) => (
   <div className="pipeline-group">
-    {/* On the header line, so the step chain stays clear of the data edges
-        crossing the middle of the group. */}
+    {/* Centred top and bottom, clear of the data edges that cross the group
+        left to right. Set inline because the shared handle rules pin every
+        handle to a side. */}
     <Handle
       type="target"
-      position={Position.Left}
+      position={Position.Top}
       id={PIPELINE_IN_HANDLE}
       isConnectable={false}
       className="pipeline-group-handle"
-      style={{ top: PIPELINE_GROUP_HEADER_HEIGHT / 2 }}
+      style={CHAIN_IN_STYLE}
     />
     <Handle
       type="source"
-      position={Position.Right}
+      position={Position.Bottom}
       id={PIPELINE_OUT_HANDLE}
       isConnectable={false}
       className="pipeline-group-handle"
-      style={{ top: PIPELINE_GROUP_HEADER_HEIGHT / 2 }}
+      style={CHAIN_OUT_STYLE}
     />
     <div
       className="pipeline-group-header"

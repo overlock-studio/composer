@@ -184,7 +184,8 @@
         color: hsl(var(--muted-foreground));
       }
 
-      /* Structural, not wired by hand: muted rather than the block palette. */
+      /* Structural, not wired by hand: muted rather than the block palette.
+         Placement is set inline on the handle, so only looks are set here. */
       .react-flow__handle.pipeline-group-handle {
         width: 9px;
         height: 9px;
@@ -193,12 +194,6 @@
         cursor: default;
         animation: none;
 
-        &.target {
-          left: -5px;
-        }
-        &.source {
-          right: -5px;
-        }
         &:hover {
           animation: none;
           border-color: hsl(var(--muted-foreground) / 0.7);

@@ -26,6 +26,7 @@ import {
   buildConnectorNodes,
   buildContainerGraph,
   connectorHandleId,
+  holdsResourceBlocks,
   isConnectorGroupId,
   mergeContainerIntoNodes,
 } from '../../../lib/containerGraph';
@@ -334,7 +335,7 @@ export const EditorArea = () => {
       ...buildConnectorNodes(
         connectors,
         setContainerConnectors,
-        prev.filter((node) => node.type === 'pipelineGroup'),
+        prev.filter(holdsResourceBlocks),
         prev.filter((node) => node.type === 'connectorGroup'),
       ),
     ]);
