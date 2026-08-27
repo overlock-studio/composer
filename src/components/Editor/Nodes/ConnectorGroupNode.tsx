@@ -77,6 +77,18 @@ const ConnectorGroupNodeComponent = ({
     ? 'justify-end pr-[22px] pl-2'
     : 'justify-start pl-[22px] pr-2';
 
+  const addButton = (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="h-6 w-6 [&_svg]:size-3.5"
+      onClick={() => setAddOpen(true)}
+      aria-label={`Add ${connection}`}
+    >
+      <Plus />
+    </Button>
+  );
+
   return (
     <div
       className="node-body"
@@ -88,19 +100,13 @@ const ConnectorGroupNodeComponent = ({
         className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 rounded-t-lg"
         style={{ height: CONNECTOR_GROUP_HEADER_HEIGHT }}
       >
-        <div className="w-6" />
+        {/* The + sits on the side the handles are on, so each node reads
+            outwards from the blocks it wires to. */}
+        {!isInput && addButton}
         <div className="flex-1 text-center text-sm font-medium">
           {isInput ? 'Inputs' : 'Outputs'}
         </div>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-6 w-6 [&_svg]:size-3.5"
-          onClick={() => setAddOpen(true)}
-          aria-label={`Add ${connection}`}
-        >
-          <Plus />
-        </Button>
+        {isInput ? addButton : <div className="w-6" />}
       </div>
 
       <div className="flex flex-col">
