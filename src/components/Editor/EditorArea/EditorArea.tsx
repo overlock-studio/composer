@@ -27,8 +27,8 @@ import {
   buildConnectorNodes,
   buildContainerGraph,
   collectContainerBlocks,
-  connectorNodeId,
-  isConnectorNodeId,
+  connectorHandleId,
+  isConnectorGroupId,
 } from '../../../lib/containerGraph';
 import { useToast } from '../../../hooks/use-toast';
 import { Spinner } from '../../Spinner';
@@ -323,29 +323,36 @@ export const EditorArea = () => {
     setViewport,
   ]);
 
-  // Editing the connector set rebuilds its two columns and drops the edges of
-  // connectors that are gone. Blocks keep their own positions, so only the
-  // connector nodes are replaced.
+  // Editing the connector set refills the two connector nodes and drops the
+  // edges of connectors that are gone. Both nodes keep wherever they were
+  // dragged to, and the blocks are left alone.
   useEffect(() => {
     if (!activeContainerId || openConnectors?.containerId !== activeContainerId)
       return;
     const { connectors } = openConnectors;
 
     setNodes((prev) => [
-      ...prev.filter((node) => node.type !== 'connector'),
+      ...prev.filter((node) => node.type !== 'connectorGroup'),
       ...buildConnectorNodes(
         connectors,
         setContainerConnectors,
         prev.filter((node) => node.type === 'resource'),
+        prev.filter((node) => node.type === 'connectorGroup'),
       ),
     ]);
 
-    const live = new Set(connectors.map(connectorNodeId));
+    const live = new Set(connectors.map(connectorHandleId));
     setEdges((prev) =>
       prev.filter(
         (edge) =>
-          (!isConnectorNodeId(edge.source) || live.has(edge.source)) &&
-          (!isConnectorNodeId(edge.target) || live.has(edge.target)),
+          !(
+            isConnectorGroupId(edge.source) &&
+            !live.has(edge.sourceHandle ?? '')
+          ) &&
+          !(
+            isConnectorGroupId(edge.target) &&
+            !live.has(edge.targetHandle ?? '')
+          ),
       ),
     );
   }, [

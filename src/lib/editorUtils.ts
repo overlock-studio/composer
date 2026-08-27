@@ -13,6 +13,7 @@ import { ResourceNode } from '../components/Editor/Nodes/ResourceNode';
 import { CustomEdge } from '../components/Editor/CustomEdge';
 import { ContainerNode } from '../components/Editor/Nodes/ContainerNode';
 import { ConnectorNode } from '../components/Editor/Nodes/ConnectorNode';
+import { ConnectorGroupNode } from '../components/Editor/Nodes/ConnectorGroupNode';
 import { Connector } from '../api/types';
 import { JSONSchemaProps } from './jsonSchema';
 
@@ -20,6 +21,7 @@ export const NODE_TYPES: NodeTypes = {
   resource: ResourceNode,
   container: ContainerNode,
   connector: ConnectorNode,
+  connectorGroup: ConnectorGroupNode,
 };
 
 export const EDGE_TYPES = {
@@ -56,6 +58,13 @@ export const MIN_CONTAINER_WIDTH = 500;
 // connector, so their width is fixed and their height follows the content.
 export const CONTAINER_NODE_WIDTH = 340;
 export const CONTAINER_HANDLE_SPACING = 30;
+
+// The two nodes holding a container's connectors while it is open: a header
+// plus one fixed-height row per connector, so a row's handle can be placed by
+// index.
+export const CONNECTOR_GROUP_WIDTH = 200;
+export const CONNECTOR_GROUP_HEADER_HEIGHT = 32;
+export const CONNECTOR_GROUP_ROW_HEIGHT = 30;
 
 // Height of the container node header. Child nodes are kept below this so they
 // don't overlap the header (title/actions) when placed or dragged.
@@ -399,18 +408,24 @@ function rectsIntersect(a: NodeRect, b: NodeRect, margin = 0): boolean {
   );
 }
 
+const isConnectorNode = (node: Node): boolean =>
+  node.type === 'connector' || node.type === 'connectorGroup';
+
 export function resolveNodeCollisions(
   draggedNode: Node,
   allNodes: Node[],
   setNodes: (updateFn: (nodes: Node[]) => Node[]) => void,
 ): void {
+  // Connectors are placed by hand and pushed around by nothing.
+  if (isConnectorNode(draggedNode)) return;
+
   const isResourceNode = draggedNode.type === 'resource';
   const spacing = isResourceNode ? MIN_RESOURCE_NODE_SPACING : MIN_NODE_SPACING;
   const maxIterations = 50;
 
   // Filter nodes that can collide with dragged node
   const collidableNodes = allNodes.filter((node) => {
-    if (node.type === 'connector') return false;
+    if (isConnectorNode(node)) return false;
 
     // Container nodes only collide with other container nodes
     if (draggedNode.type === 'container' && node.type !== 'container')
@@ -545,7 +560,7 @@ export function moveIntersectingNodes(
 
   intersectingNodes.forEach((node) => {
     if (node.id === resizedNode.id) return;
-    if (node.type === 'connector') return;
+    if (isConnectorNode(node)) return;
 
     if (resizedNode.type === 'container' && node.type !== 'container') return;
     if (isResourceNode && node.type !== 'resource') return;

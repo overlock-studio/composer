@@ -176,13 +176,18 @@ export type ContainerNodeData = {
 };
 
 export type ConnectorNodeData = {
-  connector?: Connector;
-  nodeId?: string;
+  connector: Connector;
+  nodeId: string;
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
   label?: string;
-  // Trailing empty slot of a connector column: the affordance for adding one
-  // more input/output, rather than a connector of its own.
-  placeholder?: 'input' | 'output';
+};
+
+// One of the two nodes holding a container's connectors while it is open: the
+// whole list moves together, and each row carries the handle blocks wire to.
+export type ConnectorGroupNodeData = {
+  connection: 'input' | 'output';
+  connectors: Connector[];
+  setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
 };
 
 export type HandlesStates = {

@@ -3,35 +3,30 @@ import type { Block, BlockType, Connector } from '../api/types';
 import type { ContainerNodeData, Handle, ResourceNodeData } from './types';
 import {
   buildTreeData,
-  connectorLabels,
   connectorToHandle,
   getHandleByPath,
   getHandlesFromSchema,
   handleToConnector,
+  CONNECTOR_GROUP_WIDTH,
   RESOURCE_NODE_WIDTH,
 } from './editorUtils';
 
 const BLOCK_START = { x: 320, y: 80 };
 const BLOCK_SPACING = 40;
 
-// Connector nodes are round and fixed-size (see `.react-flow__node-connector`),
-// stacked in a column on either side of the blocks.
-const CONNECTOR_NODE_SIZE = 48;
-const CONNECTOR_SPACING = 60;
+// The two connector nodes flank the blocks, far enough out to leave room for
+// the edges running between them.
 const CONNECTOR_COLUMN_GAP = 220;
 
-const CONNECTOR_NODE_ID_PREFIX = 'connector:';
+const CONNECTOR_GROUP_ID_PREFIX = 'connectors:';
 
-export const connectorNodeId = (connector: Connector): string =>
-  `${CONNECTOR_NODE_ID_PREFIX}${connector.connection}:${connector.path}`;
+export const connectorGroupId = (connection: 'input' | 'output'): string =>
+  `${CONNECTOR_GROUP_ID_PREFIX}${connection}`;
 
-const addSlotNodeId = (connection: 'input' | 'output'): string =>
-  `${CONNECTOR_NODE_ID_PREFIX}add:${connection}`;
+export const isConnectorGroupId = (id: string): boolean =>
+  id.startsWith(CONNECTOR_GROUP_ID_PREFIX);
 
-export const isConnectorNodeId = (id: string): boolean =>
-  id.startsWith(CONNECTOR_NODE_ID_PREFIX);
-
-/** Handle a connector node exposes — see `ConnectorNode`. */
+/** Handle a connector occupies on its group node — see `ConnectorGroupNode`. */
 export const connectorHandleId = (connector: Connector): string =>
   connector.connection === 'output'
     ? `target-${connector.path}`
@@ -90,70 +85,49 @@ const blockBounds = (blockNodes: RFNode[]): ColumnBounds => {
 };
 
 /**
- * The container's own inputs and outputs as nodes of its canvas: inputs in a
- * column left of the blocks, outputs in one to their right, each carrying the
- * single handle blocks wire to. The trailing slot of each column is the
- * affordance for adding one more connector.
+ * The container's own inputs and outputs, as one node each: inputs left of the
+ * blocks, outputs to their right. Both are ordinary draggable nodes, so
+ * `previous` positions are carried over rather than recomputed once the user
+ * has placed them.
  */
 export const buildConnectorNodes = (
   connectors: Connector[],
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>,
   blockNodes: RFNode[],
+  previous: RFNode[] = [],
 ): RFNode[] => {
   const { minX, maxX, minY } = blockBounds(blockNodes);
-  const labels = connectorLabels(connectors);
+  const placed = new Map(previous.map((node) => [node.id, node.position]));
 
-  const columns: {
-    connection: 'input' | 'output';
-    x: number;
-    items: Connector[];
-  }[] = [
-    {
-      connection: 'input',
-      x: minX - CONNECTOR_COLUMN_GAP - CONNECTOR_NODE_SIZE,
-      items: connectors.filter(isInput),
-    },
-    {
-      connection: 'output',
-      x: maxX + CONNECTOR_COLUMN_GAP,
-      items: connectors.filter((connector) => !isInput(connector)),
-    },
-  ];
+  return (['input', 'output'] as const).map((connection) => {
+    const id = connectorGroupId(connection);
+    const defaultX =
+      connection === 'input'
+        ? minX - CONNECTOR_COLUMN_GAP - CONNECTOR_GROUP_WIDTH
+        : maxX + CONNECTOR_COLUMN_GAP;
 
-  const nodes: RFNode[] = [];
-
-  for (const column of columns) {
-    column.items.forEach((connector, index) => {
-      nodes.push({
-        id: connectorNodeId(connector),
-        type: 'connector',
-        position: { x: column.x, y: minY + index * CONNECTOR_SPACING },
-        draggable: false,
-        data: { connector, setConnectors, label: labels[connector.path] },
-      });
-    });
-
-    nodes.push({
-      id: addSlotNodeId(column.connection),
-      type: 'connector',
-      position: {
-        x: column.x,
-        y: minY + column.items.length * CONNECTOR_SPACING,
+    return {
+      id,
+      type: 'connectorGroup',
+      position: placed.get(id) ?? { x: defaultX, y: minY },
+      style: { width: CONNECTOR_GROUP_WIDTH },
+      draggable: true,
+      data: {
+        connection,
+        connectors: connectors.filter((connector) =>
+          connection === 'input' ? isInput(connector) : !isInput(connector),
+        ),
+        setConnectors,
       },
-      draggable: false,
-      selectable: false,
-      data: { placeholder: column.connection, setConnectors },
-    });
-  }
-
-  return nodes;
+    };
+  });
 };
 
 /**
  * Graph shown when a container is opened for editing: one node per block of
- * that container and one per connector it exposes, plus the edges running
- * between them. Edges to composite paths the container does not expose as a
- * connector are left out, exactly as they are at the container level.
+ * that container, the two nodes holding its inputs and outputs, and the edges
+ * running between them. Edges to composite paths the container does not expose
+ * as a connector are left out, exactly as they are at the container level.
  */
 export const buildContainerGraph = (
   container: RFNode,
@@ -219,7 +193,7 @@ export const buildContainerGraph = (
       if (source === container.id) {
         const connector = inputs.get(sourceHandle ?? '');
         if (!connector) continue;
-        source = connectorNodeId(connector);
+        source = connectorGroupId('input');
         sourceHandle = connectorHandleId(connector);
       } else if (!blockIds.has(source)) {
         continue;
@@ -228,7 +202,7 @@ export const buildContainerGraph = (
       if (target === container.id) {
         const connector = outputs.get(targetHandle ?? '');
         if (!connector) continue;
-        target = connectorNodeId(connector);
+        target = connectorGroupId('output');
         targetHandle = connectorHandleId(connector);
       } else if (!blockIds.has(target)) {
         continue;
