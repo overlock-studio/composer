@@ -34,6 +34,7 @@ export const EditConnectorsMenu = ({
   setOpen,
   connector,
   setConnectors,
+  defaultConnection,
 }: EditConnectorsMenuProps) => {
   const editConnectorsFormSchema = z.object({
     connection: z.enum(['input', 'output'], {
@@ -51,7 +52,7 @@ export const EditConnectorsMenu = ({
     resolver: zodResolver(editConnectorsFormSchema),
     mode: 'onChange',
     defaultValues: {
-      connection: connector?.connection ?? 'input',
+      connection: connector?.connection ?? defaultConnection ?? 'input',
       path: connector?.path.replace(/^(spec\.|status\.)/, '') ?? '',
       type: connector?.type ?? '',
       description: connector?.description ?? '',

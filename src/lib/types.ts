@@ -182,6 +182,14 @@ export type ConnectorNodeData = {
   label?: string;
 };
 
+// One of the two nodes holding a container's connectors while it is open: the
+// whole list moves together, and each row carries the handle blocks wire to.
+export type ConnectorGroupNodeData = {
+  connection: 'input' | 'output';
+  connectors: Connector[];
+  setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
+};
+
 export type HandlesStates = {
   handles: Handle[];
   setHandles: HandlesSetter;
@@ -197,6 +205,8 @@ export type EditConnectorsMenuProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   connector?: Connector;
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
+  // Direction a newly added connector starts on.
+  defaultConnection?: 'input' | 'output';
 };
 
 export type EditHandlesMenuProps = {

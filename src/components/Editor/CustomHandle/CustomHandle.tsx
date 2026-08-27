@@ -21,7 +21,10 @@ interface IHandleProps extends HandleProps {
   path: string;
   description: string;
   variant?: 'block' | 'container';
-  label?: string;
+  label?: React.ReactNode;
+  // Replaces the width/padding of the label slot, for nodes whose rows are not
+  // the two half-width columns of a block.
+  labelClassName?: string;
 }
 
 const CustomHandleComponent = ({
@@ -35,9 +38,13 @@ const CustomHandleComponent = ({
   description,
   variant = 'block',
   label,
+  labelClassName,
   ...props
 }: IHandleProps) => {
   const displayLabel = label ?? path.split('.').pop();
+  const blockLabel = `text-[10px] text-foreground opacity-80 h-[30px] leading-[30px] py-[1px] ${
+    labelClassName ?? 'pl-[10px] pr-[10px] w-1/2'
+  }`;
   const connections = useNodeConnections({
     id: id || undefined,
     handleType: type,
@@ -80,9 +87,7 @@ const CustomHandleComponent = ({
         <TooltipTrigger asChild>
           <div>
             {type === 'source' && variant === 'block' && (
-              <div className="text-[10px] text-foreground opacity-80 h-[30px] leading-[30px] py-[1px] pl-[10px] pr-[10px] w-1/2">
-                {displayLabel}
-              </div>
+              <div className={blockLabel}>{displayLabel}</div>
             )}
             {type === 'source' && variant === 'container' && (
               <div className="absolute right-full -mr-[7px] text-[10px] text-foreground opacity-80 h-[48px] leading-[48px]">
@@ -98,9 +103,7 @@ const CustomHandleComponent = ({
               className={`${className || ''} ${!isConnectableValue ? inactiveClass : ''} ${isHandleActive ? 'is-active' : ''}`}
             />
             {type === 'target' && variant === 'block' && (
-              <div className="text-[10px] text-foreground opacity-80 h-[30px] leading-[30px] py-[1px] pl-[10px] w-1/2">
-                {displayLabel}
-              </div>
+              <div className={blockLabel}>{displayLabel}</div>
             )}
             {type === 'target' && variant === 'container' && (
               <div className="absolute left-full -ml-[7px] text-[10px] text-foreground opacity-80 h-[48px] leading-[48px]">

@@ -146,6 +146,12 @@
       }
     }
 
+    &.react-flow__node-connectorGroup {
+      .node-body {
+        overflow: visible;
+      }
+    }
+
     .node-body {
       background: var(--bg-color);
       outline: 2px solid hsl(var(--muted-foreground) / 0.3);
