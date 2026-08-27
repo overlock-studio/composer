@@ -1,6 +1,16 @@
 import type { Edge as RFEdge, Node as RFNode } from '@xyflow/react';
-import type { Block, BlockType, Connector } from '../api/types';
-import type { ContainerNodeData, Handle, ResourceNodeData } from './types';
+import type {
+  Block,
+  BlockType,
+  Connector,
+  Edge as ApiEdge,
+} from '../api/types';
+import type {
+  ContainerNodeData,
+  CustomEdgeData,
+  Handle,
+  ResourceNodeData,
+} from './types';
 import {
   buildTreeData,
   connectorToHandle,
@@ -34,6 +44,11 @@ export const connectorHandleId = (connector: Connector): string =>
 
 const isInput = (connector: Connector): boolean =>
   connector.connection !== 'output';
+
+/** Inverse of `connectorHandleId`: back to the composite field path. */
+const connectorPathFromHandleId = (
+  handleId: string | null | undefined,
+): string => (handleId ?? '').replace(/^(source|target)-/, '');
 
 const handlesForBlock = (block: Block, blockType: BlockType): Handle[] => {
   const handles: Handle[] =
@@ -229,38 +244,118 @@ export const buildContainerGraph = (
 };
 
 /**
+ * Turns the edges of an open container's canvas back into the per-block edges
+ * the serializer reads: an endpoint on a connector node becomes an endpoint on
+ * the container itself, at that connector's own path.
+ */
+const collectContainerEdges = (
+  containerId: string,
+  blockIds: Set<string>,
+  graphEdges: RFEdge[],
+): Map<string, ApiEdge[]> => {
+  const byBlock = new Map<string, ApiEdge[]>();
+
+  for (const edge of graphEdges) {
+    const sourceIsConnector = isConnectorGroupId(edge.source);
+    const targetIsConnector = isConnectorGroupId(edge.target);
+    // An edge between two connectors has no block to hang off.
+    if (sourceIsConnector && targetIsConnector) continue;
+
+    const source = sourceIsConnector ? containerId : edge.source;
+    const target = targetIsConnector ? containerId : edge.target;
+
+    // Patches belong to the resource they are written on, so a composite
+    // endpoint hands ownership to the block at the other end; a block-to-block
+    // edge is kept on its source so it survives a trip out of edit mode.
+    const owner = blockIds.has(source) ? source : target;
+    if (!blockIds.has(owner)) continue;
+
+    const transformers = (edge.data as CustomEdgeData | undefined)
+      ?.transformers;
+
+    byBlock.set(owner, [
+      ...(byBlock.get(owner) ?? []),
+      {
+        source,
+        sourceHandle: sourceIsConnector
+          ? connectorPathFromHandleId(edge.sourceHandle)
+          : (edge.sourceHandle ?? undefined),
+        target,
+        targetHandle: targetIsConnector
+          ? connectorPathFromHandleId(edge.targetHandle)
+          : (edge.targetHandle ?? undefined),
+        ...(transformers ? { transformers } : {}),
+      },
+    ]);
+  }
+
+  return byBlock;
+};
+
+/**
  * Folds an edited container graph back into the container node, so the blocks
- * it carries stay in sync with what was done on its own canvas.
+ * it carries — their layout, handles and patches — stay in sync with what was
+ * done on its own canvas.
  */
 export const collectContainerBlocks = (
   container: RFNode,
   graphNodes: RFNode[],
+  graphEdges: RFEdge[],
 ): Block[] => {
   const data = (container.data ?? {}) as ContainerNodeData;
   const previous = new Map(
     (data.childBlocks ?? []).map((block) => [block.id, block]),
   );
+  const blockNodes = graphNodes.filter((node) => node.type === 'resource');
+  const edgesByBlock = collectContainerEdges(
+    container.id,
+    new Set(blockNodes.map((node) => node.id)),
+    graphEdges,
+  );
 
-  return graphNodes
-    .filter((node) => node.type === 'resource')
-    .map((node) => {
-      const nodeData = (node.data ?? {}) as ResourceNodeData;
-      const handles = nodeData.currentHandles ?? nodeData.initialHandles ?? [];
-      const connectors = handles.map(handleToConnector);
-      const existing = previous.get(node.id);
+  return blockNodes.map((node) => {
+    const nodeData = (node.data ?? {}) as ResourceNodeData;
+    const handles = nodeData.currentHandles ?? nodeData.initialHandles ?? [];
+    const connectors = handles.map(handleToConnector);
+    const edges = edgesByBlock.get(node.id) ?? [];
+    const existing = previous.get(node.id);
 
-      if (existing) {
-        return { ...existing, position: node.position, connectors };
-      }
+    if (existing) {
+      return { ...existing, position: node.position, connectors, edges };
+    }
 
-      return {
-        id: node.id,
-        parentId: container.id,
-        name: node.id,
-        position: node.position,
-        edges: [],
-        blockType: nodeData.blockType,
-        connectors,
-      };
-    });
+    return {
+      id: node.id,
+      parentId: container.id,
+      name: node.id,
+      position: node.position,
+      edges,
+      blockType: nodeData.blockType,
+      connectors,
+    };
+  });
+};
+
+/**
+ * The container level with one container's edits folded in. Saving and leaving
+ * edit mode both go through this, so what is written is the whole
+ * configuration no matter which level happens to be on screen.
+ */
+export const mergeContainerIntoNodes = (
+  parkedNodes: RFNode[],
+  containerId: string,
+  graphNodes: RFNode[],
+  graphEdges: RFEdge[],
+  connectors: Connector[],
+): RFNode[] => {
+  const container = parkedNodes.find((node) => node.id === containerId);
+  if (!container) return parkedNodes;
+
+  const childBlocks = collectContainerBlocks(container, graphNodes, graphEdges);
+
+  return parkedNodes.map((node) =>
+    node.id === containerId
+      ? { ...node, data: { ...node.data, childBlocks, connectors } }
+      : node,
+  );
 };
