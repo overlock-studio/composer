@@ -17,6 +17,7 @@ import {
 } from '../../ui/dialog';
 import { EditConnectorsMenu } from '../Menus';
 import {
+  connectorLabels,
   CONTAINER_HANDLE_SPACING,
   CONTAINER_NODE_WIDTH,
 } from '../../../lib/editorUtils';
@@ -36,25 +37,7 @@ const ContainerNodeComponent = ({
   const { setNodes, resolveBlockType, openContainer } = useEditorActions();
   const connection = useConnection();
 
-  const connectorLabels = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const c of connectors || []) {
-      const last = c.path.split('.').pop() || c.path;
-      counts[last] = (counts[last] || 0) + 1;
-    }
-    const labels: Record<string, string> = {};
-    for (const c of connectors || []) {
-      const segments = c.path.split('.');
-      const last = segments[segments.length - 1] || c.path;
-      if (counts[last] > 1) {
-        const parent = segments[segments.length - 2];
-        labels[c.path] = parent ? `${parent}.${last}` : last;
-      } else {
-        labels[c.path] = last;
-      }
-    }
-    return labels;
-  }, [connectors]);
+  const labels = useMemo(() => connectorLabels(connectors), [connectors]);
 
   const { name, blockType, functions } = data;
   const kind = data.kind ?? blockType?.kind ?? '';
@@ -190,7 +173,7 @@ const ContainerNodeComponent = ({
               inactiveClass={'opacity-30'}
               description={connector.description}
               path={connector.path}
-              label={connectorLabels[connector.path]}
+              label={labels[connector.path]}
               variant="block"
             />
           ))}
@@ -208,7 +191,7 @@ const ContainerNodeComponent = ({
               inactiveClass={'opacity-30'}
               description={connector.description}
               path={connector.path}
-              label={connectorLabels[connector.path]}
+              label={labels[connector.path]}
               variant="block"
             />
           ))}

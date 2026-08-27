@@ -337,6 +337,30 @@ export function calculateConstrainedPosition(
   };
 }
 
+/**
+ * Short label per connector: the last path segment, qualified with its parent
+ * when that segment alone would be ambiguous within the set.
+ */
+export function connectorLabels(
+  connectors: Connector[] | undefined,
+): Record<string, string> {
+  const counts: Record<string, number> = {};
+  for (const connector of connectors || []) {
+    const last = connector.path.split('.').pop() || connector.path;
+    counts[last] = (counts[last] || 0) + 1;
+  }
+
+  const labels: Record<string, string> = {};
+  for (const connector of connectors || []) {
+    const segments = connector.path.split('.');
+    const last = segments[segments.length - 1] || connector.path;
+    const parent = segments[segments.length - 2];
+    labels[connector.path] =
+      counts[last] > 1 && parent ? `${parent}.${last}` : last;
+  }
+  return labels;
+}
+
 export function handleToConnector(handle: Handle): Connector {
   return {
     connection: handle.type === 'source' ? 'output' : 'input',

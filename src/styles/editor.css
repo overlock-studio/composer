@@ -144,6 +144,41 @@
           right: 5px;
         }
       }
+
+      .connector-add-slot {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 15px;
+        height: 15px;
+        border-radius: 100%;
+        border: 2px dashed hsl(var(--muted-foreground) / 0.6);
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+
+        svg {
+          width: 9px;
+          height: 9px;
+        }
+
+        &:hover {
+          border-color: hsl(var(--sidebar-primary));
+          color: hsl(var(--sidebar-primary));
+        }
+      }
+
+      .connector-add-label {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        white-space: nowrap;
+        font-size: 10px;
+        color: hsl(var(--muted-foreground));
+      }
     }
 
     .node-body {

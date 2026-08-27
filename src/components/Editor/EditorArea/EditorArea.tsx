@@ -24,12 +24,15 @@ import {
   resolveNodeCollisions,
 } from '../../../lib/editorUtils';
 import {
+  buildConnectorNodes,
   buildContainerGraph,
   collectContainerBlocks,
+  connectorNodeId,
+  isConnectorNodeId,
 } from '../../../lib/containerGraph';
 import { useToast } from '../../../hooks/use-toast';
 import { Spinner } from '../../Spinner';
-import { Block } from '../../../api/types';
+import { Block, Connector } from '../../../api/types';
 import logger from '../../../lib/logger';
 
 const useDocumentColorMode = (): 'light' | 'dark' => {
@@ -98,6 +101,26 @@ export const EditorArea = () => {
     edges: Edge[];
     viewport: Viewport;
   } | null>(null);
+  // Connectors of the container currently open, tagged with whose they are so
+  // the nodes built from them are never mixed up across containers.
+  const [openConnectors, setOpenConnectors] = useState<{
+    containerId: string;
+    connectors: Connector[];
+  } | null>(null);
+
+  const setContainerConnectors = useCallback<
+    React.Dispatch<React.SetStateAction<Connector[]>>
+  >((update) => {
+    setOpenConnectors((prev) =>
+      prev
+        ? {
+            ...prev,
+            connectors:
+              typeof update === 'function' ? update(prev.connectors) : update,
+          }
+        : prev,
+    );
+  }, []);
 
   const fetchBlocks = async () => {
     setEdges([]);
@@ -242,7 +265,16 @@ export const EditorArea = () => {
         edges,
         viewport: getViewport(),
       };
-      const graph = buildContainerGraph(container, reactFlowRef);
+      const graph = buildContainerGraph(
+        container,
+        reactFlowRef,
+        setContainerConnectors,
+      );
+      setOpenConnectors({
+        containerId: activeContainerId,
+        connectors:
+          (container.data as { connectors?: Connector[] }).connectors ?? [],
+      });
       setNodes(graph.nodes);
       setEdges(graph.edges);
       setHasInitialFitView(false);
@@ -251,6 +283,11 @@ export const EditorArea = () => {
 
     const parked = containerLevelGraph.current;
     containerLevelGraph.current = null;
+    const editedConnectors =
+      openConnectors?.containerId === previous
+        ? openConnectors.connectors
+        : null;
+    setOpenConnectors(null);
     if (!parked || !previous) return;
 
     const container = parked.nodes.find((node) => node.id === previous);
@@ -260,8 +297,15 @@ export const EditorArea = () => {
 
     setNodes(
       parked.nodes.map((node) =>
-        node.id === previous && childBlocks
-          ? { ...node, data: { ...node.data, childBlocks } }
+        node.id === previous
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                ...(childBlocks ? { childBlocks } : {}),
+                ...(editedConnectors ? { connectors: editedConnectors } : {}),
+              },
+            }
           : node,
       ),
     );
@@ -271,10 +315,45 @@ export const EditorArea = () => {
     activeContainerId,
     nodes,
     edges,
+    openConnectors,
     setNodes,
     setEdges,
+    setContainerConnectors,
     getViewport,
     setViewport,
+  ]);
+
+  // Editing the connector set rebuilds its two columns and drops the edges of
+  // connectors that are gone. Blocks keep their own positions, so only the
+  // connector nodes are replaced.
+  useEffect(() => {
+    if (!activeContainerId || openConnectors?.containerId !== activeContainerId)
+      return;
+    const { connectors } = openConnectors;
+
+    setNodes((prev) => [
+      ...prev.filter((node) => node.type !== 'connector'),
+      ...buildConnectorNodes(
+        connectors,
+        setContainerConnectors,
+        prev.filter((node) => node.type === 'resource'),
+      ),
+    ]);
+
+    const live = new Set(connectors.map(connectorNodeId));
+    setEdges((prev) =>
+      prev.filter(
+        (edge) =>
+          (!isConnectorNodeId(edge.source) || live.has(edge.source)) &&
+          (!isConnectorNodeId(edge.target) || live.has(edge.target)),
+      ),
+    );
+  }, [
+    activeContainerId,
+    openConnectors,
+    setNodes,
+    setEdges,
+    setContainerConnectors,
   ]);
 
   const onConnect = useCallback(

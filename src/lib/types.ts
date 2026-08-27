@@ -176,10 +176,13 @@ export type ContainerNodeData = {
 };
 
 export type ConnectorNodeData = {
-  connector: Connector;
-  nodeId: string;
+  connector?: Connector;
+  nodeId?: string;
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
   label?: string;
+  // Trailing empty slot of a connector column: the affordance for adding one
+  // more input/output, rather than a connector of its own.
+  placeholder?: 'input' | 'output';
 };
 
 export type HandlesStates = {
@@ -197,6 +200,8 @@ export type EditConnectorsMenuProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   connector?: Connector;
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
+  // Direction a newly added connector starts on.
+  defaultConnection?: 'input' | 'output';
 };
 
 export type EditHandlesMenuProps = {
