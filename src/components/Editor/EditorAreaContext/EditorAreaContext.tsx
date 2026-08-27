@@ -4,10 +4,12 @@ import React, {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
   ActiveHandle,
+  ContainerSession,
   EditorActionsContextType,
   EditorAreaContextType,
   EditorAreaProviderProps,
@@ -76,6 +78,7 @@ const EditorActionsContext = createContext<EditorActionsContextType>({
   registerBlockTypes: () => undefined,
   editorMode: 'containers',
   activeContainerId: null,
+  containerSession: { current: null },
   openContainer: () => undefined,
   closeContainer: () => undefined,
   resolveBlockType: () => undefined,
@@ -103,6 +106,9 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
   const [activeContainerId, setActiveContainerId] = useState<string | null>(
     null,
   );
+  // Lives here rather than in the editor area so saving can reach it without
+  // caring which level is on screen.
+  const containerSession = useRef<ContainerSession | null>(null);
   const editorMode: EditorMode = activeContainerId ? 'container' : 'containers';
 
   const openContainer = useCallback((containerId: string) => {
@@ -196,6 +202,7 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
       registerBlockTypes,
       editorMode,
       activeContainerId,
+      containerSession,
       openContainer,
       closeContainer,
       resolveBlockType,

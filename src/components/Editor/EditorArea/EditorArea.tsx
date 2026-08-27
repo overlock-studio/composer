@@ -11,7 +11,6 @@ import {
   Edge,
   Node,
   useNodesInitialized,
-  type Viewport,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useEditorAreaContext } from '../EditorAreaContext';
@@ -26,9 +25,9 @@ import {
 import {
   buildConnectorNodes,
   buildContainerGraph,
-  collectContainerBlocks,
   connectorHandleId,
   isConnectorGroupId,
+  mergeContainerIntoNodes,
 } from '../../../lib/containerGraph';
 import { useToast } from '../../../hooks/use-toast';
 import { Spinner } from '../../Spinner';
@@ -88,6 +87,7 @@ export const EditorArea = () => {
     entityRef,
     editorMode,
     activeContainerId,
+    containerSession,
   } = useEditorAreaContext();
   const { screenToFlowPosition, fitView, getViewport, setViewport } =
     useReactFlow();
@@ -95,12 +95,6 @@ export const EditorArea = () => {
   const { entity, entityId } = entityRef;
   const { toast } = useToast();
   const [hasInitialFitView, setHasInitialFitView] = useState(false);
-  // Graph of the container level, parked while a container is being edited.
-  const containerLevelGraph = useRef<{
-    nodes: Node[];
-    edges: Edge[];
-    viewport: Viewport;
-  } | null>(null);
   // Connectors of the container currently open, tagged with whose they are so
   // the nodes built from them are never mixed up across containers.
   const [openConnectors, setOpenConnectors] = useState<{
@@ -260,53 +254,39 @@ export const EditorArea = () => {
     if (activeContainerId) {
       const container = nodes.find((node) => node.id === activeContainerId);
       if (!container) return;
-      containerLevelGraph.current = {
+      const connectors =
+        (container.data as { connectors?: Connector[] }).connectors ?? [];
+      containerSession.current = {
+        containerId: activeContainerId,
         nodes,
         edges,
         viewport: getViewport(),
+        connectors,
       };
       const graph = buildContainerGraph(
         container,
         reactFlowRef,
         setContainerConnectors,
       );
-      setOpenConnectors({
-        containerId: activeContainerId,
-        connectors:
-          (container.data as { connectors?: Connector[] }).connectors ?? [],
-      });
+      setOpenConnectors({ containerId: activeContainerId, connectors });
       setNodes(graph.nodes);
       setEdges(graph.edges);
       setHasInitialFitView(false);
       return;
     }
 
-    const parked = containerLevelGraph.current;
-    containerLevelGraph.current = null;
-    const editedConnectors =
-      openConnectors?.containerId === previous
-        ? openConnectors.connectors
-        : null;
+    const parked = containerSession.current;
+    containerSession.current = null;
     setOpenConnectors(null);
     if (!parked || !previous) return;
 
-    const container = parked.nodes.find((node) => node.id === previous);
-    const childBlocks = container
-      ? collectContainerBlocks(container, nodes)
-      : null;
-
     setNodes(
-      parked.nodes.map((node) =>
-        node.id === previous
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                ...(childBlocks ? { childBlocks } : {}),
-                ...(editedConnectors ? { connectors: editedConnectors } : {}),
-              },
-            }
-          : node,
+      mergeContainerIntoNodes(
+        parked.nodes,
+        previous,
+        nodes,
+        edges,
+        parked.connectors,
       ),
     );
     setEdges(parked.edges);
@@ -315,7 +295,7 @@ export const EditorArea = () => {
     activeContainerId,
     nodes,
     edges,
-    openConnectors,
+    containerSession,
     setNodes,
     setEdges,
     setContainerConnectors,
@@ -330,6 +310,9 @@ export const EditorArea = () => {
     if (!activeContainerId || openConnectors?.containerId !== activeContainerId)
       return;
     const { connectors } = openConnectors;
+    if (containerSession.current) {
+      containerSession.current.connectors = connectors;
+    }
 
     setNodes((prev) => [
       ...prev.filter((node) => node.type !== 'connectorGroup'),
@@ -358,6 +341,7 @@ export const EditorArea = () => {
   }, [
     activeContainerId,
     openConnectors,
+    containerSession,
     setNodes,
     setEdges,
     setContainerConnectors,

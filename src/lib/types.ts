@@ -4,6 +4,7 @@ import {
   OnEdgesChange,
   OnNodesChange,
   Position,
+  Viewport,
 } from '@xyflow/react';
 import { LucideIcon } from 'lucide-react';
 import { Dispatch, ReactNode, SetStateAction } from 'react';
@@ -87,6 +88,17 @@ export type ActiveHandle = {
 // container. Both surfaces share one node/edge store.
 export type EditorMode = 'containers' | 'container';
 
+// What the container level looked like when a container was opened, plus the
+// connectors being edited inside it. Saving merges the open container's canvas
+// back into this, so what is written never depends on which level is on screen.
+export type ContainerSession = {
+  containerId: string;
+  nodes: Node[];
+  edges: Edge[];
+  viewport: Viewport;
+  connectors: Connector[];
+};
+
 export type EditorAreaContextType = {
   selectedBlockType: BlockType | undefined;
   setSelectedBlockType: Dispatch<SetStateAction<BlockType | undefined>>;
@@ -108,6 +120,9 @@ export type EditorAreaContextType = {
   registerBlockTypes: (types: BlockType[]) => void;
   editorMode: EditorMode;
   activeContainerId: string | null;
+  // Null unless a container is open. Held as a ref so parking a graph never
+  // re-renders the nodes subscribing to this context.
+  containerSession: React.MutableRefObject<ContainerSession | null>;
   openContainer: (containerId: string) => void;
   closeContainer: () => void;
   resolveBlockType: (

@@ -27,8 +27,13 @@ import {
   buildCompositionInputs,
   collectPositions,
 } from '../../../lib/compositionInputs';
+import { mergeContainerIntoNodes } from '../../../lib/containerGraph';
 import { Button } from '../../ui/button';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '../../ui/sidebar';
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '../../ui/sidebar';
 import { Breadcrumbs } from '../Breadcrumbs';
 import { EditorArea } from '../EditorArea';
 import { EditorAreaProvider, useEditorActions } from '../EditorAreaContext';
@@ -87,10 +92,23 @@ function ComposerEditorBody({
   onSave,
   forwardedRef,
 }: InnerProps) {
-  const { getNodes } = useReactFlow();
+  const { getNodes, getEdges } = useReactFlow();
+  const { containerSession } = useEditorActions();
 
   const triggerSave = useCallback(() => {
-    const nodes = getNodes();
+    // A save covers the whole configuration, not the level on screen: with a
+    // container open, its canvas is folded back into the parked container-level
+    // graph first.
+    const session = containerSession.current;
+    const nodes = session
+      ? mergeContainerIntoNodes(
+          session.nodes,
+          session.containerId,
+          getNodes(),
+          getEdges(),
+          session.connectors,
+        )
+      : getNodes();
     const layout = collectPositions(nodes, savedLayout);
     const compositions = buildCompositionInputs(nodes as RFNode[]);
     const providers = parsed.deps.filter((d) => d.kind === 'provider');
@@ -112,7 +130,17 @@ function ComposerEditorBody({
       .map(([name, content]) => ({ name, content }));
 
     onSave({ files: changedFiles, hashes, layout });
-  }, [getNodes, parsed, files, crossplaneFile, hashes, onSave, savedLayout]);
+  }, [
+    getNodes,
+    getEdges,
+    containerSession,
+    parsed,
+    files,
+    crossplaneFile,
+    hashes,
+    onSave,
+    savedLayout,
+  ]);
 
   useImperativeHandle(forwardedRef, () => ({ save: triggerSave }), [
     triggerSave,
