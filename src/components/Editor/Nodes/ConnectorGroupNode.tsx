@@ -102,7 +102,9 @@ const ConnectorGroupNodeComponent = ({
               isInput ? `source-${connector.path}` : `target-${connector.path}`
             }
             style={{ top: `${rowCentre(index)}px` }}
-            isConnectableStart={!isInput}
+            // Either side can start an edge; only an output can end one, and
+            // inputs stop being drop targets while a connection is in flight.
+            isConnectableStart={true}
             isConnectableEnd={!isInput}
             isConnectable={isInput ? !inProgress : true}
             inactiveClass={'opacity-30'}
