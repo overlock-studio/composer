@@ -30,7 +30,10 @@ interface IHandleProps extends HandleProps {
 const CustomHandleComponent = ({
   id,
   type,
-  isConnectable,
+  // A handle whose node says nothing about it is connectable; leaving this
+  // undefined made every such handle fall into `inactiveClass` and read as
+  // disabled, which is how the container's own handles were being drawn.
+  isConnectable = true,
   className,
   connectionCount = 0,
   inactiveClass = '',
