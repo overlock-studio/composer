@@ -67,16 +67,16 @@ export const CONTAINER_HANDLE_SPACING = 30;
 export const CONNECTOR_GROUP_WIDTH = 200;
 export const CONNECTOR_GROUP_HEADER_HEIGHT = 32;
 export const CONNECTOR_GROUP_ROW_HEIGHT = 30;
-// Connector rows are drawn as a tree: one indent step per path segment, with
-// the line standing near the left of its step, turning towards the name on a
+// Handle rows are drawn as a tree: one indent step per path segment, with the
+// line standing near the left of its step, turning towards the name on a
 // rounded corner and stopping just short of it. `REACH` is how far a first
 // child climbs out of its own row towards the row it hangs from, kept short of
 // that row's centre so the line clears the name it starts under.
-export const CONNECTOR_TREE_INDENT = 14;
-export const CONNECTOR_TREE_STEM = 5;
-export const CONNECTOR_TREE_RADIUS = 4;
-export const CONNECTOR_TREE_GAP = 3;
-export const CONNECTOR_TREE_REACH = 7;
+export const ROW_TREE_INDENT = 14;
+export const ROW_TREE_STEM = 5;
+export const ROW_TREE_RADIUS = 4;
+export const ROW_TREE_GAP = 3;
+export const ROW_TREE_REACH = 7;
 
 // Pipeline steps are drawn as subflow groups: a header strip plus padding
 // around whatever blocks the step holds.
@@ -413,14 +413,15 @@ export function connectorLabels(
 }
 
 /**
- * One row of a connector node: the segment it is named after, plus where it
- * sits in the tree its path belongs to, for the node to draw the lines from.
+ * One row of a node that lists paths: the segment it is named after, plus
+ * where it sits in the tree its path belongs to, for the node to draw the
+ * lines from.
  *
  * Branch rows are materialised from the path segments, so `spec.db.engine`
  * gives a `db` row even when nothing declares `spec.db` itself. Every row is a
- * handle, and `path` is the composite field it wires to.
+ * handle, and `path` is the field it wires to.
  */
-export type ConnectorRow = {
+export type PathRow<T> = {
   path: string;
   name: string;
   /** How far the row is indented; 0 for a row hanging off the node header. */
@@ -434,37 +435,39 @@ export type ConnectorRow = {
    */
   guides: boolean[];
   /** Absent on a branch row that only exists to hold its children. */
-  connector?: Connector;
+  item?: T;
 };
 
-type ConnectorTreeNode = {
+type PathTreeNode<T> = {
   name: string;
   path: string;
-  connector?: Connector;
-  children: ConnectorTreeNode[];
+  item?: T;
+  children: PathTreeNode<T>[];
 };
 
-// The node's title already says which half of the schema it holds, so that
-// first segment is not repeated on every row below it.
-const CONNECTOR_ROOT_SEGMENTS = ['spec', 'status'];
+// A column holds one half of the schema, and says so in its own title or in
+// the side it sits on, so that first segment is not repeated on every row.
+const ROW_ROOT_SEGMENTS = ['spec', 'status'];
 
 /**
- * Connectors as tree rows, in path order: a row per segment, parents before
- * the fields they hold, each carrying its own place in the tree.
+ * Paths as tree rows, in the order they come in: a row per segment, parents
+ * before the fields they hold, each carrying its own place in the tree.
+ *
+ * Feed it one column's worth at a time — the connectors of one connector node,
+ * or the handles down one side of a block — since the tree is what that column
+ * draws.
  */
-export function connectorRows(
-  connectors: Connector[] | undefined,
-): ConnectorRow[] {
-  const roots: ConnectorTreeNode[] = [];
-  const byPath = new Map<string, ConnectorTreeNode>();
+export function pathRows<T extends { path: string }>(
+  items: T[] | undefined,
+): PathRow<T>[] {
+  const roots: PathTreeNode<T>[] = [];
+  const byPath = new Map<string, PathTreeNode<T>>();
 
-  for (const connector of connectors || []) {
-    const segments = connector.path.split('.').filter(Boolean);
+  for (const item of items || []) {
+    const segments = item.path.split('.').filter(Boolean);
     if (!segments.length) continue;
     const first =
-      segments.length > 1 && CONNECTOR_ROOT_SEGMENTS.includes(segments[0])
-        ? 1
-        : 0;
+      segments.length > 1 && ROW_ROOT_SEGMENTS.includes(segments[0]) ? 1 : 0;
 
     let siblings = roots;
     for (let index = first; index < segments.length; index++) {
@@ -478,12 +481,12 @@ export function connectorRows(
       siblings = node.children;
     }
     const own = byPath.get(segments.join('.'));
-    if (own) own.connector = connector;
+    if (own) own.item = item;
   }
 
-  const rows: ConnectorRow[] = [];
+  const rows: PathRow<T>[] = [];
   const walk = (
-    nodes: ConnectorTreeNode[],
+    nodes: PathTreeNode<T>[],
     depth: number,
     guides: boolean[],
   ): void => {
@@ -496,7 +499,7 @@ export function connectorRows(
         isFirst: index === 0,
         isLast,
         guides,
-        connector: node.connector,
+        item: node.item,
       });
       // Top-level rows hang off the header rather than off a row, so nothing
       // runs through the column they would otherwise open.
