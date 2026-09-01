@@ -240,6 +240,12 @@
     }
   }
 
+  /* The menu point is the only thing to click on a data edge, so the line
+     itself lets the pointer through to the canvas behind it. */
+  .react-flow__edge.react-flow__edge-customEdge {
+    pointer-events: none;
+  }
+
   /* Chain between consecutive pipeline steps: structural, so it reads as a
      hint rather than a data edge. */
   .react-flow__edge.pipeline-step-edge {
