@@ -157,9 +157,11 @@ const ConnectorGroupNodeComponent = ({
   // Connectors are the composite's own fields, so each node is named after the
   // part of the schema it holds rather than the direction it points in.
   const title = isInput ? 'Spec' : 'Status';
+  // Rows read outwards, so they sit as close to their own handles as the
+  // handle itself leaves room for.
   const rowSide = isInput
-    ? 'justify-end pr-[22px] pl-2'
-    : 'justify-start pl-[22px] pr-2';
+    ? 'justify-end pr-[11px] pl-2'
+    : 'justify-start pl-[11px] pr-2';
 
   const addButton = (
     <Button
