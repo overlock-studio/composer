@@ -15,6 +15,8 @@ import type {
 } from './types';
 import {
   buildTreeData,
+  connectorRowHandleId,
+  connectorRows,
   connectorToHandle,
   getHandleByPath,
   getHandlesFromSchema,
@@ -46,14 +48,30 @@ export const connectorGroupId = (connection: 'input' | 'output'): string =>
 export const isConnectorGroupId = (id: string): boolean =>
   id.startsWith(CONNECTOR_GROUP_ID_PREFIX);
 
-/** Handle a connector occupies on its group node — see `ConnectorGroupNode`. */
-export const connectorHandleId = (connector: Connector): string =>
-  connector.connection === 'output'
-    ? `target-${connector.path}`
-    : `source-${connector.path}`;
-
 const isInput = (connector: Connector): boolean =>
   connector.connection !== 'output';
+
+const sideOf = (
+  connectors: Connector[],
+  connection: 'input' | 'output',
+): Connector[] =>
+  connectors.filter((connector) =>
+    connection === 'input' ? isInput(connector) : !isInput(connector),
+  );
+
+/**
+ * Every handle the two connector nodes expose, branch rows included: a path a
+ * connector only passes through is still a row, and still wireable.
+ */
+export const connectorHandleIds = (connectors: Connector[]): Set<string> => {
+  const ids = new Set<string>();
+  for (const connection of ['input', 'output'] as const) {
+    for (const row of connectorRows(sideOf(connectors, connection))) {
+      ids.add(connectorRowHandleId(row.path, connection));
+    }
+  }
+  return ids;
+};
 
 /** The pipeline step whose input carries the composition's resources. */
 export const PATCH_AND_TRANSFORM_STEP = 'patch-and-transform';
@@ -86,7 +104,7 @@ const pipelineSteps = (functions: Pipeline[] | undefined): Pipeline[] => {
   return [...steps, { step: PATCH_AND_TRANSFORM_STEP } as Pipeline];
 };
 
-/** Inverse of `connectorHandleId`: back to the composite field path. */
+/** Inverse of `connectorRowHandleId`: back to the composite field path. */
 const connectorPathFromHandleId = (
   handleId: string | null | undefined,
 ): string => (handleId ?? '').replace(/^(source|target)-/, '');
@@ -306,9 +324,7 @@ export const buildConnectorNodes = (
       draggable: true,
       data: {
         connection,
-        connectors: connectors.filter((connector) =>
-          connection === 'input' ? isInput(connector) : !isInput(connector),
-        ),
+        connectors: sideOf(connectors, connection),
         setConnectors,
       },
     };
@@ -365,11 +381,14 @@ export const buildContainerGraph = (
   }
 
   const blockIds = new Set(nodes.map((node) => node.id));
-  const inputs = new Map<string, Connector>();
-  const outputs = new Map<string, Connector>();
-  for (const connector of connectors) {
-    (isInput(connector) ? inputs : outputs).set(connector.path, connector);
-  }
+  // A composite path is on the canvas when it has a row, which a branch the
+  // connectors only pass through has just as much as a connector itself.
+  const rowPaths = (connection: 'input' | 'output'): Set<string> =>
+    new Set(
+      connectorRows(sideOf(connectors, connection)).map((row) => row.path),
+    );
+  const inputs = rowPaths('input');
+  const outputs = rowPaths('output');
 
   const edges: RFEdge[] = [];
 
@@ -383,19 +402,17 @@ export const buildContainerGraph = (
       // An endpoint on the container itself is a patch from/to the composite:
       // on this canvas it hangs off the matching connector node.
       if (source === container.id) {
-        const connector = inputs.get(sourceHandle ?? '');
-        if (!connector) continue;
+        if (!inputs.has(sourceHandle ?? '')) continue;
         source = connectorGroupId('input');
-        sourceHandle = connectorHandleId(connector);
+        sourceHandle = connectorRowHandleId(sourceHandle ?? '', 'input');
       } else if (!blockIds.has(source)) {
         continue;
       }
 
       if (target === container.id) {
-        const connector = outputs.get(targetHandle ?? '');
-        if (!connector) continue;
+        if (!outputs.has(targetHandle ?? '')) continue;
         target = connectorGroupId('output');
-        targetHandle = connectorHandleId(connector);
+        targetHandle = connectorRowHandleId(targetHandle ?? '', 'output');
       } else if (!blockIds.has(target)) {
         continue;
       }

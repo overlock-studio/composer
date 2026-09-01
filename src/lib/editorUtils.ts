@@ -67,6 +67,16 @@ export const CONTAINER_HANDLE_SPACING = 30;
 export const CONNECTOR_GROUP_WIDTH = 200;
 export const CONNECTOR_GROUP_HEADER_HEIGHT = 32;
 export const CONNECTOR_GROUP_ROW_HEIGHT = 30;
+// Connector rows are drawn as a tree: one indent step per path segment, with
+// the line standing near the left of its step, turning towards the name on a
+// rounded corner and stopping just short of it. `REACH` is how far a first
+// child climbs out of its own row towards the row it hangs from, kept short of
+// that row's centre so the line clears the name it starts under.
+export const CONNECTOR_TREE_INDENT = 14;
+export const CONNECTOR_TREE_STEM = 5;
+export const CONNECTOR_TREE_RADIUS = 4;
+export const CONNECTOR_TREE_GAP = 3;
+export const CONNECTOR_TREE_REACH = 7;
 
 // Pipeline steps are drawn as subflow groups: a header strip plus padding
 // around whatever blocks the step holds.
@@ -401,6 +411,111 @@ export function connectorLabels(
   }
   return labels;
 }
+
+/**
+ * One row of a connector node: the segment it is named after, plus where it
+ * sits in the tree its path belongs to, for the node to draw the lines from.
+ *
+ * Branch rows are materialised from the path segments, so `spec.db.engine`
+ * gives a `db` row even when nothing declares `spec.db` itself. Every row is a
+ * handle, and `path` is the composite field it wires to.
+ */
+export type ConnectorRow = {
+  path: string;
+  name: string;
+  /** How far the row is indented; 0 for a row hanging off the node header. */
+  depth: number;
+  /** Where in its group of siblings the row sits, for the shape of its elbow. */
+  isFirst: boolean;
+  isLast: boolean;
+  /**
+   * One flag per ancestor column left of the row's own, saying whether that
+   * ancestor still has rows below — the columns a line has to run through.
+   */
+  guides: boolean[];
+  /** Absent on a branch row that only exists to hold its children. */
+  connector?: Connector;
+};
+
+type ConnectorTreeNode = {
+  name: string;
+  path: string;
+  connector?: Connector;
+  children: ConnectorTreeNode[];
+};
+
+// The node's title already says which half of the schema it holds, so that
+// first segment is not repeated on every row below it.
+const CONNECTOR_ROOT_SEGMENTS = ['spec', 'status'];
+
+/**
+ * Connectors as tree rows, in path order: a row per segment, parents before
+ * the fields they hold, each carrying its own place in the tree.
+ */
+export function connectorRows(
+  connectors: Connector[] | undefined,
+): ConnectorRow[] {
+  const roots: ConnectorTreeNode[] = [];
+  const byPath = new Map<string, ConnectorTreeNode>();
+
+  for (const connector of connectors || []) {
+    const segments = connector.path.split('.').filter(Boolean);
+    if (!segments.length) continue;
+    const first =
+      segments.length > 1 && CONNECTOR_ROOT_SEGMENTS.includes(segments[0])
+        ? 1
+        : 0;
+
+    let siblings = roots;
+    for (let index = first; index < segments.length; index++) {
+      const path = segments.slice(0, index + 1).join('.');
+      let node = byPath.get(path);
+      if (!node) {
+        node = { name: segments[index], path, children: [] };
+        byPath.set(path, node);
+        siblings.push(node);
+      }
+      siblings = node.children;
+    }
+    const own = byPath.get(segments.join('.'));
+    if (own) own.connector = connector;
+  }
+
+  const rows: ConnectorRow[] = [];
+  const walk = (
+    nodes: ConnectorTreeNode[],
+    depth: number,
+    guides: boolean[],
+  ): void => {
+    nodes.forEach((node, index) => {
+      const isLast = index === nodes.length - 1;
+      rows.push({
+        path: node.path,
+        name: node.name,
+        depth,
+        isFirst: index === 0,
+        isLast,
+        guides,
+        connector: node.connector,
+      });
+      // Top-level rows hang off the header rather than off a row, so nothing
+      // runs through the column they would otherwise open.
+      walk(node.children, depth + 1, depth ? [...guides, !isLast] : []);
+    });
+  };
+  walk(roots, 0, []);
+
+  return rows;
+}
+
+/**
+ * Handle a connector row occupies on its group node: Spec rows start edges,
+ * Status rows end them — see `ConnectorGroupNode`.
+ */
+export const connectorRowHandleId = (
+  path: string,
+  connection: 'input' | 'output',
+): string => (connection === 'output' ? `target-${path}` : `source-${path}`);
 
 export function handleToConnector(handle: Handle): Connector {
   return {
