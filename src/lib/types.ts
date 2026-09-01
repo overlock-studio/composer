@@ -275,7 +275,6 @@ export type SaveConfigurationDialogProps = {
 export type CustomEdgeData = {
   isHovered?: boolean;
   transformers?: Transformer[];
-  reactFlowRef: React.MutableRefObject<HTMLDivElement | null>;
 };
 
 export type CustomEdgeToolbarProps = {

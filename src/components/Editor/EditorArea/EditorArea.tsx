@@ -279,11 +279,7 @@ export const EditorArea = () => {
         viewport: getViewport(),
         connectors,
       };
-      const graph = buildContainerGraph(
-        container,
-        reactFlowRef,
-        setContainerConnectors,
-      );
+      const graph = buildContainerGraph(container, setContainerConnectors);
       setOpenConnectors({ containerId: activeContainerId, connectors });
       setNodes(graph.nodes);
       setEdges(graph.edges);
@@ -366,7 +362,7 @@ export const EditorArea = () => {
   const onConnect = useCallback(
     (params: Connection) => {
       setEdges((eds) =>
-        addEdge({ ...params, type: 'customEdge', data: { reactFlowRef } }, eds),
+        addEdge({ ...params, type: 'customEdge' }, eds),
       );
     },
     [setEdges],

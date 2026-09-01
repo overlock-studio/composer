@@ -240,6 +240,12 @@
     }
   }
 
+  /* The menu point is the only thing to click on a data edge, so the line
+     itself lets the pointer through to the canvas behind it. */
+  .react-flow__edge.react-flow__edge-customEdge {
+    pointer-events: none;
+  }
+
   /* Chain between consecutive pipeline steps: structural, so it reads as a
      hint rather than a data edge. */
   .react-flow__edge.pipeline-step-edge {
@@ -262,8 +268,8 @@
       display: flex;
       padding: 2px;
       border-radius: 100%;
-      width: 30px;
-      height: 30px;
+      width: 15px;
+      height: 15px;
       background-color: var(--text-color);
       pointer-events: all;
       cursor: pointer;
@@ -291,7 +297,50 @@
         height: 100%;
         width: 100%;
         z-index: 1;
+
+        svg {
+          width: 9px;
+          height: 9px;
+        }
       }
+    }
+  }
+
+  /* The one target that opens an edge's menu: always visible, in the colour the
+     edge gradient reaches at its middle so it reads as part of the line. Solid
+     at rest, hollowed out to the canvas colour while hovered or while its menu
+     is open, and zoomed with the canvas like the transformer chips. */
+  .edge-menu-point {
+    --edge-point-color: #6c6ed8;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10000;
+    display: flex;
+    width: 10px;
+    height: 10px;
+    padding: 2px;
+    border: none;
+    border-radius: 100%;
+    background: var(--edge-point-color);
+    pointer-events: all;
+    cursor: pointer;
+
+    &:after {
+      content: '';
+      width: 100%;
+      height: 100%;
+      border-radius: 100%;
+      background: var(--edge-point-color);
+      transition: background-color 0.15s ease;
+    }
+
+    /* Hovering, or having the menu open, hollows the point out to the canvas
+       colour, so the ring reads as a target rather than a filled dot. */
+    &:hover:after,
+    &.is-active:after {
+      background: hsl(var(--background));
     }
   }
 }

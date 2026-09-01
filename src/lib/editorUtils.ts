@@ -291,6 +291,24 @@ export function generateBezierPoints(
   return points;
 }
 
+/**
+ * Where along an edge its menu point sits. The middle of the edge, unless the
+ * transformers already occupy it: with an odd number of them one sits exactly
+ * at the halfway mark, so the point moves to the middle of the free gap
+ * closest to it instead of on top of a transformer.
+ */
+export function edgeMenuPointT(transformerCount: number): number {
+  const gaps = transformerCount + 1;
+  let best = 0.5 / gaps;
+  for (let gap = 1; gap < gaps; gap++) {
+    const t = (gap + 0.5) / gaps;
+    if (Math.abs(t - 0.5) < Math.abs(best - 0.5)) {
+      best = t;
+    }
+  }
+  return best;
+}
+
 export function getInitialPosition(
   defaultPosition: DefaultPosition,
   boundWidth: number,

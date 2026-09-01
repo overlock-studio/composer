@@ -324,7 +324,6 @@ export const buildConnectorNodes = (
  */
 export const buildContainerGraph = (
   container: RFNode,
-  reactFlowRef: React.MutableRefObject<HTMLDivElement | null> | null,
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>,
 ): { nodes: RFNode[]; edges: RFEdge[] } => {
   const data = (container.data ?? {}) as ContainerNodeData;
@@ -410,7 +409,7 @@ export const buildContainerGraph = (
         sourceHandle,
         target,
         targetHandle,
-        data: { transformers: edge.transformers, reactFlowRef },
+        data: { transformers: edge.transformers },
       });
     }
   }

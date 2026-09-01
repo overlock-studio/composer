@@ -26,8 +26,8 @@ export const TransformerToolbar = ({
       <div className="nodrag nopan border bg-sidebar border-sidebar-border rounded-lg z-[10003]">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost">
-              <Pencil /> Edit
+            <Button variant="ghost" aria-label="Edit transformer">
+              <Pencil />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="p-0">
