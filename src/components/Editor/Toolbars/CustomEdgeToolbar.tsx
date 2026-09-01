@@ -71,6 +71,7 @@ export const CustomEdgeToolbar = ({
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
+                aria-label="Add transformer"
                 onClick={() => {
                   if (openAddTransformers) {
                     addTransformersClose();
@@ -78,7 +79,7 @@ export const CustomEdgeToolbar = ({
                   setOpenAddTransformers((prev) => !prev);
                 }}
               >
-                <Plus /> Add
+                <Plus />
               </Button>
             </PopoverTrigger>
             <PopoverContent>
