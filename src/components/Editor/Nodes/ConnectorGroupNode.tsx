@@ -20,6 +20,7 @@ import {
   CONNECTOR_GROUP_HEADER_HEIGHT,
   CONNECTOR_GROUP_ROW_HEIGHT,
   CONNECTOR_TREE_INDENT,
+  CONNECTOR_TREE_RADIUS,
   CONNECTOR_TREE_REACH,
   type ConnectorRow,
 } from '../../../lib/editorUtils';
@@ -32,9 +33,10 @@ const rowCentre = (index: number): number =>
   CONNECTOR_GROUP_ROW_HEIGHT / 2;
 
 // Column a row's own elbow stands in, and the one an ancestor's line runs
-// down: the tree is a grid of indent steps, half a step in from each.
+// down: the tree is a grid of indent steps, half a step in from each. The half
+// pixel puts a one pixel stroke on a pixel centre rather than across two.
 const treeColumn = (depth: number): number =>
-  (depth - 1) * CONNECTOR_TREE_INDENT + CONNECTOR_TREE_INDENT / 2;
+  (depth - 1) * CONNECTOR_TREE_INDENT + CONNECTOR_TREE_INDENT / 2 + 0.5;
 
 /**
  * The lines placing one row in the tree, drawn rather than spelled out: a row
@@ -54,8 +56,14 @@ const ConnectorRowTree = ({
   if (!row.depth) return null;
 
   const width = row.depth * CONNECTOR_TREE_INDENT;
-  const middle = CONNECTOR_GROUP_ROW_HEIGHT / 2;
+  const middle = CONNECTOR_GROUP_ROW_HEIGHT / 2 + 0.5;
   const column = treeColumn(row.depth);
+  // The turn towards the name is rounded, so the branch eases off its line
+  // instead of cornering on it.
+  const elbow =
+    `M ${column} ${middle - CONNECTOR_TREE_RADIUS}` +
+    ` Q ${column} ${middle} ${column + CONNECTOR_TREE_RADIUS} ${middle}` +
+    ` H ${width}`;
 
   return (
     <svg
@@ -64,7 +72,7 @@ const ConnectorRowTree = ({
       className="shrink-0 overflow-visible text-muted-foreground"
       style={mirrored ? { transform: 'scaleX(-1)' } : undefined}
       stroke="currentColor"
-      shapeRendering="crispEdges"
+      fill="none"
       aria-hidden
     >
       {row.guides.map((guide, depth) =>
@@ -79,15 +87,19 @@ const ConnectorRowTree = ({
         ) : null,
       )}
       {/* A first child reaches up past its own row to meet the one it hangs
-          from; the rest carry on from the sibling above. A last child stops at
-          its elbow. */}
+          from; the rest carry on from the sibling above. A last child hands
+          over to the curve rather than running past it. */}
       <line
         x1={column}
         y1={row.isFirst ? -CONNECTOR_TREE_REACH : 0}
         x2={column}
-        y2={row.isLast ? middle : CONNECTOR_GROUP_ROW_HEIGHT}
+        y2={
+          row.isLast
+            ? middle - CONNECTOR_TREE_RADIUS
+            : CONNECTOR_GROUP_ROW_HEIGHT
+        }
       />
-      <line x1={column} y1={middle} x2={width} y2={middle} />
+      <path d={elbow} />
     </svg>
   );
 };

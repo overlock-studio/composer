@@ -71,6 +71,7 @@ export const CONNECTOR_GROUP_ROW_HEIGHT = 30;
 // the reach a first child needs to meet the row above it.
 export const CONNECTOR_TREE_INDENT = 12;
 export const CONNECTOR_TREE_REACH = 9;
+export const CONNECTOR_TREE_RADIUS = 4;
 
 // Pipeline steps are drawn as subflow groups: a header strip plus padding
 // around whatever blocks the step holds.
