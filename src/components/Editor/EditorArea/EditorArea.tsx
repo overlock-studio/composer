@@ -104,6 +104,7 @@ export const EditorArea = () => {
     editorMode,
     activeContainerId,
     containerSession,
+    setActiveHandle,
   } = useEditorAreaContext();
   const { screenToFlowPosition, fitView, getViewport, setViewport } =
     useReactFlow();
@@ -522,6 +523,41 @@ export const EditorArea = () => {
     [updateEdgeHoverState],
   );
 
+  // Focus follows the last thing touched: clicking the canvas or a node body
+  // drops the handle the user lit up earlier, instead of leaving it glowing
+  // over an interaction it has nothing to do with.
+  const clearHandleFocus = useCallback(
+    () => setActiveHandle(null),
+    [setActiveHandle],
+  );
+
+  // Clicks that never reach the canvas — the sidebar, a toolbar, a dialog —
+  // still count as looking away from a lit handle.
+  useEffect(() => {
+    const onMouseDown = (event: MouseEvent) => {
+      const canvas = reactFlowRef.current;
+      if (canvas && !canvas.contains(event.target as globalThis.Node)) {
+        setActiveHandle(null);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [setActiveHandle]);
+
+  // Escape is the way out that does not need the handle or edge to be found
+  // again to click it off.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setActiveHandle(null);
+      setEdges((eds) =>
+        eds.map((ed) => (ed.selected ? { ...ed, selected: false } : ed)),
+      );
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [setActiveHandle, setEdges]);
+
   const onNodeDragStop = useCallback(
     (_: React.MouseEvent, node: Node) => {
       resolveNodeCollisions(node, nodes, setNodes);
@@ -562,6 +598,8 @@ export const EditorArea = () => {
           edgeTypes={EDGE_TYPES}
           onEdgeMouseEnter={onEdgeMouseEnter}
           onEdgeMouseLeave={onEdgeMouseLeave}
+          onPaneClick={clearHandleFocus}
+          onNodeClick={clearHandleFocus}
           minZoom={0.1}
           multiSelectionKeyCode={null}
           deleteKeyCode={null}
