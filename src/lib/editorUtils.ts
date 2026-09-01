@@ -67,6 +67,10 @@ export const CONTAINER_HANDLE_SPACING = 30;
 export const CONNECTOR_GROUP_WIDTH = 200;
 export const CONNECTOR_GROUP_HEADER_HEIGHT = 32;
 export const CONNECTOR_GROUP_ROW_HEIGHT = 30;
+// Connector rows are drawn as a tree: one indent step per path segment, and
+// the reach a first child needs to meet the row above it.
+export const CONNECTOR_TREE_INDENT = 12;
+export const CONNECTOR_TREE_REACH = 9;
 
 // Pipeline steps are drawn as subflow groups: a header strip plus padding
 // around whatever blocks the step holds.
@@ -385,8 +389,8 @@ export function connectorLabels(
 }
 
 /**
- * One row of a connector node: the segment it is named after, plus the box
- * drawing decoration that places it in the tree its path belongs to.
+ * One row of a connector node: the segment it is named after, plus where it
+ * sits in the tree its path belongs to, for the node to draw the lines from.
  *
  * Branch rows are materialised from the path segments, so `spec.db.engine`
  * gives a `db` row even when nothing declares `spec.db` itself. Every row is a
@@ -395,11 +399,16 @@ export function connectorLabels(
 export type ConnectorRow = {
   path: string;
   name: string;
+  /** How far the row is indented; 0 for a row hanging off the node header. */
+  depth: number;
+  /** Where in its group of siblings the row sits, for the shape of its elbow. */
+  isFirst: boolean;
+  isLast: boolean;
   /**
-   * Depth and last-child position, written left to right; mirror it with
-   * `mirrorTreeDecoration` for Spec.
+   * One flag per ancestor column left of the row's own, saying whether that
+   * ancestor still has rows below — the columns a line has to run through.
    */
-  decoration: string;
+  guides: boolean[];
   /** Absent on a branch row that only exists to hold its children. */
   connector?: Connector;
 };
@@ -417,7 +426,7 @@ const CONNECTOR_ROOT_SEGMENTS = ['spec', 'status'];
 
 /**
  * Connectors as tree rows, in path order: a row per segment, parents before
- * the fields they hold, each carrying its own depth and decoration.
+ * the fields they hold, each carrying its own place in the tree.
  */
 export function connectorRows(
   connectors: Connector[] | undefined,
@@ -449,8 +458,6 @@ export function connectorRows(
   }
 
   const rows: ConnectorRow[] = [];
-  // `guides` says, per ancestor below the top level, whether that ancestor has
-  // rows after it — the columns where the tree still needs a vertical line.
   const walk = (
     nodes: ConnectorTreeNode[],
     depth: number,
@@ -461,13 +468,14 @@ export function connectorRows(
       rows.push({
         path: node.path,
         name: node.name,
-        // Top-level rows hang straight off the header, so they carry nothing.
-        decoration: depth
-          ? guides.map((guide) => (guide ? '│ ' : '  ')).join('') +
-            (isLast ? '└─' : '├─')
-          : '',
+        depth,
+        isFirst: index === 0,
+        isLast,
+        guides,
         connector: node.connector,
       });
+      // Top-level rows hang off the header rather than off a row, so nothing
+      // runs through the column they would otherwise open.
       walk(node.children, depth + 1, depth ? [...guides, !isLast] : []);
     });
   };
@@ -484,21 +492,6 @@ export const connectorRowHandleId = (
   path: string,
   connection: 'input' | 'output',
 ): string => (connection === 'output' ? `target-${path}` : `source-${path}`);
-
-const MIRRORED_TREE_CHARS: Record<string, string> = {
-  '├': '┤',
-  '└': '┘',
-};
-
-/**
- * The same decoration read from the other side, for rows whose labels are
- * right-aligned towards a handle on their right.
- */
-export const mirrorTreeDecoration = (decoration: string): string =>
-  [...decoration]
-    .reverse()
-    .map((char) => MIRRORED_TREE_CHARS[char] ?? char)
-    .join('');
 
 export function handleToConnector(handle: Handle): Connector {
   return {

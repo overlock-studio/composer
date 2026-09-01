@@ -17,9 +17,11 @@ import { EditConnectorsMenu } from '../Menus';
 import {
   connectorRowHandleId,
   connectorRows,
-  mirrorTreeDecoration,
   CONNECTOR_GROUP_HEADER_HEIGHT,
   CONNECTOR_GROUP_ROW_HEIGHT,
+  CONNECTOR_TREE_INDENT,
+  CONNECTOR_TREE_REACH,
+  type ConnectorRow,
 } from '../../../lib/editorUtils';
 
 // Handles sit against the node box rather than the row they belong to, so each
@@ -28,6 +30,67 @@ const rowCentre = (index: number): number =>
   CONNECTOR_GROUP_HEADER_HEIGHT +
   index * CONNECTOR_GROUP_ROW_HEIGHT +
   CONNECTOR_GROUP_ROW_HEIGHT / 2;
+
+// Column a row's own elbow stands in, and the one an ancestor's line runs
+// down: the tree is a grid of indent steps, half a step in from each.
+const treeColumn = (depth: number): number =>
+  (depth - 1) * CONNECTOR_TREE_INDENT + CONNECTOR_TREE_INDENT / 2;
+
+/**
+ * The lines placing one row in the tree, drawn rather than spelled out: a row
+ * paints the piece of every line that crosses it, so the verticals meet across
+ * the gaps between rows instead of breaking at each glyph.
+ *
+ * `mirrored` flips the whole thing for Spec, whose rows read towards a handle
+ * on their right.
+ */
+const ConnectorRowTree = ({
+  row,
+  mirrored,
+}: {
+  row: ConnectorRow;
+  mirrored: boolean;
+}) => {
+  if (!row.depth) return null;
+
+  const width = row.depth * CONNECTOR_TREE_INDENT;
+  const middle = CONNECTOR_GROUP_ROW_HEIGHT / 2;
+  const column = treeColumn(row.depth);
+
+  return (
+    <svg
+      width={width}
+      height={CONNECTOR_GROUP_ROW_HEIGHT}
+      className="shrink-0 overflow-visible text-muted-foreground"
+      style={mirrored ? { transform: 'scaleX(-1)' } : undefined}
+      stroke="currentColor"
+      shapeRendering="crispEdges"
+      aria-hidden
+    >
+      {row.guides.map((guide, depth) =>
+        guide ? (
+          <line
+            key={depth}
+            x1={treeColumn(depth + 1)}
+            y1={0}
+            x2={treeColumn(depth + 1)}
+            y2={CONNECTOR_GROUP_ROW_HEIGHT}
+          />
+        ) : null,
+      )}
+      {/* A first child reaches up past its own row to meet the one it hangs
+          from; the rest carry on from the sibling above. A last child stops at
+          its elbow. */}
+      <line
+        x1={column}
+        y1={row.isFirst ? -CONNECTOR_TREE_REACH : 0}
+        x2={column}
+        y2={row.isLast ? middle : CONNECTOR_GROUP_ROW_HEIGHT}
+      />
+      <line x1={column} y1={middle} x2={width} y2={middle} />
+    </svg>
+  );
+};
 
 const ConnectorRowActions = ({
   connector,
@@ -116,25 +179,13 @@ const ConnectorGroupNodeComponent = ({
 
       <div className="flex flex-col">
         {rows.map((row, index) => {
-          const decoration = isInput
-            ? mirrorTreeDecoration(row.decoration)
-            : row.decoration;
-          // The tree is drawn in the label: a monospace run of box drawing
-          // characters against the name, kept on the side the handle is on so
-          // the branches point back at the row they hang from.
+          // The tree sits in the label, on the side the handle is on, so the
+          // branches point back at the row they hang from.
           const treeLabel = (
             <span className="flex min-w-0 items-center">
-              {!isInput && decoration && (
-                <span className="shrink-0 whitespace-pre font-mono">
-                  {decoration}
-                </span>
-              )}
+              {!isInput && <ConnectorRowTree row={row} mirrored={false} />}
               <span className="min-w-0 truncate">{row.name}</span>
-              {isInput && decoration && (
-                <span className="shrink-0 whitespace-pre font-mono">
-                  {decoration}
-                </span>
-              )}
+              {isInput && <ConnectorRowTree row={row} mirrored />}
             </span>
           );
           // A branch row materialised from the path segments has no connector
