@@ -303,7 +303,7 @@
   /* The one target that opens an edge's menu: always visible, in the colour the
      edge gradient reaches at its middle so it reads as part of the line. Solid
      at rest, hollowed out to the canvas colour once hovered or selected, and
-     the same size on screen at every zoom level. */
+     zoomed with the canvas like the transformer chips. */
   .edge-menu-point {
     --edge-point-color: #6c6ed8;
 

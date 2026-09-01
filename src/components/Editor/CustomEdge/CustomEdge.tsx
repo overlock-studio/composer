@@ -7,7 +7,6 @@ import {
   Position,
   EdgeProps,
   useStore,
-  useViewport,
 } from '@xyflow/react';
 import {
   CustomEdgeData,
@@ -77,7 +76,6 @@ const CustomEdgeComponent = ({
   }, [transformers, data, id, setEdges]);
 
   const [openEdgeToolbar, setOpenEdgeToolbar] = useState<boolean>(false);
-  const { zoom } = useViewport();
 
   const [openTransformerToolbar, setOpenTransformerToolbar] =
     useState<boolean>(false);
@@ -237,7 +235,7 @@ const CustomEdgeComponent = ({
             selected ? 'is-active' : ''
           }`}
           style={{
-            transform: `translate(-50%, -50%) translate(${menuX}px, ${menuY}px) scale(${1 / zoom})`,
+            transform: `translate(-50%, -50%) translate(${menuX}px, ${menuY}px)`,
           }}
           onMouseDown={(ev) => ev.stopPropagation()}
           onClick={onMenuPointClick}
