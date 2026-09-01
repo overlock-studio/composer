@@ -160,8 +160,8 @@ const ConnectorGroupNodeComponent = ({
   // Rows read outwards, so they sit as close to their own handles as the
   // handle itself leaves room for.
   const rowSide = isInput
-    ? 'justify-end pr-[11px] pl-2'
-    : 'justify-start pl-[11px] pr-2';
+    ? 'justify-end pr-[17px] pl-2'
+    : 'justify-start pl-[17px] pr-2';
 
   const addButton = (
     <Button
