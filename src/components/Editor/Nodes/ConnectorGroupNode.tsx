@@ -15,7 +15,9 @@ import {
 } from '../../ui/dialog';
 import { EditConnectorsMenu } from '../Menus';
 import {
-  connectorLabels,
+  connectorRowHandleId,
+  connectorRows,
+  mirrorTreeDecoration,
   CONNECTOR_GROUP_HEADER_HEIGHT,
   CONNECTOR_GROUP_ROW_HEIGHT,
 } from '../../../lib/editorUtils';
@@ -28,18 +30,20 @@ const rowCentre = (index: number): number =>
   CONNECTOR_GROUP_ROW_HEIGHT / 2;
 
 const ConnectorRowActions = ({
+  connector,
   onEdit,
   onDelete,
 }: {
-  onEdit: () => void;
-  onDelete: () => void;
+  connector: Connector;
+  onEdit: (connector: Connector) => void;
+  onDelete: (connector: Connector) => void;
 }) => (
   <span className="nodrag nopan flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100">
     <Button
       size="icon"
       variant="ghost"
       className="h-4 w-4 [&_svg]:size-3"
-      onClick={onEdit}
+      onClick={() => onEdit(connector)}
       aria-label="Edit connector"
     >
       <Pencil />
@@ -48,7 +52,7 @@ const ConnectorRowActions = ({
       size="icon"
       variant="ghost"
       className="h-4 w-4 [&_svg]:size-3 hover:text-red-400"
-      onClick={onDelete}
+      onClick={() => onDelete(connector)}
       aria-label="Delete connector"
     >
       <Trash2 />
@@ -72,7 +76,7 @@ const ConnectorGroupNodeComponent = ({
   const [deleting, setDeleting] = useState<Connector | null>(null);
   const inProgress = !!useConnection()?.inProgress;
 
-  const labels = useMemo(() => connectorLabels(connectors), [connectors]);
+  const rows = useMemo(() => connectorRows(connectors), [connectors]);
   // Connectors are the composite's own fields, so each node is named after the
   // part of the schema it holds rather than the direction it points in.
   const title = isInput ? 'Spec' : 'Status';
@@ -111,45 +115,71 @@ const ConnectorGroupNodeComponent = ({
       </div>
 
       <div className="flex flex-col">
-        {connectors.map((connector, index) => (
-          <CustomHandle
-            key={connector.path}
-            type={isInput ? 'source' : 'target'}
-            position={isInput ? Position.Right : Position.Left}
-            id={
-              isInput ? `source-${connector.path}` : `target-${connector.path}`
-            }
-            style={{ top: `${rowCentre(index)}px` }}
-            // Either side can start an edge; only an output can end one, and
-            // inputs stop being drop targets while a connection is in flight.
-            isConnectableStart={true}
-            isConnectableEnd={!isInput}
-            isConnectable={isInput ? !inProgress : true}
-            inactiveClass={'opacity-30'}
-            path={connector.path}
-            description={connector.description}
-            variant="block"
-            labelClassName={`group/row flex w-full items-center gap-1 ${rowSide}`}
-            label={
-              <>
-                {!isInput && (
-                  <span className="min-w-0 truncate">
-                    {labels[connector.path]}
-                  </span>
-                )}
-                <ConnectorRowActions
-                  onEdit={() => setEditing(connector)}
-                  onDelete={() => setDeleting(connector)}
-                />
-                {isInput && (
-                  <span className="min-w-0 truncate">
-                    {labels[connector.path]}
-                  </span>
-                )}
-              </>
-            }
-          />
-        ))}
+        {rows.map((row, index) => {
+          const decoration = isInput
+            ? mirrorTreeDecoration(row.decoration)
+            : row.decoration;
+          // The tree is drawn in the label: a monospace run of box drawing
+          // characters against the name, kept on the side the handle is on so
+          // the branches point back at the row they hang from.
+          const treeLabel = (
+            <span className="flex min-w-0 items-center">
+              {!isInput && decoration && (
+                <span className="shrink-0 whitespace-pre font-mono">
+                  {decoration}
+                </span>
+              )}
+              <span className="min-w-0 truncate">{row.name}</span>
+              {isInput && decoration && (
+                <span className="shrink-0 whitespace-pre font-mono">
+                  {decoration}
+                </span>
+              )}
+            </span>
+          );
+          // A branch row materialised from the path segments has no connector
+          // of its own to edit or delete.
+          const actions = row.connector && (
+            <ConnectorRowActions
+              connector={row.connector}
+              onEdit={setEditing}
+              onDelete={setDeleting}
+            />
+          );
+
+          return (
+            <CustomHandle
+              key={row.path}
+              type={isInput ? 'source' : 'target'}
+              position={isInput ? Position.Right : Position.Left}
+              id={connectorRowHandleId(row.path, connection)}
+              style={{ top: `${rowCentre(index)}px` }}
+              // Either side can start an edge; only an output can end one, and
+              // inputs stop being drop targets while a connection is in flight.
+              isConnectableStart={true}
+              isConnectableEnd={!isInput}
+              isConnectable={isInput ? !inProgress : true}
+              inactiveClass={'opacity-30'}
+              path={row.path}
+              description={row.connector?.description ?? ''}
+              variant="block"
+              labelClassName={`group/row flex w-full items-center gap-1 ${rowSide}`}
+              label={
+                isInput ? (
+                  <>
+                    {actions}
+                    {treeLabel}
+                  </>
+                ) : (
+                  <>
+                    {treeLabel}
+                    {actions}
+                  </>
+                )
+              }
+            />
+          );
+        })}
       </div>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>

@@ -24,6 +24,27 @@ spec:
                 size:
                   type: string
                   description: t-shirt size of the app
+                database:
+                  type: object
+                  properties:
+                    engine:
+                      type: string
+                      description: database engine to run
+                    backup:
+                      type: object
+                      properties:
+                        enabled:
+                          type: boolean
+                          description: whether backups are taken
+                        retention:
+                          type: integer
+                          description: days a backup is kept
+                    version:
+                      type: string
+                      description: engine version
+                region:
+                  type: string
+                  description: region the app runs in
               required:
                 - size
             status:
@@ -32,3 +53,12 @@ spec:
                 size:
                   type: string
                   description: t-shirt size of the app
+                database:
+                  type: object
+                  properties:
+                    endpoint:
+                      type: string
+                      description: address the database answers on
+                    ready:
+                      type: boolean
+                      description: whether the database is up

@@ -384,6 +384,122 @@ export function connectorLabels(
   return labels;
 }
 
+/**
+ * One row of a connector node: the segment it is named after, plus the box
+ * drawing decoration that places it in the tree its path belongs to.
+ *
+ * Branch rows are materialised from the path segments, so `spec.db.engine`
+ * gives a `db` row even when nothing declares `spec.db` itself. Every row is a
+ * handle, and `path` is the composite field it wires to.
+ */
+export type ConnectorRow = {
+  path: string;
+  name: string;
+  /**
+   * Depth and last-child position, written left to right; mirror it with
+   * `mirrorTreeDecoration` for Spec.
+   */
+  decoration: string;
+  /** Absent on a branch row that only exists to hold its children. */
+  connector?: Connector;
+};
+
+type ConnectorTreeNode = {
+  name: string;
+  path: string;
+  connector?: Connector;
+  children: ConnectorTreeNode[];
+};
+
+// The node's title already says which half of the schema it holds, so that
+// first segment is not repeated on every row below it.
+const CONNECTOR_ROOT_SEGMENTS = ['spec', 'status'];
+
+/**
+ * Connectors as tree rows, in path order: a row per segment, parents before
+ * the fields they hold, each carrying its own depth and decoration.
+ */
+export function connectorRows(
+  connectors: Connector[] | undefined,
+): ConnectorRow[] {
+  const roots: ConnectorTreeNode[] = [];
+  const byPath = new Map<string, ConnectorTreeNode>();
+
+  for (const connector of connectors || []) {
+    const segments = connector.path.split('.').filter(Boolean);
+    if (!segments.length) continue;
+    const first =
+      segments.length > 1 && CONNECTOR_ROOT_SEGMENTS.includes(segments[0])
+        ? 1
+        : 0;
+
+    let siblings = roots;
+    for (let index = first; index < segments.length; index++) {
+      const path = segments.slice(0, index + 1).join('.');
+      let node = byPath.get(path);
+      if (!node) {
+        node = { name: segments[index], path, children: [] };
+        byPath.set(path, node);
+        siblings.push(node);
+      }
+      siblings = node.children;
+    }
+    const own = byPath.get(segments.join('.'));
+    if (own) own.connector = connector;
+  }
+
+  const rows: ConnectorRow[] = [];
+  // `guides` says, per ancestor below the top level, whether that ancestor has
+  // rows after it — the columns where the tree still needs a vertical line.
+  const walk = (
+    nodes: ConnectorTreeNode[],
+    depth: number,
+    guides: boolean[],
+  ): void => {
+    nodes.forEach((node, index) => {
+      const isLast = index === nodes.length - 1;
+      rows.push({
+        path: node.path,
+        name: node.name,
+        // Top-level rows hang straight off the header, so they carry nothing.
+        decoration: depth
+          ? guides.map((guide) => (guide ? '│ ' : '  ')).join('') +
+            (isLast ? '└─' : '├─')
+          : '',
+        connector: node.connector,
+      });
+      walk(node.children, depth + 1, depth ? [...guides, !isLast] : []);
+    });
+  };
+  walk(roots, 0, []);
+
+  return rows;
+}
+
+/**
+ * Handle a connector row occupies on its group node: Spec rows start edges,
+ * Status rows end them — see `ConnectorGroupNode`.
+ */
+export const connectorRowHandleId = (
+  path: string,
+  connection: 'input' | 'output',
+): string => (connection === 'output' ? `target-${path}` : `source-${path}`);
+
+const MIRRORED_TREE_CHARS: Record<string, string> = {
+  '├': '┤',
+  '└': '┘',
+};
+
+/**
+ * The same decoration read from the other side, for rows whose labels are
+ * right-aligned towards a handle on their right.
+ */
+export const mirrorTreeDecoration = (decoration: string): string =>
+  [...decoration]
+    .reverse()
+    .map((char) => MIRRORED_TREE_CHARS[char] ?? char)
+    .join('');
+
 export function handleToConnector(handle: Handle): Connector {
   return {
     connection: handle.type === 'source' ? 'output' : 'input',

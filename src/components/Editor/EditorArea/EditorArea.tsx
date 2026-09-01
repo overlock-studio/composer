@@ -25,7 +25,7 @@ import {
 import {
   buildConnectorNodes,
   buildContainerGraph,
-  connectorHandleId,
+  connectorHandleIds,
   holdsResourceBlocks,
   isConnectorGroupId,
   mergeContainerIntoNodes,
@@ -340,7 +340,9 @@ export const EditorArea = () => {
       ),
     ]);
 
-    const live = new Set(connectors.map(connectorHandleId));
+    // Rows, not connectors: a branch row keeps its edge for as long as
+    // something still lives under it.
+    const live = connectorHandleIds(connectors);
     setEdges((prev) =>
       prev.filter(
         (edge) =>
