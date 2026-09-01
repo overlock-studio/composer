@@ -14,17 +14,12 @@ import {
   DialogTitle,
 } from '../../ui/dialog';
 import { EditConnectorsMenu } from '../Menus';
+import { RowTree } from '../RowTree';
 import {
   connectorRowHandleId,
-  connectorRows,
+  pathRows,
   CONNECTOR_GROUP_HEADER_HEIGHT,
   CONNECTOR_GROUP_ROW_HEIGHT,
-  CONNECTOR_TREE_GAP,
-  CONNECTOR_TREE_INDENT,
-  CONNECTOR_TREE_RADIUS,
-  CONNECTOR_TREE_REACH,
-  CONNECTOR_TREE_STEM,
-  type ConnectorRow,
 } from '../../../lib/editorUtils';
 
 // Handles sit against the node box rather than the row they belong to, so each
@@ -33,78 +28,6 @@ const rowCentre = (index: number): number =>
   CONNECTOR_GROUP_HEADER_HEIGHT +
   index * CONNECTOR_GROUP_ROW_HEIGHT +
   CONNECTOR_GROUP_ROW_HEIGHT / 2;
-
-// Column a row's own elbow stands in, and the one an ancestor's line runs
-// down: the tree is a grid of indent steps, the line a little way into each.
-// The half pixel puts a one pixel stroke on a pixel centre, not across two.
-const treeColumn = (depth: number): number =>
-  (depth - 1) * CONNECTOR_TREE_INDENT + CONNECTOR_TREE_STEM + 0.5;
-
-/**
- * The lines placing one row in the tree, drawn rather than spelled out: a row
- * paints the piece of every line that crosses it, so the verticals meet across
- * the gaps between rows instead of breaking at each glyph.
- *
- * `mirrored` flips the whole thing for Spec, whose rows read towards a handle
- * on their right.
- */
-const ConnectorRowTree = ({
-  row,
-  mirrored,
-}: {
-  row: ConnectorRow;
-  mirrored: boolean;
-}) => {
-  if (!row.depth) return null;
-
-  const width = row.depth * CONNECTOR_TREE_INDENT;
-  const middle = CONNECTOR_GROUP_ROW_HEIGHT / 2 + 0.5;
-  const column = treeColumn(row.depth);
-  // The turn towards the name is rounded, so the branch eases off its line
-  // instead of cornering on it, and stops a hair short of the first letter.
-  const elbow =
-    `M ${column} ${middle - CONNECTOR_TREE_RADIUS}` +
-    ` Q ${column} ${middle} ${column + CONNECTOR_TREE_RADIUS} ${middle}` +
-    ` H ${width - CONNECTOR_TREE_GAP}`;
-
-  return (
-    <svg
-      width={width}
-      height={CONNECTOR_GROUP_ROW_HEIGHT}
-      className="shrink-0 overflow-visible text-muted-foreground"
-      style={mirrored ? { transform: 'scaleX(-1)' } : undefined}
-      stroke="currentColor"
-      fill="none"
-      aria-hidden
-    >
-      {row.guides.map((guide, depth) =>
-        guide ? (
-          <line
-            key={depth}
-            x1={treeColumn(depth + 1)}
-            y1={0}
-            x2={treeColumn(depth + 1)}
-            y2={CONNECTOR_GROUP_ROW_HEIGHT}
-          />
-        ) : null,
-      )}
-      {/* A first child reaches up past its own row to meet the one it hangs
-          from; the rest carry on from the sibling above. A last child hands
-          over to the curve rather than running past it. */}
-      <line
-        x1={column}
-        y1={row.isFirst ? -CONNECTOR_TREE_REACH : 0}
-        x2={column}
-        y2={
-          row.isLast
-            ? middle - CONNECTOR_TREE_RADIUS
-            : CONNECTOR_GROUP_ROW_HEIGHT
-        }
-      />
-      <path d={elbow} />
-    </svg>
-  );
-};
 
 const ConnectorRowActions = ({
   connector,
@@ -153,7 +76,7 @@ const ConnectorGroupNodeComponent = ({
   const [deleting, setDeleting] = useState<Connector | null>(null);
   const inProgress = !!useConnection()?.inProgress;
 
-  const rows = useMemo(() => connectorRows(connectors), [connectors]);
+  const rows = useMemo(() => pathRows(connectors), [connectors]);
   // Connectors are the composite's own fields, so each node is named after the
   // part of the schema it holds rather than the direction it points in.
   const title = isInput ? 'Spec' : 'Status';
@@ -199,16 +122,24 @@ const ConnectorGroupNodeComponent = ({
           // branches point back at the row they hang from.
           const treeLabel = (
             <span className="flex min-w-0 items-center">
-              {!isInput && <ConnectorRowTree row={row} mirrored={false} />}
+              {!isInput && (
+                <RowTree row={row} height={CONNECTOR_GROUP_ROW_HEIGHT} />
+              )}
               <span className="min-w-0 truncate">{row.name}</span>
-              {isInput && <ConnectorRowTree row={row} mirrored />}
+              {isInput && (
+                <RowTree
+                  row={row}
+                  height={CONNECTOR_GROUP_ROW_HEIGHT}
+                  mirrored
+                />
+              )}
             </span>
           );
           // A branch row materialised from the path segments has no connector
           // of its own to edit or delete.
-          const actions = row.connector && (
+          const actions = row.item && (
             <ConnectorRowActions
-              connector={row.connector}
+              connector={row.item}
               onEdit={setEditing}
               onDelete={setDeleting}
             />
@@ -228,7 +159,7 @@ const ConnectorGroupNodeComponent = ({
               isConnectable={isInput ? !inProgress : true}
               inactiveClass={'opacity-30'}
               path={row.path}
-              description={row.connector?.description ?? ''}
+              description={row.item?.description ?? ''}
               variant="block"
               labelClassName={`group/row flex w-full items-center gap-1 ${rowSide}`}
               label={

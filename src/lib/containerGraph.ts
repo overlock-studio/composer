@@ -16,7 +16,7 @@ import type {
 import {
   buildTreeData,
   connectorRowHandleId,
-  connectorRows,
+  pathRows,
   connectorToHandle,
   getHandleByPath,
   getHandlesFromSchema,
@@ -66,7 +66,7 @@ const sideOf = (
 export const connectorHandleIds = (connectors: Connector[]): Set<string> => {
   const ids = new Set<string>();
   for (const connection of ['input', 'output'] as const) {
-    for (const row of connectorRows(sideOf(connectors, connection))) {
+    for (const row of pathRows(sideOf(connectors, connection))) {
       ids.add(connectorRowHandleId(row.path, connection));
     }
   }
@@ -385,7 +385,7 @@ export const buildContainerGraph = (
   // connectors only pass through has just as much as a connector itself.
   const rowPaths = (connection: 'input' | 'output'): Set<string> =>
     new Set(
-      connectorRows(sideOf(connectors, connection)).map((row) => row.path),
+      pathRows(sideOf(connectors, connection)).map((row) => row.path),
     );
   const inputs = rowPaths('input');
   const outputs = rowPaths('output');
