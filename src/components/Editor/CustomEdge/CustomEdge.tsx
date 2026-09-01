@@ -231,8 +231,10 @@ const CustomEdgeComponent = ({
         {renderTransformers()}
         <button
           type="button"
+          // Active only while its own menu is open: opening a transformer's
+          // menu selects the edge too, and that should not light this up.
           className={`edge-menu-point nodrag nopan ${
-            selected ? 'is-active' : ''
+            openEdgeToolbar ? 'is-active' : ''
           }`}
           style={{
             transform: `translate(-50%, -50%) translate(${menuX}px, ${menuY}px)`,
