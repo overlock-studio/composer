@@ -44,7 +44,8 @@ const CustomEdgeComponent = ({
     ApiTransformer[] | undefined
   >(data?.transformers);
 
-  const { setEdges, activeHandle } = useEditorActions();
+  const { setNodes, setEdges, activeHandle, setActiveHandle } =
+    useEditorActions();
 
   const isHandleFlowActive =
     !!activeHandle &&
@@ -171,8 +172,17 @@ const CustomEdgeComponent = ({
       setEdges((eds) =>
         eds.map((ed) => (ed.id === id ? { ...ed, selected: open } : ed)),
       );
+      if (!open) return;
+      // Same reason as the handles: the click never reaches the pane, so the
+      // edge takes the focus from whatever was holding it.
+      setActiveHandle(null);
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.selected ? { ...node, selected: false } : node,
+        ),
+      );
     },
-    [id, openEdgeToolbar, setEdges],
+    [id, openEdgeToolbar, setActiveHandle, setEdges, setNodes],
   );
 
   // Selecting the edge only highlights it; losing the selection closes a menu

@@ -1,8 +1,8 @@
 'use client';
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ContainerNodeData } from '../../../lib/types';
-import { Node, NodeProps, Position, useConnection } from '@xyflow/react';
-import { Box, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
+import { Node, NodeProps, Position } from '@xyflow/react';
+import { Box, Pencil, Settings, Trash2 } from 'lucide-react';
 import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 import { ContainerNodeFooter } from './ContainerNodeFooter';
@@ -15,14 +15,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../ui/dialog';
-import { EditConnectorsMenu } from '../Menus';
 import {
   connectorLabels,
   CONTAINER_HANDLE_SPACING,
   CONTAINER_NODE_WIDTH,
 } from '../../../lib/editorUtils';
 import { useEditorActions } from '../EditorAreaContext/EditorAreaContext';
-import { Connector } from '../../../api/types';
 
 const ContainerNodeComponent = ({
   id: containerId,
@@ -30,12 +28,10 @@ const ContainerNodeComponent = ({
   selected,
 }: NodeProps<Node<ContainerNodeData>>) => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [addOpen, setAddOpen] = useState<boolean>(false);
   const [editOpen, setEditOpen] = useState<boolean>(false);
   useNodeDeleteShortcut(selected, () => setOpenDeleteDialog(true));
-  const [connectors, setConnectors] = useState<Connector[]>(data.connectors);
+  const connectors = data.connectors;
   const { setNodes, resolveBlockType, openContainer } = useEditorActions();
-  const connection = useConnection();
 
   const labels = useMemo(() => connectorLabels(connectors), [connectors]);
 
@@ -56,18 +52,6 @@ const ContainerNodeComponent = ({
     () => (connectors || []).filter((c) => c.connection === 'output'),
     [connectors],
   );
-
-  // Connectors are edited on the node itself, so mirror them back into the node
-  // data the serializer reads on save.
-  useEffect(() => {
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === containerId
-          ? { ...node, data: { ...node.data, connectors } }
-          : node,
-      ),
-    );
-  }, [connectors, containerId, setNodes]);
 
   const updateData = (patch: Partial<ContainerNodeData>) => {
     setNodes((nds) =>
@@ -101,7 +85,6 @@ const ContainerNodeComponent = ({
     setEditOpen(false);
   };
 
-  const isConnecting = !!connection?.inProgress;
 
   return (
     // A container is at least square, so it keeps a block-like footprint even
@@ -124,14 +107,6 @@ const ContainerNodeComponent = ({
           )}
         </div>
         <div className="flex gap-0.5">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6 [&_svg]:size-3.5"
-            onClick={() => setAddOpen(true)}
-          >
-            <Plus />
-          </Button>
           <Button
             size="icon"
             variant="ghost"
@@ -186,8 +161,8 @@ const ContainerNodeComponent = ({
               position={Position.Right}
               id={connector.path}
               style={{ top: `${CONTAINER_HANDLE_SPACING * (index + 2)}px` }}
+              isConnectableStart={false}
               isConnectableEnd={false}
-              isConnectable={!isConnecting}
               inactiveClass={'opacity-30'}
               description={connector.description}
               path={connector.path}
@@ -197,17 +172,6 @@ const ContainerNodeComponent = ({
           ))}
         </div>
       </div>
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add Connector</DialogTitle>
-          </DialogHeader>
-          <EditConnectorsMenu
-            setOpen={setAddOpen}
-            setConnectors={setConnectors}
-          />
-        </DialogContent>
-      </Dialog>
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>

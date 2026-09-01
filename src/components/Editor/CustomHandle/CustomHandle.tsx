@@ -30,7 +30,10 @@ interface IHandleProps extends HandleProps {
 const CustomHandleComponent = ({
   id,
   type,
-  isConnectable,
+  // A handle whose node says nothing about it is connectable; leaving this
+  // undefined made every such handle fall into `inactiveClass` and read as
+  // disabled, which is how the container's own handles were being drawn.
+  isConnectable = true,
   className,
   connectionCount = 0,
   inactiveClass = '',
@@ -51,7 +54,8 @@ const CustomHandleComponent = ({
   });
 
   const nodeId = useNodeId();
-  const { activeHandle, setActiveHandle } = useEditorActions();
+  const { activeHandle, setActiveHandle, setNodes, setEdges } =
+    useEditorActions();
   const isOwnerSelected = useStore((s) =>
     nodeId ? (s.nodeLookup.get(nodeId)?.selected ?? false) : false,
   );
@@ -65,16 +69,29 @@ const CustomHandleComponent = ({
 
   const handleClick = (e: React.MouseEvent) => {
     if (!nodeId) return;
+    // The click is kept off the pane so React Flow does not clear the focus
+    // this handle is about to take, which is why everything else has to be
+    // unfocused here rather than by the canvas.
     e.stopPropagation();
     if (isActiveByClick) {
       setActiveHandle(null);
-    } else {
-      setActiveHandle({
-        nodeId,
-        handleId: id ?? '',
-        type: type as 'source' | 'target',
-      });
+      return;
     }
+    setActiveHandle({
+      nodeId,
+      handleId: id ?? '',
+      type: type as 'source' | 'target',
+    });
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.selected && node.id !== nodeId
+          ? { ...node, selected: false }
+          : node,
+      ),
+    );
+    setEdges((eds) =>
+      eds.map((edge) => (edge.selected ? { ...edge, selected: false } : edge)),
+    );
   };
 
   const isConnectableValue =
