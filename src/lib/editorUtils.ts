@@ -76,7 +76,7 @@ export const CONNECTOR_TREE_INDENT = 14;
 export const CONNECTOR_TREE_STEM = 5;
 export const CONNECTOR_TREE_RADIUS = 4;
 export const CONNECTOR_TREE_GAP = 3;
-export const CONNECTOR_TREE_REACH = 4;
+export const CONNECTOR_TREE_REACH = 7;
 
 // Pipeline steps are drawn as subflow groups: a header strip plus padding
 // around whatever blocks the step holds.
