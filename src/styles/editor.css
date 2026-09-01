@@ -294,6 +294,42 @@
       }
     }
   }
+
+  /* The one target that opens an edge's menu: always visible, in the colour the
+     edge gradient reaches at its middle so it reads as part of the line. Solid
+     at rest, accent-filled inside its ring once hovered or selected, and the
+     same size on screen at every zoom level. */
+  .edge-menu-point {
+    --edge-point-color: #6c6ed8;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10000;
+    display: flex;
+    width: 20px;
+    height: 20px;
+    padding: 4px;
+    border: none;
+    border-radius: 100%;
+    background: var(--edge-point-color);
+    pointer-events: all;
+    cursor: pointer;
+
+    &:after {
+      content: '';
+      width: 100%;
+      height: 100%;
+      border-radius: 100%;
+      background: var(--edge-point-color);
+      transition: background-color 0.15s ease;
+    }
+
+    &:hover:after,
+    &.is-active:after {
+      background: hsl(var(--sidebar-primary));
+    }
+  }
 }
 
 .react-flow__edges {

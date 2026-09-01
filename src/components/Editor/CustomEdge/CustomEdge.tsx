@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   EdgeLabelRenderer,
   getBezierPath,
@@ -14,7 +14,11 @@ import {
   GetControlWithCurvatureParams,
   Transformer as ApiTransformer,
 } from '../../../lib/types';
-import { generateBezierPoints } from '../../../lib/editorUtils';
+import {
+  cubicBezierPoint,
+  edgeMenuPointT,
+  generateBezierPoints,
+} from '../../../lib/editorUtils';
 import { CustomEdgeToolbar } from '../Toolbars';
 import { Transformer } from '../Transformer';
 import { useEditorActions } from '../EditorAreaContext';
@@ -73,11 +77,7 @@ const CustomEdgeComponent = ({
   }, [transformers, data, id, setEdges]);
 
   const [openEdgeToolbar, setOpenEdgeToolbar] = useState<boolean>(false);
-  const [toolbarPosition, setToolbarPosition] = useState<{
-    x: number;
-    y: number;
-  }>({ x: 0, y: 0 });
-  const { zoom, x: viewPortX, y: viewPortY } = useViewport();
+  const { zoom } = useViewport();
 
   const [openTransformerToolbar, setOpenTransformerToolbar] =
     useState<boolean>(false);
@@ -139,20 +139,50 @@ const CustomEdgeComponent = ({
     c: CURVATURE,
   });
 
-  const onPathClick = useCallback(
-    (ev: React.MouseEvent<SVGPathElement, globalThis.MouseEvent>) => {
-      if (data.reactFlowRef?.current) {
-        const bounds = data.reactFlowRef.current.getBoundingClientRect();
-        const x = (ev.clientX - bounds.left - viewPortX) / zoom;
-        const y = (ev.clientY - bounds.top - viewPortY) / zoom;
-        setToolbarPosition({ x, y });
-      }
-    },
-    [data, viewPortX, viewPortY, zoom],
+  // The menu opens from its own point rather than from wherever the path was
+  // clicked, so it always lands in the same spot relative to the edge.
+  const [menuX, menuY] = useMemo(
+    () =>
+      cubicBezierPoint(
+        edgeMenuPointT(transformers?.length ?? 0),
+        [sourceX, sourceY],
+        [sourceControlX, sourceControlY],
+        [targetControlX, targetControlY],
+        [targetX, targetY],
+      ),
+    [
+      transformers,
+      sourceX,
+      sourceY,
+      sourceControlX,
+      sourceControlY,
+      targetControlX,
+      targetControlY,
+      targetX,
+      targetY,
+    ],
   );
 
+  const onMenuPointClick = useCallback(
+    (ev: React.MouseEvent) => {
+      // Without this the click reaches the pane, which clears the selection
+      // and closes the menu again.
+      ev.stopPropagation();
+      const open = !openEdgeToolbar;
+      setOpenEdgeToolbar(open);
+      setEdges((eds) =>
+        eds.map((ed) => (ed.id === id ? { ...ed, selected: open } : ed)),
+      );
+    },
+    [id, openEdgeToolbar, setEdges],
+  );
+
+  // Selecting the edge only highlights it; losing the selection closes a menu
+  // opened from the point.
   useEffect(() => {
-    setOpenEdgeToolbar(Boolean(selected));
+    if (!selected) {
+      setOpenEdgeToolbar(false);
+    }
   }, [selected]);
 
   useEffect(() => {
@@ -198,15 +228,26 @@ const CustomEdgeComponent = ({
         style={style}
         className={`react-flow__edge-path nopan nodrag ${isFlowActive ? 'edge-flow-animated' : ''}`}
         d={edgePath}
-        onClick={(ev) => onPathClick(ev)}
       />
       <EdgeLabelRenderer>
         {renderTransformers()}
+        <button
+          type="button"
+          className={`edge-menu-point nodrag nopan ${
+            selected ? 'is-active' : ''
+          }`}
+          style={{
+            transform: `translate(-50%, -50%) translate(${menuX}px, ${menuY}px) scale(${1 / zoom})`,
+          }}
+          onMouseDown={(ev) => ev.stopPropagation()}
+          onClick={onMenuPointClick}
+          aria-label="Open edge menu"
+        />
         {!openTransformerToolbar && openEdgeToolbar && (
           <CustomEdgeToolbar
             edgeId={id}
             setTransformers={setTransformers}
-            toolbarPosition={toolbarPosition}
+            toolbarPosition={{ x: menuX, y: menuY }}
           />
         )}
       </EdgeLabelRenderer>

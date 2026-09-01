@@ -100,7 +100,7 @@ const MonitoringAreaContent = ({
   const onConnect = useCallback(
     (params: Connection) => {
       setEdges((eds) =>
-        addEdge({ ...params, type: 'customEdge', data: { reactFlowRef } }, eds),
+        addEdge({ ...params, type: 'customEdge' }, eds),
       );
     },
     [setEdges],
