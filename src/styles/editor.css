@@ -312,9 +312,9 @@
     left: 0;
     z-index: 10000;
     display: flex;
-    width: 20px;
-    height: 20px;
-    padding: 4px;
+    width: 10px;
+    height: 10px;
+    padding: 2px;
     border: none;
     border-radius: 100%;
     background: var(--edge-point-color);
