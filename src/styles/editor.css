@@ -297,8 +297,8 @@
 
   /* The one target that opens an edge's menu: always visible, in the colour the
      edge gradient reaches at its middle so it reads as part of the line. Solid
-     at rest, accent-filled inside its ring once hovered or selected, and the
-     same size on screen at every zoom level. */
+     at rest, hollowed out to the canvas colour once hovered or selected, and
+     the same size on screen at every zoom level. */
   .edge-menu-point {
     --edge-point-color: #6c6ed8;
 
@@ -325,9 +325,11 @@
       transition: background-color 0.15s ease;
     }
 
+    /* Hovering or selecting hollows the point out to the canvas colour, so the
+       ring reads as a target rather than a filled dot. */
     &:hover:after,
     &.is-active:after {
-      background: hsl(var(--sidebar-primary));
+      background: hsl(var(--background));
     }
   }
 }
