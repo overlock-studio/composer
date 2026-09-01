@@ -19,9 +19,11 @@ import {
   connectorRows,
   CONNECTOR_GROUP_HEADER_HEIGHT,
   CONNECTOR_GROUP_ROW_HEIGHT,
+  CONNECTOR_TREE_GAP,
   CONNECTOR_TREE_INDENT,
   CONNECTOR_TREE_RADIUS,
   CONNECTOR_TREE_REACH,
+  CONNECTOR_TREE_STEM,
   type ConnectorRow,
 } from '../../../lib/editorUtils';
 
@@ -33,10 +35,10 @@ const rowCentre = (index: number): number =>
   CONNECTOR_GROUP_ROW_HEIGHT / 2;
 
 // Column a row's own elbow stands in, and the one an ancestor's line runs
-// down: the tree is a grid of indent steps, half a step in from each. The half
-// pixel puts a one pixel stroke on a pixel centre rather than across two.
+// down: the tree is a grid of indent steps, the line a little way into each.
+// The half pixel puts a one pixel stroke on a pixel centre, not across two.
 const treeColumn = (depth: number): number =>
-  (depth - 1) * CONNECTOR_TREE_INDENT + CONNECTOR_TREE_INDENT / 2 + 0.5;
+  (depth - 1) * CONNECTOR_TREE_INDENT + CONNECTOR_TREE_STEM + 0.5;
 
 /**
  * The lines placing one row in the tree, drawn rather than spelled out: a row
@@ -59,11 +61,11 @@ const ConnectorRowTree = ({
   const middle = CONNECTOR_GROUP_ROW_HEIGHT / 2 + 0.5;
   const column = treeColumn(row.depth);
   // The turn towards the name is rounded, so the branch eases off its line
-  // instead of cornering on it.
+  // instead of cornering on it, and stops a hair short of the first letter.
   const elbow =
     `M ${column} ${middle - CONNECTOR_TREE_RADIUS}` +
     ` Q ${column} ${middle} ${column + CONNECTOR_TREE_RADIUS} ${middle}` +
-    ` H ${width}`;
+    ` H ${width - CONNECTOR_TREE_GAP}`;
 
   return (
     <svg

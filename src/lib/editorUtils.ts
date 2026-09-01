@@ -67,11 +67,15 @@ export const CONTAINER_HANDLE_SPACING = 30;
 export const CONNECTOR_GROUP_WIDTH = 200;
 export const CONNECTOR_GROUP_HEADER_HEIGHT = 32;
 export const CONNECTOR_GROUP_ROW_HEIGHT = 30;
-// Connector rows are drawn as a tree: one indent step per path segment, and
-// the reach a first child needs to meet the row above it.
-export const CONNECTOR_TREE_INDENT = 12;
-export const CONNECTOR_TREE_REACH = 9;
+// Connector rows are drawn as a tree: one indent step per path segment, with
+// the line standing near the left of its step, turning towards the name on a
+// rounded corner and stopping just short of it. `REACH` is how far a first
+// child has to climb out of its row to meet the row above it.
+export const CONNECTOR_TREE_INDENT = 14;
+export const CONNECTOR_TREE_STEM = 5;
 export const CONNECTOR_TREE_RADIUS = 4;
+export const CONNECTOR_TREE_GAP = 3;
+export const CONNECTOR_TREE_REACH = 9;
 
 // Pipeline steps are drawn as subflow groups: a header strip plus padding
 // around whatever blocks the step holds.
