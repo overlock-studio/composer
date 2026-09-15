@@ -1,14 +1,8 @@
 import type { Node as RFNode } from '@xyflow/react';
 import type { Block, BlockType, Connector, Pipeline } from '../api/types';
 import {
-  SELF_POSITION_KEY,
-  type CompositionLayout,
-  type LayoutByComposition,
-} from './parser';
-import {
-  connectorLayoutKey,
-  pipelineLayoutKey,
   PATCH_AND_TRANSFORM_STEP,
+  type ContainerLayout,
 } from './containerLayout';
 import { pipelineSteps, resolveContainerLayout } from './containerGraph';
 import { PIPELINE_IN_HANDLE, PIPELINE_OUT_HANDLE } from './editorUtils';
@@ -89,6 +83,7 @@ export const collectBlocks = (nodes: RFNode[]): Block[] =>
         connectors: data.connectors ?? [],
         apiVersion: data.apiVersion,
         kind: data.kind,
+        ...(data.blockData ? { data: data.blockData } : {}),
       };
 
       // Only placed once the user has moved them; sized once resized.
@@ -140,11 +135,8 @@ export const collectBlocks = (nodes: RFNode[]): Block[] =>
             : [],
           blockType: undefined,
           connectors: [],
-          data: {
-            step: fn.step,
-            ...(fn.functionRef ? { functionRef: fn.functionRef } : {}),
-            ...(input ? { input } : {}),
-          },
+          // The whole step, so whatever the editor does not model comes back.
+          data: { ...fn, ...(input ? { input } : {}) },
         };
       });
 
@@ -168,65 +160,100 @@ export const collectBlocks = (nodes: RFNode[]): Block[] =>
     });
 
 /**
- * The layout file for blocks from `collectBlocks`, in the shape the editor
- * reads back: per composition, `_self` for the composition, `_pipeline:<step>`
- * for each function, `_spec` and `_status` once placed, and one entry per
- * resource, relative to its function.
+ * Function blocks in pipeline order: each one's edge to the next is followed
+ * from every block nothing points at. Blocks caught in a cycle, or not chained
+ * at all, keep their list order after the chains.
  */
-export const layoutFromBlocks = (blocks: Block[]): LayoutByComposition => {
-  const out: LayoutByComposition = {};
+const pipelineOrder = (functionBlocks: Block[]): Block[] => {
+  const byId = new Map(functionBlocks.map((block) => [block.id, block]));
+  const nextOf = new Map<string, string>();
+  const hasPrevious = new Set<string>();
+  for (const block of functionBlocks) {
+    for (const edge of block.edges ?? []) {
+      if (edge.source !== block.id || !byId.has(edge.target)) continue;
+      nextOf.set(block.id, edge.target);
+      hasPrevious.add(edge.target);
+    }
+  }
+
+  const ordered: Block[] = [];
+  const seen = new Set<string>();
+  for (const start of functionBlocks) {
+    if (hasPrevious.has(start.id)) continue;
+    let id: string | undefined = start.id;
+    while (id && !seen.has(id)) {
+      const block = byId.get(id);
+      if (!block) break;
+      seen.add(id);
+      ordered.push(block);
+      id = nextOf.get(id);
+    }
+  }
+
+  return [
+    ...ordered,
+    ...functionBlocks.filter((block) => !seen.has(block.id)),
+  ];
+};
+
+/**
+ * The inverse of `collectBlocks`: blocks a save handed out, back in the shape
+ * the editor holds. Each composition carries its pipeline, rebuilt from its
+ * function blocks, and the layout of its edit mode, from its function, Spec and
+ * Status blocks; its resources are parented to it again, placed on its canvas.
+ */
+export const restoreBlocks = (blocks: Block[]): Block[] => {
   const childrenOf = (id: string): Block[] =>
     blocks.filter((block) => block.parentId === id);
 
-  for (const composition of blocks.filter(
-    (block) => block.type === BLOCK_TYPES.composition,
-  )) {
-    const compName = composition.name ?? composition.id;
-    const entries: CompositionLayout = {};
+  return blocks
+    .filter((block) => block.type === BLOCK_TYPES.composition)
+    .flatMap((composition) => {
+      const children = childrenOf(composition.id);
+      const functionBlocks = pipelineOrder(
+        children.filter((block) => block.type === BLOCK_TYPES.function),
+      );
+      const containerLayout: ContainerLayout = { groups: {}, connectors: {} };
 
-    for (const child of childrenOf(composition.id)) {
-      if (child.type === BLOCK_TYPES.function) {
-        if (child.position && child.size) {
-          const step = String(child.data?.step ?? child.name ?? child.id);
-          entries[pipelineLayoutKey(step)] = {
-            ...child.position,
-            ...child.size,
-          };
+      const functions = functionBlocks.map((block) => {
+        const step = String(block.data?.step ?? block.name ?? block.id);
+        if (block.position && block.size) {
+          containerLayout.groups[step] = { ...block.position, ...block.size };
         }
-        for (const resource of childrenOf(child.id)) {
-          if (resource.type !== BLOCK_TYPES.resource || !resource.position) {
-            continue;
-          }
-          const resourceName = stripCompositionPrefix(
-            resource.name ?? resource.id,
-            [composition.id, compName],
-          );
-          entries[resourceName] = {
-            x: resource.position.x,
-            y: resource.position.y,
-          };
-        }
-      } else if (child.type === BLOCK_TYPES.connectors && child.position) {
+        return { ...block.data, step } as Pipeline;
+      });
+
+      for (const block of children) {
+        if (block.type !== BLOCK_TYPES.connectors || !block.position) continue;
         const connection =
-          child.data?.connection === 'output' ? 'output' : 'input';
-        entries[connectorLayoutKey(connection)] = {
-          ...child.position,
-          ...child.size,
+          block.data?.connection === 'output' ? 'output' : 'input';
+        containerLayout.connectors[connection] = {
+          ...block.position,
+          ...block.size,
         };
       }
-    }
 
-    if (composition.position) {
-      entries[SELF_POSITION_KEY] = {
-        ...composition.position,
-        ...composition.size,
-      };
-    }
+      // Resources are placed inside the function composing them.
+      const resources: Block[] = functionBlocks.flatMap((fn) => {
+        const origin = fn.position ?? { x: 0, y: 0 };
+        return childrenOf(fn.id)
+          .filter((block) => block.type === BLOCK_TYPES.resource)
+          .map((block) => ({
+            ...block,
+            parentId: composition.id,
+            ...(block.position
+              ? {
+                  position: {
+                    x: block.position.x + origin.x,
+                    y: block.position.y + origin.y,
+                  },
+                }
+              : {}),
+          }));
+      });
 
-    out[compName] = entries;
-  }
-
-  return out;
+      return [...resources, { ...composition, functions, containerLayout }];
+    });
 };
 
 export const buildCompositionInputs = (

@@ -191,6 +191,8 @@ export type ContainerNodeData = {
   functions?: Pipeline[];
   // How the container was last arranged in edit mode, if it has been.
   containerLayout?: ContainerLayout;
+  // The loaded block's own `data`, handed back untouched on save.
+  blockData?: Record<string, unknown>;
 };
 
 // A pipeline step of the open container, drawn as a subflow group. Only the

@@ -16,11 +16,9 @@ import { PanelRight, Save } from 'lucide-react';
 import type { EditorDataAdapter, EditorEntityRef } from '../../../api/adapter';
 import type { Block } from '../../../api/types';
 import {
-  parseCrossplaneConfigurationFromFiles,
-  type CrossplaneFile,
-  type LayoutByComposition,
-} from '../../../lib/parser';
-import { collectBlocks } from '../../../lib/compositionInputs';
+  collectBlocks,
+  restoreBlocks,
+} from '../../../lib/compositionInputs';
 import { mergeContainerIntoNodes } from '../../../lib/containerGraph';
 import { Button } from '../../ui/button';
 import {
@@ -38,14 +36,14 @@ const DEFAULT_ENTITY_ID = 'composer';
 export type ComposerSavePayload = {
   // The whole configuration as one flat list of generic blocks, layout
   // included: compositions, their Spec and Status blocks, pipeline functions
-  // and resources, each placed in its parent's space. The layout file the
-  // editor reads back comes from `layoutFromBlocks(blocks)`.
+  // and resources, each placed in its parent's space. Passing them back as the
+  // `blocks` prop restores the same editor.
   blocks: Block[];
 };
 
 export type ComposerEditorProps = {
-  files: CrossplaneFile[];
-  layout: LayoutByComposition;
+  // What a previous save handed out.
+  blocks: Block[];
   adapter: EditorDataAdapter;
   entityRef?: EditorEntityRef;
   onSave: (payload: ComposerSavePayload) => void;
@@ -55,22 +53,17 @@ export type ComposerEditorHandle = {
   save: () => void;
 };
 
-type ParsedDoc = {
-  blocks: ReturnType<typeof parseCrossplaneConfigurationFromFiles>['blocks'];
-};
-
-function DocSync({ parsed }: { parsed: ParsedDoc }) {
+function DocSync({ blocks }: { blocks: Block[] }) {
   const { setBlocks, setNodes, setEdges } = useEditorActions();
   useEffect(() => {
     setNodes([]);
     setEdges([]);
-    setBlocks(parsed.blocks);
-  }, [parsed, setBlocks, setNodes, setEdges]);
+    setBlocks(blocks);
+  }, [blocks, setBlocks, setNodes, setEdges]);
   return null;
 }
 
 type InnerProps = ComposerEditorProps & {
-  parsed: ParsedDoc;
   forwardedRef: Ref<ComposerEditorHandle>;
 };
 
@@ -131,13 +124,7 @@ export const ComposerEditor = forwardRef<
   ComposerEditorHandle,
   ComposerEditorProps
 >(function ComposerEditor(props, ref) {
-  const parsed = useMemo<ParsedDoc>(
-    () => ({
-      blocks: parseCrossplaneConfigurationFromFiles(props.files, props.layout)
-        .blocks,
-    }),
-    [props.files, props.layout],
-  );
+  const restored = useMemo(() => restoreBlocks(props.blocks), [props.blocks]);
 
   const entityRef = props.entityRef ?? {
     entity: 'configuration' as const,
@@ -147,8 +134,8 @@ export const ComposerEditor = forwardRef<
   return (
     <ReactFlowProvider>
       <EditorAreaProvider adapter={props.adapter} entityRef={entityRef}>
-        <DocSync parsed={parsed} />
-        <ComposerEditorBody {...props} parsed={parsed} forwardedRef={ref} />
+        <DocSync blocks={restored} />
+        <ComposerEditorBody {...props} forwardedRef={ref} />
       </EditorAreaProvider>
     </ReactFlowProvider>
   );

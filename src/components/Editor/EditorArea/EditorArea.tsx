@@ -224,6 +224,7 @@ export const EditorArea = () => {
           apiVersion,
           functions: container.functions || [],
           containerLayout: container.containerLayout,
+          blockData: container.data,
         },
       };
 

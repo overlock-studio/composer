@@ -1,0 +1,328 @@
+[
+  {
+    "id": "demo-app-composition",
+    "parentId": "",
+    "type": "composition",
+    "name": "demo-app-composition",
+    "position": {
+      "x": 80,
+      "y": 80
+    },
+    "size": {
+      "width": 340,
+      "height": 346
+    },
+    "edges": [],
+    "blockType": {
+      "name": "xdemoapps.demo.example.org",
+      "id": "xdemoapps.demo.example.org",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "size": {
+                "type": "string",
+                "description": "t-shirt size of the app"
+              },
+              "database": {
+                "type": "object",
+                "properties": {
+                  "engine": {
+                    "type": "string",
+                    "description": "database engine to run"
+                  },
+                  "backup": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean",
+                        "description": "whether backups are taken"
+                      },
+                      "retention": {
+                        "type": "integer",
+                        "description": "days a backup is kept"
+                      }
+                    }
+                  },
+                  "version": {
+                    "type": "string",
+                    "description": "engine version"
+                  }
+                }
+              },
+              "region": {
+                "type": "string",
+                "description": "region the app runs in"
+              }
+            },
+            "required": [
+              "size"
+            ]
+          },
+          "status": {
+            "type": "object",
+            "properties": {
+              "size": {
+                "type": "string",
+                "description": "t-shirt size of the app"
+              },
+              "database": {
+                "type": "object",
+                "properties": {
+                  "endpoint": {
+                    "type": "string",
+                    "description": "address the database answers on"
+                  },
+                  "ready": {
+                    "type": "boolean",
+                    "description": "whether the database is up"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "leaf": false,
+      "kind": "XDemoApp",
+      "apiVersion": "demo.example.org/v1alpha1",
+      "icon": "/@fs/home/deep/www/web7/overlock/studio/composer/src/assets/crossplane-icon.svg"
+    },
+    "connectors": [
+      {
+        "connection": "input",
+        "path": "spec.size",
+        "type": "string",
+        "required": true,
+        "description": "t-shirt size of the app"
+      },
+      {
+        "connection": "input",
+        "path": "spec.database.engine",
+        "type": "string",
+        "required": false,
+        "description": "database engine to run"
+      },
+      {
+        "connection": "input",
+        "path": "spec.database.backup.enabled",
+        "type": "boolean",
+        "required": false,
+        "description": "whether backups are taken"
+      },
+      {
+        "connection": "input",
+        "path": "spec.database.backup.retention",
+        "type": "integer",
+        "required": false,
+        "description": "days a backup is kept"
+      },
+      {
+        "connection": "input",
+        "path": "spec.database.version",
+        "type": "string",
+        "required": false,
+        "description": "engine version"
+      },
+      {
+        "connection": "input",
+        "path": "spec.region",
+        "type": "string",
+        "required": false,
+        "description": "region the app runs in"
+      },
+      {
+        "connection": "output",
+        "path": "status.size",
+        "type": "string",
+        "required": false,
+        "description": "t-shirt size of the app"
+      },
+      {
+        "connection": "output",
+        "path": "status.database.endpoint",
+        "type": "string",
+        "required": false,
+        "description": "address the database answers on"
+      },
+      {
+        "connection": "output",
+        "path": "status.database.ready",
+        "type": "boolean",
+        "required": false,
+        "description": "whether the database is up"
+      }
+    ],
+    "apiVersion": "demo.example.org/v1alpha1",
+    "kind": "XDemoApp"
+  },
+  {
+    "id": "demo-app-composition:spec",
+    "parentId": "demo-app-composition",
+    "type": "connectors",
+    "name": "spec",
+    "edges": [],
+    "connectors": [],
+    "data": {
+      "connection": "input"
+    }
+  },
+  {
+    "id": "demo-app-composition:status",
+    "parentId": "demo-app-composition",
+    "type": "connectors",
+    "name": "status",
+    "edges": [],
+    "connectors": [],
+    "data": {
+      "connection": "output"
+    }
+  },
+  {
+    "id": "demo-app-composition:function:fetch-environment",
+    "parentId": "demo-app-composition",
+    "type": "function",
+    "name": "fetch-environment",
+    "position": {
+      "x": 24,
+      "y": -156
+    },
+    "size": {
+      "width": 332,
+      "height": 110
+    },
+    "edges": [
+      {
+        "source": "demo-app-composition:function:fetch-environment",
+        "sourceHandle": "pipeline-out",
+        "target": "demo-app-composition:function:patch-and-transform",
+        "targetHandle": "pipeline-in"
+      }
+    ],
+    "connectors": [],
+    "data": {
+      "step": "fetch-environment",
+      "functionRef": {
+        "name": "function-environment-configs"
+      },
+      "input": {
+        "apiVersion": "environmentconfigs.fn.crossplane.io/v1beta1",
+        "kind": "Input",
+        "spec": {
+          "environmentConfigs": [
+            {
+              "type": "Reference",
+              "ref": {
+                "name": "demo-environment"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "demo-app-composition:function:patch-and-transform",
+    "parentId": "demo-app-composition",
+    "type": "function",
+    "name": "patch-and-transform",
+    "position": {
+      "x": 24,
+      "y": 34
+    },
+    "size": {
+      "width": 332,
+      "height": 222
+    },
+    "edges": [
+      {
+        "source": "demo-app-composition:function:patch-and-transform",
+        "sourceHandle": "pipeline-out",
+        "target": "demo-app-composition:function:auto-ready",
+        "targetHandle": "pipeline-in"
+      }
+    ],
+    "connectors": [],
+    "data": {
+      "step": "patch-and-transform",
+      "functionRef": {
+        "name": "function-patch-and-transform"
+      },
+      "input": {
+        "apiVersion": "pt.fn.crossplane.io/v1beta1",
+        "kind": "Resources"
+      }
+    }
+  },
+  {
+    "id": "demo-app-composition:function:auto-ready",
+    "parentId": "demo-app-composition",
+    "type": "function",
+    "name": "auto-ready",
+    "position": {
+      "x": 24,
+      "y": 336
+    },
+    "size": {
+      "width": 332,
+      "height": 110
+    },
+    "edges": [],
+    "connectors": [],
+    "data": {
+      "step": "auto-ready",
+      "functionRef": {
+        "name": "function-auto-ready"
+      }
+    }
+  },
+  {
+    "id": "demo-app-composition_nop-resource",
+    "parentId": "demo-app-composition:function:patch-and-transform",
+    "name": "demo-app-composition_nop-resource",
+    "position": {
+      "x": 16,
+      "y": 46
+    },
+    "size": {
+      "width": 300,
+      "height": 160
+    },
+    "edges": [
+      {
+        "source": "demo-app-composition",
+        "sourceHandle": "spec.size",
+        "target": "demo-app-composition_nop-resource",
+        "targetHandle": "spec.forProvider.fields"
+      },
+      {
+        "source": "demo-app-composition_nop-resource",
+        "sourceHandle": "status.atProvider.fields",
+        "target": "demo-app-composition",
+        "targetHandle": "status.size"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  }
+]

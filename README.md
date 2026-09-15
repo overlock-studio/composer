@@ -12,28 +12,24 @@ Peer dependencies: `react`, `react-dom`.
 
 ## Use
 
-The simplest way to embed the editor is the `ComposerEditor` component. It owns the canvas, sidebar, save action, and YAML round-trip — feed it Crossplane files plus an adapter and it returns a save payload.
+The simplest way to embed the editor is the `ComposerEditor` component. It owns the canvas, sidebar and save action — feed it blocks plus an adapter, and a save hands back blocks in the same format, which restore the same editor when passed back in.
 
 ```tsx
 import { useRef } from 'react';
 import {
   ComposerEditor,
+  type Block,
   type ComposerEditorHandle,
   type ComposerSavePayload,
   type EditorDataAdapter,
-  type CrossplaneFile,
-  type LayoutByComposition,
-  layoutFromBlocks,
 } from '@overlock-studio/composer';
 import '@overlock-studio/composer/styles/editor.css';
 
 function Editor({
-  files,
-  layout,
+  blocks,
   adapter,
 }: {
-  files: CrossplaneFile[];
-  layout: LayoutByComposition;
+  blocks: Block[];
   adapter: EditorDataAdapter;
 }) {
   const ref = useRef<ComposerEditorHandle>(null);
@@ -44,15 +40,14 @@ function Editor({
     //   connectors, edges, data). Types: composition, connectors (its Spec and
     //   Status panels), function (a pipeline step, chained to the next by an
     //   edge) and resource (child of the function composing it, patches as
-    //   edges).
-    const nextLayout = layoutFromBlocks(payload.blocks); // pass back as `layout`
+    //   edges). Store them as they are and pass them back as `blocks` to
+    //   restore the same editor.
   };
 
   return (
     <ComposerEditor
       ref={ref}
-      files={files}
-      layout={layout}
+      blocks={blocks}
       adapter={adapter}
       onSave={handleSave}
     />

@@ -40,7 +40,7 @@ export {
   BLOCK_TYPES,
   connectorsBlockId,
   functionBlockId,
-  layoutFromBlocks,
+  restoreBlocks,
 } from './lib/compositionInputs';
 export type {
   ConnectorLayout,
