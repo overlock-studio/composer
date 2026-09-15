@@ -150,6 +150,22 @@
       .node-body {
         overflow: visible;
       }
+
+      /* Out of the way until the node is hovered or selected. */
+      .react-flow__resize-control.handle.connector-group-resize-handle {
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+        border: 1px solid hsl(var(--background));
+        background: hsl(var(--sidebar-primary));
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+
+      &:hover .connector-group-resize-handle,
+      &.selected .connector-group-resize-handle {
+        opacity: 1;
+      }
     }
 
     /* Pipeline steps are backdrops for the blocks they hold, so they sit behind
@@ -166,8 +182,8 @@
         width: 100%;
         height: 100%;
         border-radius: var(--node-border-radius);
-        border: 1px dashed hsl(var(--muted-foreground) / 0.4);
-        background: hsl(var(--muted-foreground) / 0.06);
+        border: 1px solid hsl(var(--muted-foreground) / 0.45);
+        background: hsl(var(--muted-foreground) / 0.12);
         display: flex;
         flex-direction: column;
       }
@@ -177,7 +193,9 @@
         align-items: center;
         gap: 6px;
         padding: 0 10px;
-        border-bottom: 1px dashed hsl(var(--muted-foreground) / 0.3);
+        border-bottom: 1px solid hsl(var(--muted-foreground) / 0.3);
+        border-radius: var(--node-border-radius) var(--node-border-radius) 0 0;
+        background: hsl(var(--muted-foreground) / 0.1);
       }
 
       .pipeline-group-empty {

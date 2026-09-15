@@ -65,8 +65,14 @@ export const CONTAINER_HANDLE_SPACING = 30;
 // plus one fixed-height row per connector, so a row's handle can be placed by
 // index.
 export const CONNECTOR_GROUP_WIDTH = 200;
+export const CONNECTOR_GROUP_MIN_WIDTH = 160;
 export const CONNECTOR_GROUP_HEADER_HEIGHT = 32;
 export const CONNECTOR_GROUP_ROW_HEIGHT = 30;
+
+/** Floor a connector node can be resized to: its header plus every row. */
+export const connectorGroupMinHeight = (rowCount: number): number =>
+  CONNECTOR_GROUP_HEADER_HEIGHT +
+  Math.max(rowCount, 1) * CONNECTOR_GROUP_ROW_HEIGHT;
 // Handle rows are drawn as a tree: one indent step per path segment, with the
 // line standing near the left of its step, turning towards the name on a
 // rounded corner and stopping just short of it. `REACH` is how far a first
@@ -79,11 +85,12 @@ export const ROW_TREE_GAP = 3;
 export const ROW_TREE_REACH = 7;
 
 // Pipeline steps are drawn as subflow groups: a header strip plus padding
-// around whatever blocks the step holds.
+// around whatever blocks the step holds. The minimum is kept small so a step
+// opens close to the size of its contents.
 export const PIPELINE_GROUP_HEADER_HEIGHT = 30;
-export const PIPELINE_GROUP_PADDING = 28;
-export const PIPELINE_GROUP_MIN_WIDTH = 380;
-export const PIPELINE_GROUP_MIN_HEIGHT = 220;
+export const PIPELINE_GROUP_PADDING = 16;
+export const PIPELINE_GROUP_MIN_WIDTH = 240;
+export const PIPELINE_GROUP_MIN_HEIGHT = 110;
 export const PIPELINE_GROUP_GAP = 80;
 
 // Handles carrying the chain from one pipeline step to the next.
