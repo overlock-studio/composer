@@ -10,6 +10,7 @@ import {
   type ContainerLayout,
 } from './containerLayout';
 import { containerLayoutEntries } from './containerGraph';
+import type { ContainerNodeData } from './types';
 import type {
   ResourceEdgeInput,
   SerializerCompositionInput,
@@ -87,6 +88,42 @@ export const collectPositions = (
   }
   return out;
 };
+
+/**
+ * The whole configuration as blocks: each container followed by the resource
+ * blocks it holds, with their patches as edges. The same shape the parser
+ * produces, so a consumer can write YAML from it its own way.
+ */
+export const collectBlocks = (nodes: RFNode[]): Block[] =>
+  nodes
+    .filter((node) => node.type === 'container')
+    .flatMap((node) => {
+      const data = (node.data ?? {}) as Partial<ContainerNodeData>;
+      const width = node.measured?.width;
+      const height = node.measured?.height;
+      const container: Block & { apiVersion?: string; kind?: string } = {
+        id: node.id,
+        parentId: '',
+        name: data.name ?? node.id,
+        position: {
+          x: Math.round(node.position.x),
+          y: Math.round(node.position.y),
+        },
+        ...(width !== undefined && height !== undefined
+          ? { size: { width: Math.round(width), height: Math.round(height) } }
+          : {}),
+        edges: [],
+        blockType: data.blockType,
+        connectors: data.connectors ?? [],
+        functions: data.functions ?? [],
+        ...(data.containerLayout
+          ? { containerLayout: data.containerLayout }
+          : {}),
+        apiVersion: data.apiVersion,
+        kind: data.kind,
+      };
+      return [container, ...(data.childBlocks ?? [])];
+    });
 
 export const buildCompositionInputs = (
   nodes: RFNode[],

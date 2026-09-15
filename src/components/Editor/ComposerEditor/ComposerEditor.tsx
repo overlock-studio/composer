@@ -14,6 +14,7 @@ import {
 } from '@xyflow/react';
 import { PanelRight, Save } from 'lucide-react';
 import type { EditorDataAdapter, EditorEntityRef } from '../../../api/adapter';
+import type { Block } from '../../../api/types';
 import {
   parseCrossplaneConfigurationFromFiles,
   parseCrossplaneDependencies,
@@ -25,6 +26,7 @@ import {
 import { serializeCrossplaneFiles } from '../../../lib/serializer';
 import {
   buildCompositionInputs,
+  collectBlocks,
   collectPositions,
 } from '../../../lib/compositionInputs';
 import { mergeContainerIntoNodes } from '../../../lib/containerGraph';
@@ -45,6 +47,9 @@ export type ComposerSavePayload = {
   files: { name: string; content: string }[];
   hashes: Record<string, string>;
   layout: LayoutByComposition;
+  // Containers and the resource blocks they hold, with their patches as edges,
+  // for consumers that write the YAML themselves.
+  blocks: Block[];
 };
 
 export type ComposerEditorProps = {
@@ -129,7 +134,12 @@ function ComposerEditorBody({
       })
       .map(([name, content]) => ({ name, content }));
 
-    onSave({ files: changedFiles, hashes, layout });
+    onSave({
+      files: changedFiles,
+      hashes,
+      layout,
+      blocks: collectBlocks(nodes as RFNode[]),
+    });
   }, [
     getNodes,
     getEdges,
