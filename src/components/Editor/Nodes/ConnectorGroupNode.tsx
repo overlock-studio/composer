@@ -118,7 +118,13 @@ const ConnectorGroupNodeComponent = ({
         minWidth={CONNECTOR_GROUP_MIN_WIDTH}
         minHeight={connectorGroupMinHeight(rows.length)}
         className="connector-group-resize-handle"
-      />
+      >
+        {/* Three diagonal lines, drawn for the bottom-right corner and
+            mirrored by CSS on the bottom-left one. */}
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M11 1 1 11M11 5 5 11M11 9 9 11" />
+        </svg>
+      </NodeResizeControl>
       <div
         className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 rounded-t-lg"
         style={{ height: CONNECTOR_GROUP_HEADER_HEIGHT }}
