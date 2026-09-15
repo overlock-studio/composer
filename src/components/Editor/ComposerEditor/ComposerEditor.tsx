@@ -27,7 +27,6 @@ import { serializeCrossplaneFiles } from '../../../lib/serializer';
 import {
   buildCompositionInputs,
   collectBlocks,
-  collectPositions,
 } from '../../../lib/compositionInputs';
 import { mergeContainerIntoNodes } from '../../../lib/containerGraph';
 import { Button } from '../../ui/button';
@@ -46,9 +45,10 @@ const DEFAULT_ENTITY_ID = 'composer';
 export type ComposerSavePayload = {
   files: { name: string; content: string }[];
   hashes: Record<string, string>;
-  layout: LayoutByComposition;
-  // Containers and the resource blocks they hold, with their patches as edges,
-  // for consumers that write the YAML themselves.
+  // Containers and the resource blocks they hold, with their patches as edges
+  // and the whole layout: resource positions are relative to their pipeline
+  // group, whose box is in the container's `containerLayout`. The layout file
+  // the editor reads back comes from `layoutFromBlocks(blocks)`.
   blocks: Block[];
 };
 
@@ -93,7 +93,6 @@ function ComposerEditorBody({
   files,
   crossplaneFile,
   hashes,
-  layout: savedLayout,
   onSave,
   forwardedRef,
 }: InnerProps) {
@@ -114,7 +113,6 @@ function ComposerEditorBody({
           session.connectors,
         )
       : getNodes();
-    const layout = collectPositions(nodes, savedLayout);
     const compositions = buildCompositionInputs(nodes as RFNode[]);
     const providers = parsed.deps.filter((d) => d.kind === 'provider');
     const functions = parsed.deps.filter((d) => d.kind === 'function');
@@ -137,7 +135,6 @@ function ComposerEditorBody({
     onSave({
       files: changedFiles,
       hashes,
-      layout,
       blocks: collectBlocks(nodes as RFNode[]),
     });
   }, [
@@ -149,7 +146,6 @@ function ComposerEditorBody({
     crossplaneFile,
     hashes,
     onSave,
-    savedLayout,
   ]);
 
   useImperativeHandle(forwardedRef, () => ({ save: triggerSave }), [

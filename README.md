@@ -23,6 +23,7 @@ import {
   type EditorDataAdapter,
   type CrossplaneFile,
   type LayoutByComposition,
+  layoutFromBlocks,
 } from '@overlock-studio/composer';
 import '@overlock-studio/composer/styles/editor.css';
 
@@ -42,7 +43,10 @@ function Editor({
   const handleSave = (payload: ComposerSavePayload) => {
     // payload.files: only files whose content changed
     // payload.hashes: pass-through for optimistic-locking checks
-    // payload.layout: positions to persist alongside the YAML
+    // payload.blocks: containers and their resource blocks, with patches as
+    //   edges and the whole layout (resource positions are relative to their
+    //   pipeline group, whose box is in the container's containerLayout)
+    const layout = layoutFromBlocks(payload.blocks); // persist, pass back as `layout`
   };
 
   return (

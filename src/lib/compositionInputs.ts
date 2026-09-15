@@ -1,15 +1,12 @@
 import type { Node as RFNode } from '@xyflow/react';
-import type { Block, BlockType, Connector, Pipeline } from '../api/types';
+import type { Block, BlockType, Connector } from '../api/types';
 import {
   SELF_POSITION_KEY,
+  type CompositionLayout,
   type LayoutByComposition,
-  type LayoutEntry,
 } from './parser';
-import {
-  isReservedLayoutKey,
-  type ContainerLayout,
-} from './containerLayout';
-import { containerLayoutEntries } from './containerGraph';
+import { connectorLayoutKey, pipelineLayoutKey } from './containerLayout';
+import { resolveContainerLayout } from './containerGraph';
 import type { ContainerNodeData } from './types';
 import type {
   ResourceEdgeInput,
@@ -23,82 +20,19 @@ const stripCompositionPrefix = (name: string, compNames: string[]): string => {
   return name;
 };
 
-export const collectPositions = (
-  nodes: {
-    type?: string;
-    position?: { x: number; y: number } | null;
-    measured?: { width?: number; height?: number };
-    data?: {
-      name?: unknown;
-      childBlocks?: Block[];
-      functions?: Pipeline[];
-      containerLayout?: ContainerLayout;
-    };
-    id: string;
-  }[],
-  previous: LayoutByComposition,
-): LayoutByComposition => {
-  const out: LayoutByComposition = {};
-  for (const node of nodes) {
-    if (node.type !== 'container') continue;
-    if (!node.position) continue;
-    const x = Math.round(node.position.x);
-    const y = Math.round(node.position.y);
-    const w = node.measured?.width;
-    const h = node.measured?.height;
-    const entry: LayoutEntry =
-      w !== undefined && h !== undefined
-        ? { x, y, width: Math.round(w), height: Math.round(h) }
-        : { x, y };
-
-    const compName = (node.data?.name as string | undefined) ?? node.id;
-    // Blocks are laid out on the container's own canvas, so their positions
-    // come from the blocks the container carries, falling back to what was
-    // loaded for containers that were never opened. The editor's own entries
-    // are written fresh below, so stored ones for a step or node that is gone
-    // are not carried along.
-    const carried = Object.fromEntries(
-      Object.entries(previous[node.id] ?? previous[compName] ?? {}).filter(
-        ([key]) => !isReservedLayoutKey(key),
-      ),
-    );
-    const { entries: editEntries, blockOrigin } = containerLayoutEntries(
-      node.data ?? {},
-    );
-    // Blocks are written relative to the group holding them, so they stay put
-    // inside it wherever the group itself is moved.
-    const blockEntries: Record<string, LayoutEntry> = {};
-    for (const block of node.data?.childBlocks ?? []) {
-      if (!block.position) continue;
-      const resourceName = stripCompositionPrefix(block.name ?? block.id, [
-        node.id,
-        compName,
-      ]);
-      blockEntries[resourceName] = {
-        x: Math.round(block.position.x - blockOrigin.x),
-        y: Math.round(block.position.y - blockOrigin.y),
-      };
-    }
-    out[compName] = {
-      ...carried,
-      ...blockEntries,
-      ...editEntries,
-      [SELF_POSITION_KEY]: entry,
-    };
-  }
-  return out;
-};
-
 /**
- * The whole configuration as blocks: each container followed by the resource
- * blocks it holds, with their patches as edges. The same shape the parser
- * produces, so a consumer can write YAML from it its own way.
+ * The whole configuration as blocks, layout included: each container, with its
+ * position, size and full edit-mode layout (a box per pipeline group, and
+ * wherever the Spec and Status nodes were put), followed by the resource blocks
+ * it holds, with their patches as edges. Resource positions are relative to the
+ * group holding them, so moving the group never changes them.
  */
 export const collectBlocks = (nodes: RFNode[]): Block[] =>
   nodes
     .filter((node) => node.type === 'container')
     .flatMap((node) => {
       const data = (node.data ?? {}) as Partial<ContainerNodeData>;
+      const { layout, blockOrigin } = resolveContainerLayout(data);
       const width = node.measured?.width;
       const height = node.measured?.height;
       const container: Block & { apiVersion?: string; kind?: string } = {
@@ -116,14 +50,68 @@ export const collectBlocks = (nodes: RFNode[]): Block[] =>
         blockType: data.blockType,
         connectors: data.connectors ?? [],
         functions: data.functions ?? [],
-        ...(data.containerLayout
-          ? { containerLayout: data.containerLayout }
-          : {}),
+        containerLayout: layout,
         apiVersion: data.apiVersion,
         kind: data.kind,
       };
-      return [container, ...(data.childBlocks ?? [])];
+      // The editor holds blocks on the container's canvas.
+      const children = (data.childBlocks ?? []).map((block) =>
+        block.position
+          ? {
+              ...block,
+              position: {
+                x: Math.round(block.position.x - blockOrigin.x),
+                y: Math.round(block.position.y - blockOrigin.y),
+              },
+            }
+          : block,
+      );
+      return [container, ...children];
     });
+
+/**
+ * The layout file for blocks from `collectBlocks`, in the shape the editor
+ * reads back: per composition, `_self` for the container, `_pipeline:<step>`
+ * for each group, `_spec` and `_status` for the connector nodes once placed,
+ * and one entry per resource, relative to its group.
+ */
+export const layoutFromBlocks = (blocks: Block[]): LayoutByComposition => {
+  const out: LayoutByComposition = {};
+
+  for (const container of blocks.filter((block) => !block.parentId)) {
+    const compName = container.name ?? container.id;
+    const entries: CompositionLayout = {};
+
+    for (const block of blocks) {
+      if (block.parentId !== container.id || !block.position) continue;
+      const resourceName = stripCompositionPrefix(block.name ?? block.id, [
+        container.id,
+        compName,
+      ]);
+      entries[resourceName] = { x: block.position.x, y: block.position.y };
+    }
+
+    const layout = container.containerLayout;
+    for (const [step, box] of Object.entries(layout?.groups ?? {})) {
+      entries[pipelineLayoutKey(step)] = box;
+    }
+    for (const connection of ['input', 'output'] as const) {
+      const placed = layout?.connectors[connection];
+      if (placed) entries[connectorLayoutKey(connection)] = placed;
+    }
+
+    if (container.position) {
+      entries[SELF_POSITION_KEY] = {
+        ...container.position,
+        ...container.size,
+      };
+    }
+
+    out[compName] = entries;
+  }
+
+  return out;
+};
 
 export const buildCompositionInputs = (
   nodes: RFNode[],
@@ -196,4 +184,3 @@ export const buildCompositionInputs = (
   }
   return out;
 };
-

@@ -14,10 +14,7 @@ import type {
   PipelineGroupNodeData,
   ResourceNodeData,
 } from './types';
-import type { CompositionLayout } from './parser';
 import {
-  connectorLayoutKey,
-  pipelineLayoutKey,
   PATCH_AND_TRANSFORM_STEP,
   type ContainerLayout,
   type LayoutBox,
@@ -698,17 +695,17 @@ const roundBox = ({ x, y, width, height }: LayoutBox): LayoutBox => ({
 });
 
 /**
- * Layout-file entries for what a container draws in edit mode — a box per
- * pipeline group and wherever the Spec and Status nodes were put — with the
- * origin its blocks are stored relative to: the group holding them. A container
- * that was never opened gets the groups it would open with, so its blocks have
- * an origin to be stored against too. Steps that are gone get no entry.
+ * A container's full edit-mode layout — a box for every pipeline group and
+ * wherever the Spec and Status nodes were put — with the origin its blocks are
+ * placed relative to: the group holding them. A container that was never opened
+ * gets the groups it would open with, so its blocks have an origin too. Steps
+ * that are gone get no box.
  */
-export const containerLayoutEntries = (data: {
+export const resolveContainerLayout = (data: {
   functions?: Pipeline[];
   childBlocks?: Block[];
   containerLayout?: ContainerLayout;
-}): { entries: CompositionLayout; blockOrigin: { x: number; y: number } } => {
+}): { layout: ContainerLayout; blockOrigin: { x: number; y: number } } => {
   // The same blocks `buildContainerGraph` sizes the group around.
   const footprints: Footprint[] = (data.childBlocks ?? []).flatMap((block) =>
     block.blockType?.schema && block.position
@@ -722,15 +719,14 @@ export const containerLayoutEntries = (data: {
   );
   const rounded = boxes.map(roundBox);
 
-  const entries: CompositionLayout = {};
+  const groups: ContainerLayout['groups'] = {};
   steps.forEach((fn, index) => {
-    entries[pipelineLayoutKey(fn.step)] = rounded[index];
+    groups[fn.step] = rounded[index];
   });
-  for (const connection of ['input', 'output'] as const) {
-    const saved = data.containerLayout?.connectors[connection];
-    if (saved) entries[connectorLayoutKey(connection)] = saved;
-  }
 
   const origin = rounded[patchIndex];
-  return { entries, blockOrigin: { x: origin.x, y: origin.y } };
+  return {
+    layout: { groups, connectors: { ...data.containerLayout?.connectors } },
+    blockOrigin: { x: origin.x, y: origin.y },
+  };
 };
