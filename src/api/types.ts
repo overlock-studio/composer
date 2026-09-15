@@ -1,4 +1,5 @@
 import { JSONSchemaProps } from '../lib/jsonSchema';
+import type { ContainerLayout } from '../lib/containerLayout';
 export interface Spec {
   type?: string;
   owner?: string;
@@ -14,6 +15,11 @@ export interface Spec {
 export type Block = {
   id: string;
   parentId: string;
+  // What the block stands for (e.g. composition, function, resource). Blocks
+  // stay generic otherwise, so other kinds of structure fit the same shape.
+  type?: string;
+  // Whatever the block's type carries beyond position, connectors and edges.
+  data?: Record<string, unknown>;
   name?: string;
   position?: { x: number; y: number };
   size?: { width: number; height: number };
@@ -21,6 +27,7 @@ export type Block = {
   blockType: BlockType | undefined;
   connectors: Connector[];
   functions?: Pipeline[];
+  containerLayout?: ContainerLayout;
 };
 
 export type Edge = {

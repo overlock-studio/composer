@@ -7,12 +7,18 @@ import type {
   Pipeline,
 } from '../api/types';
 import type {
+  ConnectorGroupNodeData,
   ContainerNodeData,
   CustomEdgeData,
   Handle,
   PipelineGroupNodeData,
   ResourceNodeData,
 } from './types';
+import {
+  PATCH_AND_TRANSFORM_STEP,
+  type ContainerLayout,
+  type LayoutBox,
+} from './containerLayout';
 import {
   buildTreeData,
   connectorRowHandleId,
@@ -74,8 +80,7 @@ export const connectorHandleIds = (connectors: Connector[]): Set<string> => {
   return ids;
 };
 
-/** The pipeline step whose input carries the composition's resources. */
-export const PATCH_AND_TRANSFORM_STEP = 'patch-and-transform';
+export { PATCH_AND_TRANSFORM_STEP } from './containerLayout';
 
 const PIPELINE_GROUP_ID_PREFIX = 'pipeline:';
 
@@ -99,7 +104,9 @@ const functionName = (fn: Pipeline): string | undefined =>
  * already belong to — the serializer keeps writing them back where it found
  * them either way.
  */
-const pipelineSteps = (functions: Pipeline[] | undefined): Pipeline[] => {
+export const pipelineSteps = (
+  functions: Pipeline[] | undefined,
+): Pipeline[] => {
   const steps = (functions ?? []).filter((fn) => !!fn?.step);
   if (steps.some((fn) => fn.step === PATCH_AND_TRANSFORM_STEP)) return steps;
   return [...steps, { step: PATCH_AND_TRANSFORM_STEP } as Pipeline];
@@ -159,10 +166,11 @@ const blockBounds = (blockNodes: RFNode[]): ColumnBounds => {
   return { minX, maxX, minY };
 };
 
-type Box = { x: number; y: number; width: number; height: number };
+// All that sizing a group around its blocks needs to know about them.
+type Footprint = Pick<RFNode, 'position' | 'style'>;
 
 /** Footprint the patch-and-transform group needs to hold its blocks. */
-const patchGroupBox = (blockNodes: RFNode[]): Box => {
+const patchGroupBox = (blockNodes: Footprint[]): LayoutBox => {
   if (!blockNodes.length) {
     return {
       x: BLOCK_START.x - PIPELINE_GROUP_PADDING,
@@ -203,28 +211,30 @@ const patchGroupBox = (blockNodes: RFNode[]): Box => {
 };
 
 /**
- * One group per pipeline step, stacked top to bottom in pipeline order: the
- * patch-and-transform group sized around the blocks it holds, the rest above
- * and below it sharing its width so the column lines up. Blocks become children
- * of the patch-and-transform group, so dragging it takes them along.
+ * Where each pipeline step's group sits. A step whose group was stored keeps
+ * that box; the rest are stacked top to bottom in pipeline order: the
+ * patch-and-transform group sized around the blocks it holds, the others above
+ * and below it sharing its width so the column lines up.
  */
-const buildPipelineGroups = (
+export const pipelineGroupBoxes = (
   functions: Pipeline[] | undefined,
-  blockNodes: RFNode[],
-): { groups: RFNode[]; children: RFNode[]; edges: RFEdge[] } => {
+  blockNodes: Footprint[],
+  stored: Record<string, LayoutBox> = {},
+): { steps: Pipeline[]; patchIndex: number; boxes: LayoutBox[] } => {
   const steps = pipelineSteps(functions);
   const patchIndex = steps.findIndex(
     (fn) => fn.step === PATCH_AND_TRANSFORM_STEP,
   );
-  const patchBox = patchGroupBox(blockNodes);
+  const patchBox =
+    stored[PATCH_AND_TRANSFORM_STEP] ?? patchGroupBox(blockNodes);
 
-  const boxes: Box[] = new Array(steps.length);
+  const boxes: LayoutBox[] = new Array(steps.length);
   boxes[patchIndex] = patchBox;
 
   let above = patchBox.y;
   for (let i = patchIndex - 1; i >= 0; i--) {
     above -= PIPELINE_GROUP_GAP + PIPELINE_GROUP_MIN_HEIGHT;
-    boxes[i] = {
+    boxes[i] = stored[steps[i].step] ?? {
       x: patchBox.x,
       y: above,
       width: patchBox.width,
@@ -235,7 +245,7 @@ const buildPipelineGroups = (
   let below = patchBox.y + patchBox.height;
   for (let i = patchIndex + 1; i < steps.length; i++) {
     below += PIPELINE_GROUP_GAP;
-    boxes[i] = {
+    boxes[i] = stored[steps[i].step] ?? {
       x: patchBox.x,
       y: below,
       width: patchBox.width,
@@ -243,6 +253,25 @@ const buildPipelineGroups = (
     };
     below += PIPELINE_GROUP_MIN_HEIGHT;
   }
+
+  return { steps, patchIndex, boxes };
+};
+
+/**
+ * One group per pipeline step, placed by `pipelineGroupBoxes`. Blocks become
+ * children of the patch-and-transform group, so dragging it takes them along.
+ */
+const buildPipelineGroups = (
+  functions: Pipeline[] | undefined,
+  blockNodes: RFNode[],
+  stored?: Record<string, LayoutBox>,
+): { groups: RFNode[]; children: RFNode[]; edges: RFEdge[] } => {
+  const { steps, patchIndex, boxes } = pipelineGroupBoxes(
+    functions,
+    blockNodes,
+    stored,
+  );
+  const patchBox = boxes[patchIndex];
 
   const groups = steps.map((fn, index) => {
     const box = boxes[index];
@@ -298,7 +327,8 @@ const buildPipelineGroups = (
 /**
  * The container's own inputs and outputs, as one node each: inputs left of the
  * blocks, outputs to their right. Both are ordinary draggable, resizable
- * nodes, so `previous` positions and sizes are carried over rather than
+ * nodes, so their positions and sizes are carried over from the `previous`
+ * nodes, or from the `stored` layout when the container is opened, rather than
  * recomputed once the user has placed them. A height the user chose still grows
  * to fit rows added since.
  */
@@ -307,6 +337,7 @@ export const buildConnectorNodes = (
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>,
   blockNodes: RFNode[],
   previous: RFNode[] = [],
+  stored: ContainerLayout['connectors'] = {},
 ): RFNode[] => {
   const { minX, maxX, minY } = blockBounds(blockNodes);
   const placed = new Map(previous.map((node) => [node.id, node]));
@@ -315,6 +346,10 @@ export const buildConnectorNodes = (
     const id = connectorGroupId(connection);
     const side = sideOf(connectors, connection);
     const before = placed.get(id);
+    // A node already on the canvas wins over what was stored for it.
+    const saved = before
+      ? { ...before.position, width: before.width, height: before.height }
+      : stored[connection];
     const defaultX =
       connection === 'input'
         ? minX - CONNECTOR_COLUMN_GAP - CONNECTOR_GROUP_WIDTH
@@ -323,13 +358,13 @@ export const buildConnectorNodes = (
     return {
       id,
       type: 'connectorGroup',
-      position: before?.position ?? { x: defaultX, y: minY },
+      position: saved ? { x: saved.x, y: saved.y } : { x: defaultX, y: minY },
       style: { width: CONNECTOR_GROUP_WIDTH },
-      ...(before?.width !== undefined ? { width: before.width } : {}),
-      ...(before?.height !== undefined
+      ...(saved?.width !== undefined ? { width: saved.width } : {}),
+      ...(saved?.height !== undefined
         ? {
             height: Math.max(
-              before.height,
+              saved.height,
               connectorGroupMinHeight(pathRows(side).length),
             ),
           }
@@ -448,7 +483,7 @@ export const buildContainerGraph = (
     groups,
     children,
     edges: pipelineEdges,
-  } = buildPipelineGroups(data.functions, nodes);
+  } = buildPipelineGroups(data.functions, nodes, data.containerLayout?.groups);
 
   return {
     // A group has to precede its children for React Flow to nest them.
@@ -459,6 +494,8 @@ export const buildContainerGraph = (
         connectors,
         setConnectors,
         groups.filter(holdsResourceBlocks),
+        [],
+        data.containerLayout?.connectors,
       ),
     ],
     edges: [...pipelineEdges, ...edges],
@@ -592,10 +629,106 @@ export const mergeContainerIntoNodes = (
   if (!container) return parkedNodes;
 
   const childBlocks = collectContainerBlocks(container, graphNodes, graphEdges);
+  const containerLayout = collectContainerLayout(graphNodes);
 
   return parkedNodes.map((node) =>
     node.id === containerId
-      ? { ...node, data: { ...node.data, childBlocks, connectors } }
+      ? {
+          ...node,
+          data: { ...node.data, childBlocks, connectors, containerLayout },
+        }
       : node,
   );
+};
+
+const sizeOf = (
+  node: RFNode,
+  axis: 'width' | 'height',
+  fallback: number,
+): number =>
+  Math.round(
+    Number(node[axis] ?? node.measured?.[axis] ?? node.style?.[axis] ?? fallback),
+  );
+
+/**
+ * The arrangement of an open container's canvas: where each pipeline group
+ * sits and how big it is, and where the Spec and Status nodes were put. A
+ * connector node's size is only kept once the user has resized it, so an
+ * untouched one keeps following its rows.
+ */
+export const collectContainerLayout = (
+  graphNodes: RFNode[],
+): ContainerLayout => {
+  const layout: ContainerLayout = { groups: {}, connectors: {} };
+
+  for (const node of graphNodes) {
+    const x = Math.round(node.position.x);
+    const y = Math.round(node.position.y);
+
+    if (node.type === 'pipelineGroup') {
+      const { step } = node.data as PipelineGroupNodeData;
+      layout.groups[step] = {
+        x,
+        y,
+        width: sizeOf(node, 'width', PIPELINE_GROUP_MIN_WIDTH),
+        height: sizeOf(node, 'height', PIPELINE_GROUP_MIN_HEIGHT),
+      };
+    } else if (node.type === 'connectorGroup') {
+      const { connection } = node.data as ConnectorGroupNodeData;
+      layout.connectors[connection] = {
+        x,
+        y,
+        ...(node.width !== undefined ? { width: Math.round(node.width) } : {}),
+        ...(node.height !== undefined
+          ? { height: Math.round(node.height) }
+          : {}),
+      };
+    }
+  }
+
+  return layout;
+};
+
+const roundBox = ({ x, y, width, height }: LayoutBox): LayoutBox => ({
+  x: Math.round(x),
+  y: Math.round(y),
+  width: Math.round(width),
+  height: Math.round(height),
+});
+
+/**
+ * A container's full edit-mode layout — a box for every pipeline group and
+ * wherever the Spec and Status nodes were put — with the origin its blocks are
+ * placed relative to: the group holding them. A container that was never opened
+ * gets the groups it would open with, so its blocks have an origin too. Steps
+ * that are gone get no box.
+ */
+export const resolveContainerLayout = (data: {
+  functions?: Pipeline[];
+  childBlocks?: Block[];
+  containerLayout?: ContainerLayout;
+}): { layout: ContainerLayout; blockOrigin: { x: number; y: number } } => {
+  // The same blocks `buildContainerGraph` sizes the group around.
+  const footprints: Footprint[] = (data.childBlocks ?? []).flatMap((block) =>
+    block.blockType?.schema && block.position
+      ? [{ position: block.position, style: { width: RESOURCE_NODE_WIDTH } }]
+      : [],
+  );
+  const { steps, patchIndex, boxes } = pipelineGroupBoxes(
+    data.functions,
+    footprints,
+    data.containerLayout?.groups,
+  );
+  const rounded = boxes.map(roundBox);
+
+  const groups: ContainerLayout['groups'] = {};
+  steps.forEach((fn, index) => {
+    groups[fn.step] = rounded[index];
+  });
+
+  const origin = rounded[patchIndex];
+  return {
+    layout: { groups, connectors: { ...data.containerLayout?.connectors } },
+    blockOrigin: { x: origin.x, y: origin.y },
+  };
 };
