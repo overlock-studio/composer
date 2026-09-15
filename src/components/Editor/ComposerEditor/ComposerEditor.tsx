@@ -17,17 +17,10 @@ import type { EditorDataAdapter, EditorEntityRef } from '../../../api/adapter';
 import type { Block } from '../../../api/types';
 import {
   parseCrossplaneConfigurationFromFiles,
-  parseCrossplaneDependencies,
   type CrossplaneFile,
   type LayoutByComposition,
-  type OriginIndex,
-  type PackageDependency,
 } from '../../../lib/parser';
-import { serializeCrossplaneFiles } from '../../../lib/serializer';
-import {
-  buildCompositionInputs,
-  collectBlocks,
-} from '../../../lib/compositionInputs';
+import { collectBlocks } from '../../../lib/compositionInputs';
 import { mergeContainerIntoNodes } from '../../../lib/containerGraph';
 import { Button } from '../../ui/button';
 import {
@@ -43,19 +36,15 @@ import { EditorAreaSidebar } from '../EditorAreaSidebar';
 const DEFAULT_ENTITY_ID = 'composer';
 
 export type ComposerSavePayload = {
-  files: { name: string; content: string }[];
-  hashes: Record<string, string>;
-  // Containers and the resource blocks they hold, with their patches as edges
-  // and the whole layout: resource positions are relative to their pipeline
-  // group, whose box is in the container's `containerLayout`. The layout file
-  // the editor reads back comes from `layoutFromBlocks(blocks)`.
+  // The whole configuration as one flat list of generic blocks, layout
+  // included: compositions, their Spec and Status blocks, pipeline functions
+  // and resources, each placed in its parent's space. The layout file the
+  // editor reads back comes from `layoutFromBlocks(blocks)`.
   blocks: Block[];
 };
 
 export type ComposerEditorProps = {
   files: CrossplaneFile[];
-  crossplaneFile: string;
-  hashes: Record<string, string>;
   layout: LayoutByComposition;
   adapter: EditorDataAdapter;
   entityRef?: EditorEntityRef;
@@ -67,9 +56,6 @@ export type ComposerEditorHandle = {
 };
 
 type ParsedDoc = {
-  files: CrossplaneFile[];
-  origin: OriginIndex;
-  deps: PackageDependency[];
   blocks: ReturnType<typeof parseCrossplaneConfigurationFromFiles>['blocks'];
 };
 
@@ -88,14 +74,7 @@ type InnerProps = ComposerEditorProps & {
   forwardedRef: Ref<ComposerEditorHandle>;
 };
 
-function ComposerEditorBody({
-  parsed,
-  files,
-  crossplaneFile,
-  hashes,
-  onSave,
-  forwardedRef,
-}: InnerProps) {
+function ComposerEditorBody({ onSave, forwardedRef }: InnerProps) {
   const { getNodes, getEdges } = useReactFlow();
   const { containerSession } = useEditorActions();
 
@@ -113,40 +92,9 @@ function ComposerEditorBody({
           session.connectors,
         )
       : getNodes();
-    const compositions = buildCompositionInputs(nodes as RFNode[]);
-    const providers = parsed.deps.filter((d) => d.kind === 'provider');
-    const functions = parsed.deps.filter((d) => d.kind === 'function');
-    const filesByName = serializeCrossplaneFiles({
-      files,
-      origin: parsed.origin,
-      crossplaneFile,
-      compositions,
-      providers,
-      functions,
-    });
 
-    const changedFiles = Object.entries(filesByName)
-      .filter(([name, content]) => {
-        const original = files.find((f) => f.name === name);
-        return !original || original.content !== content;
-      })
-      .map(([name, content]) => ({ name, content }));
-
-    onSave({
-      files: changedFiles,
-      hashes,
-      blocks: collectBlocks(nodes as RFNode[]),
-    });
-  }, [
-    getNodes,
-    getEdges,
-    containerSession,
-    parsed,
-    files,
-    crossplaneFile,
-    hashes,
-    onSave,
-  ]);
+    onSave({ blocks: collectBlocks(nodes as RFNode[]) });
+  }, [getNodes, getEdges, containerSession, onSave]);
 
   useImperativeHandle(forwardedRef, () => ({ save: triggerSave }), [
     triggerSave,
@@ -183,20 +131,13 @@ export const ComposerEditor = forwardRef<
   ComposerEditorHandle,
   ComposerEditorProps
 >(function ComposerEditor(props, ref) {
-  const parsed = useMemo<ParsedDoc>(() => {
-    const result = parseCrossplaneConfigurationFromFiles(
-      props.files,
-      props.layout,
-    );
-    const main =
-      props.files.find((f) => f.name === props.crossplaneFile)?.content ?? '';
-    return {
-      files: props.files,
-      origin: result.origin,
-      deps: parseCrossplaneDependencies(main),
-      blocks: result.blocks,
-    };
-  }, [props.files, props.layout, props.crossplaneFile]);
+  const parsed = useMemo<ParsedDoc>(
+    () => ({
+      blocks: parseCrossplaneConfigurationFromFiles(props.files, props.layout)
+        .blocks,
+    }),
+    [props.files, props.layout],
+  );
 
   const entityRef = props.entityRef ?? {
     entity: 'configuration' as const,

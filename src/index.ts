@@ -36,7 +36,12 @@ export type {
   ParsedCrossplaneWithProvenance,
   PackageDependency,
 } from './lib/parser';
-export { layoutFromBlocks } from './lib/compositionInputs';
+export {
+  BLOCK_TYPES,
+  connectorsBlockId,
+  functionBlockId,
+  layoutFromBlocks,
+} from './lib/compositionInputs';
 export type {
   ConnectorLayout,
   ContainerLayout,

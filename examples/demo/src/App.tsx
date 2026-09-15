@@ -9,7 +9,7 @@ import '@overlock-studio/composer/styles/editor.css';
 import '@xyflow/react/dist/style.css';
 
 import { demoAdapter } from './adapter';
-import { sampleFiles, sampleHashes, sampleLayout } from './sample';
+import { sampleFiles, sampleLayout } from './sample';
 
 type Theme = 'light' | 'dark';
 
@@ -74,8 +74,6 @@ export default function App() {
           <ComposerEditor
             ref={editorRef}
             files={sampleFiles}
-            crossplaneFile="crossplane.yaml"
-            hashes={sampleHashes}
             layout={sampleLayout}
             adapter={demoAdapter}
             onSave={handleSave}

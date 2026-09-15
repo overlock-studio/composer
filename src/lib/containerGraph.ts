@@ -104,7 +104,9 @@ const functionName = (fn: Pipeline): string | undefined =>
  * already belong to — the serializer keeps writing them back where it found
  * them either way.
  */
-const pipelineSteps = (functions: Pipeline[] | undefined): Pipeline[] => {
+export const pipelineSteps = (
+  functions: Pipeline[] | undefined,
+): Pipeline[] => {
   const steps = (functions ?? []).filter((fn) => !!fn?.step);
   if (steps.some((fn) => fn.step === PATCH_AND_TRANSFORM_STEP)) return steps;
   return [...steps, { step: PATCH_AND_TRANSFORM_STEP } as Pipeline];

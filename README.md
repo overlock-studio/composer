@@ -30,31 +30,28 @@ import '@overlock-studio/composer/styles/editor.css';
 function Editor({
   files,
   layout,
-  hashes,
   adapter,
 }: {
   files: CrossplaneFile[];
   layout: LayoutByComposition;
-  hashes: Record<string, string>;
   adapter: EditorDataAdapter;
 }) {
   const ref = useRef<ComposerEditorHandle>(null);
 
   const handleSave = (payload: ComposerSavePayload) => {
-    // payload.files: only files whose content changed
-    // payload.hashes: pass-through for optimistic-locking checks
-    // payload.blocks: containers and their resource blocks, with patches as
-    //   edges and the whole layout (resource positions are relative to their
-    //   pipeline group, whose box is in the container's containerLayout)
-    const layout = layoutFromBlocks(payload.blocks); // persist, pass back as `layout`
+    // payload.blocks: the whole configuration as one flat list of generic
+    //   blocks (id, parentId, type, position in the parent's space, size,
+    //   connectors, edges, data). Types: composition, connectors (its Spec and
+    //   Status panels), function (a pipeline step, chained to the next by an
+    //   edge) and resource (child of the function composing it, patches as
+    //   edges).
+    const nextLayout = layoutFromBlocks(payload.blocks); // pass back as `layout`
   };
 
   return (
     <ComposerEditor
       ref={ref}
       files={files}
-      crossplaneFile="crossplane.yaml"
-      hashes={hashes}
       layout={layout}
       adapter={adapter}
       onSave={handleSave}

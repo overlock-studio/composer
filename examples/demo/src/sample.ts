@@ -19,11 +19,5 @@ export const sampleFiles: CrossplaneFile[] = [
 export const sampleLayout: LayoutByComposition =
   layoutJson as LayoutByComposition;
 
-export const sampleHashes: Record<string, string> = {
-  'crossplane.yaml': 'h-crossplane-1',
-  'xrd.yaml': 'h-xrd-1',
-  'composition.yaml': 'h-composition-1',
-};
-
 export const sampleDependencies: PackageDependency[] =
   parseCrossplaneDependencies(crossplaneYaml);
