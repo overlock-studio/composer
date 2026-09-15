@@ -11,6 +11,7 @@ import { Dispatch, ReactNode, SetStateAction } from 'react';
 import { Block, BlockType, Connector, Pipeline } from '../api/types';
 import { EditorDataAdapter, EditorEntityRef } from '../api/adapter';
 import { JSONSchemaProps } from './jsonSchema';
+import type { ContainerLayout } from './containerLayout';
 
 export type JsonPrimitive = number | string | boolean | null;
 
@@ -188,6 +189,8 @@ export type ContainerNodeData = {
   apiVersion?: string;
   blockType?: BlockType;
   functions?: Pipeline[];
+  // How the container was last arranged in edit mode, if it has been.
+  containerLayout?: ContainerLayout;
 };
 
 // A pipeline step of the open container, drawn as a subflow group. Only the

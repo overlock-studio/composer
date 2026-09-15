@@ -1,4 +1,5 @@
 import { JSONSchemaProps } from '../lib/jsonSchema';
+import type { ContainerLayout } from '../lib/containerLayout';
 export interface Spec {
   type?: string;
   owner?: string;
@@ -21,6 +22,7 @@ export type Block = {
   blockType: BlockType | undefined;
   connectors: Connector[];
   functions?: Pipeline[];
+  containerLayout?: ContainerLayout;
 };
 
 export type Edge = {

@@ -14,6 +14,12 @@ import {
 } from '../api/types';
 import { extractConnectors } from './editorUtils';
 import { JsonObject } from './types';
+import {
+  connectorLayoutKey,
+  PATCH_AND_TRANSFORM_STEP,
+  PIPELINE_LAYOUT_PREFIX,
+  type ContainerLayout,
+} from './containerLayout';
 import crossplaneIcon from '../assets/crossplane-icon.svg';
 
 const BLOCK_WIDTH = 300;
@@ -162,6 +168,31 @@ const isLayoutEntry = (value: unknown): value is LayoutEntry => {
   );
 };
 
+/** A composition's edit-mode entries: pipeline groups and the connector nodes. */
+const readContainerLayout = (positions: CompositionLayout): ContainerLayout => {
+  const layout: ContainerLayout = { groups: {}, connectors: {} };
+
+  for (const [key, entry] of Object.entries(positions)) {
+    if (!key.startsWith(PIPELINE_LAYOUT_PREFIX)) continue;
+    // Groups are resizable, so one stored without a size is not trusted.
+    const { position, size } = toLayout(entry);
+    if (!size) continue;
+    layout.groups[key.slice(PIPELINE_LAYOUT_PREFIX.length)] = {
+      ...position,
+      ...size,
+    };
+  }
+
+  for (const connection of ['input', 'output'] as const) {
+    const entry = positions[connectorLayoutKey(connection)];
+    if (!entry) continue;
+    const { position, size } = toLayout(entry);
+    layout.connectors[connection] = { ...position, ...size };
+  }
+
+  return layout;
+};
+
 export const parseLayoutYaml = (text: string): LayoutByComposition => {
   if (!text.trim()) return {};
   let parsed: unknown;
@@ -213,6 +244,9 @@ const buildBlocksForComposition = (
   const blockX = (containerWidth - BLOCK_WIDTH) / 2;
   let currentY = CONTAINER_HEADER_HEIGHT;
 
+  const containerLayout = readContainerLayout(positions);
+  const blockOrigin = containerLayout.groups[PATCH_AND_TRANSFORM_STEP];
+
   const usedNames = new Set<string>();
   const childBlocks: Block[] = resourceList
     .filter((r): r is Resource => !!r && typeof r === 'object')
@@ -235,7 +269,15 @@ const buildBlocksForComposition = (
         id: blockId([name, resourceName]),
         parentId: name,
         name: blockId([name, resourceName]),
-        position: savedLayout?.position ?? { x: blockX, y: currentY },
+        // Blocks are stored relative to the group holding them and carried on
+        // the canvas. A layout written before groups were stored has them on
+        // the canvas already.
+        position: savedLayout
+          ? {
+              x: savedLayout.position.x + (blockOrigin?.x ?? 0),
+              y: savedLayout.position.y + (blockOrigin?.y ?? 0),
+            }
+          : { x: blockX, y: currentY },
         size: savedLayout?.size ?? { width: BLOCK_WIDTH, height },
         edges: patchesToEdges(name, resourceName, resource.patches),
         blockType: syntheticBlockType(apiVersion, kind, true),
@@ -276,6 +318,7 @@ const buildBlocksForComposition = (
       ? extractConnectors(parentBlockType.schema as unknown as JsonObject)
       : [],
     functions,
+    containerLayout,
   };
   (parentBlock as Block & { apiVersion?: string; kind?: string }).apiVersion =
     compositeRef?.apiVersion;

@@ -1,10 +1,15 @@
 import type { Node as RFNode } from '@xyflow/react';
-import type { Block, BlockType, Connector } from '../api/types';
+import type { Block, BlockType, Connector, Pipeline } from '../api/types';
 import {
   SELF_POSITION_KEY,
   type LayoutByComposition,
   type LayoutEntry,
 } from './parser';
+import {
+  isReservedLayoutKey,
+  type ContainerLayout,
+} from './containerLayout';
+import { containerLayoutEntries } from './containerGraph';
 import type {
   ResourceEdgeInput,
   SerializerCompositionInput,
@@ -22,7 +27,12 @@ export const collectPositions = (
     type?: string;
     position?: { x: number; y: number } | null;
     measured?: { width?: number; height?: number };
-    data?: { name?: unknown; childBlocks?: Block[] };
+    data?: {
+      name?: unknown;
+      childBlocks?: Block[];
+      functions?: Pipeline[];
+      containerLayout?: ContainerLayout;
+    };
     id: string;
   }[],
   previous: LayoutByComposition,
@@ -43,8 +53,19 @@ export const collectPositions = (
     const compName = (node.data?.name as string | undefined) ?? node.id;
     // Blocks are laid out on the container's own canvas, so their positions
     // come from the blocks the container carries, falling back to what was
-    // loaded for containers that were never opened.
-    const carried = previous[node.id] ?? previous[compName] ?? {};
+    // loaded for containers that were never opened. The editor's own entries
+    // are written fresh below, so stored ones for a step or node that is gone
+    // are not carried along.
+    const carried = Object.fromEntries(
+      Object.entries(previous[node.id] ?? previous[compName] ?? {}).filter(
+        ([key]) => !isReservedLayoutKey(key),
+      ),
+    );
+    const { entries: editEntries, blockOrigin } = containerLayoutEntries(
+      node.data ?? {},
+    );
+    // Blocks are written relative to the group holding them, so they stay put
+    // inside it wherever the group itself is moved.
     const blockEntries: Record<string, LayoutEntry> = {};
     for (const block of node.data?.childBlocks ?? []) {
       if (!block.position) continue;
@@ -53,13 +74,14 @@ export const collectPositions = (
         compName,
       ]);
       blockEntries[resourceName] = {
-        x: Math.round(block.position.x),
-        y: Math.round(block.position.y),
+        x: Math.round(block.position.x - blockOrigin.x),
+        y: Math.round(block.position.y - blockOrigin.y),
       };
     }
     out[compName] = {
       ...carried,
       ...blockEntries,
+      ...editEntries,
       [SELF_POSITION_KEY]: entry,
     };
   }

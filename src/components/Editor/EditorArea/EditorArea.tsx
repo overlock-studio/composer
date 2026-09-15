@@ -223,6 +223,7 @@ export const EditorArea = () => {
           kind,
           apiVersion,
           functions: container.functions || [],
+          containerLayout: container.containerLayout,
         },
       };
 
