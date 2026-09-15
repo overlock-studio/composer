@@ -151,9 +151,10 @@
         overflow: visible;
       }
 
-      /* Out of the way until the node is hovered or selected. */
       /* A grip of three diagonal lines tucked inside the corner, clear of the
-         rounded border. */
+         rounded border. Faint at rest, full strength while the node is hovered
+         or selected. The library centres handles on the corner with
+         `translate`, so that is reset in favour of the offsets below. */
       .react-flow__resize-control.handle.connector-group-resize-handle {
         width: 12px;
         height: 12px;
@@ -161,7 +162,8 @@
         border-radius: 0;
         background: transparent;
         color: hsl(var(--muted-foreground));
-        opacity: 0;
+        opacity: 0.5;
+        translate: none;
         transition: opacity 0.15s ease;
 
         &.right {
@@ -187,9 +189,11 @@
         }
       }
 
-      &:hover .connector-group-resize-handle,
-      &.selected .connector-group-resize-handle {
-        opacity: 1;
+      &:hover,
+      &.selected {
+        .react-flow__resize-control.handle.connector-group-resize-handle {
+          opacity: 1;
+        }
       }
     }
 
