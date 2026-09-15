@@ -19,13 +19,22 @@ import { Spinner } from '../../Spinner';
 import useAsync from 'react-use/esm/useAsync';
 import { BlockType } from '../../../api/types';
 import { BlockCard } from '../BlockCard';
-import { ConfigurationDB, CrossplaneProviderDB } from '../../../api/typesDB';
-import { Box, Filter } from 'lucide-react';
+import {
+  ConfigurationDB,
+  CrossplaneFunctionDB,
+  CrossplaneProviderDB,
+} from '../../../api/typesDB';
+import { Box, Filter, Layers } from 'lucide-react';
+
+// Accordion value and filter key of the Functions section, apart from the
+// provider ids the other sections use.
+const FUNCTIONS_SECTION = '__functions';
 import crossplaneIcon from '../../../assets/crossplane-icon.svg';
 
 export const EditorAreaSidebar = () => {
   const {
     setSelectedBlockType,
+    setSelectedFunction,
     addNodeToCanvas,
     adapter,
     entityRef,
@@ -44,8 +53,15 @@ export const EditorAreaSidebar = () => {
   >({});
   const { entity, entityId } = entityRef;
 
+  // Whichever card is being dragged is the one a drop adds.
   const onDragStart = (blockType: BlockType) => {
+    setSelectedFunction(undefined);
     setSelectedBlockType(blockType);
+  };
+
+  const onFunctionDragStart = (fn: CrossplaneFunctionDB) => {
+    setSelectedBlockType(undefined);
+    setSelectedFunction(fn);
   };
 
   const fetchConfiguration = async () => {
@@ -98,6 +114,30 @@ export const EditorAreaSidebar = () => {
 
     return [defaultProvider, ...matchedProviders];
   }, [allProviders, configuration?.providers]);
+
+  // The functions registered for the configuration, resolved through the
+  // adapter the same way providers are.
+  const { value: listCrossplaneFunctionsValue } = useAsync(async () => {
+    return await adapter.listCrossplaneFunctions();
+  }, []);
+
+  const functions = useMemo(() => {
+    const allFunctions = listCrossplaneFunctionsValue?.crossplaneFunctions;
+    if (!allFunctions) return [];
+    return (configuration?.functions || [])
+      .map((id) => allFunctions.find((fn) => fn._id === id))
+      .filter((fn): fn is CrossplaneFunctionDB => fn !== undefined);
+  }, [listCrossplaneFunctionsValue, configuration?.functions]);
+
+  const filteredFunctions = useMemo(() => {
+    const filterText = filterByProvider[FUNCTIONS_SECTION]?.toLowerCase() || '';
+    if (!filterText) return functions;
+    return functions.filter((fn) =>
+      [fn.title, fn.description, fn.url].some((text) =>
+        text?.toLowerCase().includes(filterText),
+      ),
+    );
+  }, [functions, filterByProvider]);
 
   const fetchBlockTypes = async (url: string, providerIcon?: string) => {
     if (providerBlockTypes.some((pc) => pc.key === url)) return;
@@ -180,6 +220,51 @@ export const EditorAreaSidebar = () => {
                     }
                   }}
                 >
+                  {/* Functions become pipeline steps, so they are only offered
+                      inside a container. */}
+                  {editorMode === 'container' && functions.length > 0 && (
+                    <AccordionItem
+                      value={FUNCTIONS_SECTION}
+                      className="border border-sidebar-border rounded-md px-2 last:border-b"
+                    >
+                      <AccordionTrigger className="justify-start gap-3 no-underline hover:no-underline py-3">
+                        <Layers
+                          className="text-muted-foreground"
+                          width={20}
+                          height={20}
+                        />
+                        Functions
+                      </AccordionTrigger>
+
+                      <AccordionContent className="flex flex-col gap-3 pb-3">
+                        <div className="relative py-1">
+                          <Filter className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            type="text"
+                            placeholder="Filter"
+                            className="pl-9 h-8"
+                            value={filterByProvider[FUNCTIONS_SECTION] || ''}
+                            onChange={(e) =>
+                              handleFilterChange(
+                                FUNCTIONS_SECTION,
+                                e.target.value,
+                              )
+                            }
+                          />
+                        </div>
+
+                        {filteredFunctions.map((fn) => (
+                          <BlockCard
+                            key={fn._id}
+                            title={fn.title}
+                            apiVersion={fn.version}
+                            description={fn.description}
+                            onDragStart={() => onFunctionDragStart(fn)}
+                          />
+                        ))}
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
                   {providers.map((pr) => {
                     const providerFullUrl = pr.version
                       ? `${pr.url}:${pr.version}`

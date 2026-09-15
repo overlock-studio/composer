@@ -19,6 +19,7 @@ import {
   type ContainerLayout,
   type LayoutBox,
 } from './containerLayout';
+import { collectPipeline, pipelineEdge } from './pipelineChain';
 import {
   buildTreeData,
   connectorRowHandleId,
@@ -34,8 +35,6 @@ import {
   PIPELINE_GROUP_MIN_HEIGHT,
   PIPELINE_GROUP_MIN_WIDTH,
   PIPELINE_GROUP_PADDING,
-  PIPELINE_IN_HANDLE,
-  PIPELINE_OUT_HANDLE,
   RESOURCE_NODE_WIDTH,
 } from './editorUtils';
 
@@ -257,6 +256,30 @@ export const pipelineGroupBoxes = (
   return { steps, patchIndex, boxes };
 };
 
+/** A pipeline step drawn as a group at `box`. */
+export const pipelineGroupNode = (
+  fn: Pipeline,
+  box: LayoutBox,
+  holdsResources: boolean,
+): RFNode => {
+  const data: PipelineGroupNodeData = {
+    step: fn.step,
+    functionName: functionName(fn),
+    holdsResources,
+    fn,
+  };
+  return {
+    id: pipelineGroupId(fn.step),
+    type: 'pipelineGroup',
+    position: { x: box.x, y: box.y },
+    style: { width: box.width, height: box.height },
+    draggable: true,
+    // Selectable so the resize handles have something to appear on.
+    selectable: true,
+    data,
+  };
+};
+
 /**
  * One group per pipeline step, placed by `pipelineGroupBoxes`. Blocks become
  * children of the patch-and-transform group, so dragging it takes them along.
@@ -273,24 +296,9 @@ const buildPipelineGroups = (
   );
   const patchBox = boxes[patchIndex];
 
-  const groups = steps.map((fn, index) => {
-    const box = boxes[index];
-    const data: PipelineGroupNodeData = {
-      step: fn.step,
-      functionName: functionName(fn),
-      holdsResources: index === patchIndex,
-    };
-    return {
-      id: pipelineGroupId(fn.step),
-      type: 'pipelineGroup',
-      position: { x: box.x, y: box.y },
-      style: { width: box.width, height: box.height },
-      draggable: true,
-      // Selectable so the resize handles have something to appear on.
-      selectable: true,
-      data,
-    } as RFNode;
-  });
+  const groups = steps.map((fn, index) =>
+    pipelineGroupNode(fn, boxes[index], index === patchIndex),
+  );
 
   const patchGroup = groups[patchIndex];
   const children = blockNodes.map((node) => ({
@@ -304,22 +312,10 @@ const buildPipelineGroups = (
   }));
 
   // The pipeline runs its steps in order, so consecutive groups are chained
-  // down the column.
-  // That order is the composition's, not something wired by hand, so these
-  // edges are not selectable, deletable or reconnectable.
-  const edges: RFEdge[] = groups.slice(1).map((group, index) => ({
-    id: `pipeline-${groups[index].id}-${group.id}`,
-    source: groups[index].id,
-    sourceHandle: PIPELINE_OUT_HANDLE,
-    target: group.id,
-    targetHandle: PIPELINE_IN_HANDLE,
-    type: 'smoothstep',
-    selectable: false,
-    deletable: false,
-    focusable: false,
-    reconnectable: false,
-    className: 'pipeline-step-edge',
-  }));
+  // down the column. From there the chain is the user's to rewire.
+  const edges: RFEdge[] = groups
+    .slice(1)
+    .map((group, index) => pipelineEdge(groups[index].id, group.id));
 
   return { groups, children, edges };
 };
@@ -630,12 +626,20 @@ export const mergeContainerIntoNodes = (
 
   const childBlocks = collectContainerBlocks(container, graphNodes, graphEdges);
   const containerLayout = collectContainerLayout(graphNodes);
+  // The steps and their order are whatever the groups and their chain say.
+  const functions = collectPipeline(graphNodes, graphEdges);
 
   return parkedNodes.map((node) =>
     node.id === containerId
       ? {
           ...node,
-          data: { ...node.data, childBlocks, connectors, containerLayout },
+          data: {
+            ...node.data,
+            childBlocks,
+            connectors,
+            containerLayout,
+            functions,
+          },
         }
       : node,
   );

@@ -10,6 +10,7 @@ import { LucideIcon } from 'lucide-react';
 import { Dispatch, ReactNode, SetStateAction } from 'react';
 import { Block, BlockType, Connector, Pipeline } from '../api/types';
 import { EditorDataAdapter, EditorEntityRef } from '../api/adapter';
+import type { CrossplaneFunctionDB } from '../api/typesDB';
 import { JSONSchemaProps } from './jsonSchema';
 import type { ContainerLayout } from './containerLayout';
 
@@ -103,6 +104,11 @@ export type ContainerSession = {
 export type EditorAreaContextType = {
   selectedBlockType: BlockType | undefined;
   setSelectedBlockType: Dispatch<SetStateAction<BlockType | undefined>>;
+  // The function being dragged from the sidebar, dropped as a pipeline step.
+  selectedFunction: CrossplaneFunctionDB | undefined;
+  setSelectedFunction: Dispatch<
+    SetStateAction<CrossplaneFunctionDB | undefined>
+  >;
   nodes: Node[];
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
   onNodesChange: OnNodesChange<Node>;
@@ -202,6 +208,8 @@ export type PipelineGroupNodeData = {
   step: string;
   functionName?: string;
   holdsResources: boolean;
+  // The whole step, so what the editor does not model is written back as is.
+  fn: Pipeline;
 };
 
 export type ConnectorNodeData = {

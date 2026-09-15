@@ -47,6 +47,10 @@ const noopAdapter: EditorDataAdapter = {
     crossplaneProviders: [],
     totalCount: 0,
   }),
+  listCrossplaneFunctions: async () => ({
+    crossplaneFunctions: [],
+    totalCount: 0,
+  }),
   getConfigurationData: async () => ({
     compositions: [],
     xrdBlockType: [],
@@ -62,6 +66,8 @@ const noopAdapter: EditorDataAdapter = {
 const EditorActionsContext = createContext<EditorActionsContextType>({
   selectedBlockType: undefined,
   setSelectedBlockType: () => undefined,
+  selectedFunction: undefined,
+  setSelectedFunction: () => undefined,
   setNodes: () => undefined,
   onNodesChange: () => undefined,
   setEdges: () => undefined,
@@ -95,6 +101,8 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
   entityRef,
 }) => {
   const [selectedBlockType, setSelectedBlockType] = useState<BlockType>();
+  const [selectedFunction, setSelectedFunction] =
+    useState<EditorActionsContextType['selectedFunction']>();
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -186,6 +194,8 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
     () => ({
       selectedBlockType,
       setSelectedBlockType,
+      selectedFunction,
+      setSelectedFunction,
       setNodes,
       onNodesChange,
       setEdges,
@@ -209,6 +219,7 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
     }),
     [
       selectedBlockType,
+      selectedFunction,
       setNodes,
       onNodesChange,
       setEdges,

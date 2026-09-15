@@ -11,6 +11,7 @@ import {
 } from './types';
 import { ResourceNode } from '../components/Editor/Nodes/ResourceNode';
 import { CustomEdge } from '../components/Editor/CustomEdge';
+import { PipelineEdge } from '../components/Editor/PipelineEdge';
 import { ContainerNode } from '../components/Editor/Nodes/ContainerNode';
 import { ConnectorNode } from '../components/Editor/Nodes/ConnectorNode';
 import { ConnectorGroupNode } from '../components/Editor/Nodes/ConnectorGroupNode';
@@ -28,6 +29,7 @@ export const NODE_TYPES: NodeTypes = {
 
 export const EDGE_TYPES = {
   customEdge: CustomEdge,
+  pipelineEdge: PipelineEdge,
 };
 
 export const TRANSFORMERS_DEFAULT: {
