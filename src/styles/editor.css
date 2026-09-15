@@ -249,14 +249,15 @@
         background: hsl(var(--sidebar-primary));
       }
 
-      /* Structural, not wired by hand: muted rather than the block palette.
-         Placement is set inline on the handle, so only looks are set here. */
+      /* The chain between steps: muted rather than the block palette, since it
+         carries order rather than data. Placement is set inline on the handle,
+         so only looks are set here. */
       .react-flow__handle.pipeline-group-handle {
         width: 9px;
         height: 9px;
         border: 2px solid hsl(var(--muted-foreground) / 0.7);
         background: hsl(var(--background));
-        cursor: default;
+        cursor: crosshair;
         animation: none;
 
         &:hover {
@@ -304,6 +305,36 @@
       stroke: hsl(var(--muted-foreground) / 0.85);
       stroke-width: 1.5;
       stroke-dasharray: 5 4;
+    }
+  }
+
+  /* Unlinks two pipeline steps: small and muted like the chain it sits on. */
+  .pipeline-edge-unlink {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 1px solid hsl(var(--muted-foreground) / 0.6);
+    border-radius: 100%;
+    background: hsl(var(--background));
+    color: hsl(var(--muted-foreground));
+    pointer-events: all;
+    cursor: pointer;
+
+    svg {
+      width: 10px;
+      height: 10px;
+    }
+
+    &:hover {
+      color: rgb(248, 113, 113);
+      border-color: rgb(248, 113, 113);
     }
   }
 

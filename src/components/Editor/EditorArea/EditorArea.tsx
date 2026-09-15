@@ -19,6 +19,11 @@ import {
   EDGE_TYPES,
   NODE_TYPES,
   CONTAINER_NODE_WIDTH,
+  PIPELINE_GROUP_HEADER_HEIGHT,
+  PIPELINE_GROUP_MIN_HEIGHT,
+  PIPELINE_GROUP_MIN_WIDTH,
+  PIPELINE_IN_HANDLE,
+  PIPELINE_OUT_HANDLE,
   RESOURCE_NODE_WIDTH,
   resolveNodeCollisions,
 } from '../../../lib/editorUtils';
@@ -29,10 +34,17 @@ import {
   holdsResourceBlocks,
   isConnectorGroupId,
   mergeContainerIntoNodes,
+  pipelineGroupNode,
 } from '../../../lib/containerGraph';
+import {
+  closesPipelineLoop,
+  functionRefName,
+  linkPipelineSteps,
+  uniqueStepName,
+} from '../../../lib/pipelineChain';
 import { useToast } from '../../../hooks/use-toast';
 import { Spinner } from '../../Spinner';
-import { Block, Connector } from '../../../api/types';
+import { Block, Connector, Pipeline } from '../../../api/types';
 import type { PipelineGroupNodeData } from '../../../lib/types';
 import logger from '../../../lib/logger';
 
@@ -89,6 +101,7 @@ export const EditorArea = () => {
   const colorMode = useDocumentColorMode();
   const {
     selectedBlockType,
+    selectedFunction,
     nodes,
     onNodesChange,
     setNodes,
@@ -366,11 +379,31 @@ export const EditorArea = () => {
 
   const onConnect = useCallback(
     (params: Connection) => {
+      // The pipeline chain is its own kind of edge: a step leads to exactly
+      // one next step.
+      if (params.sourceHandle === PIPELINE_OUT_HANDLE) {
+        setEdges((eds) => linkPipelineSteps(eds, params.source, params.target));
+        return;
+      }
       setEdges((eds) =>
         addEdge({ ...params, type: 'customEdge' }, eds),
       );
     },
     [setEdges],
+  );
+
+  // Chain handles only meet each other, and never so that the pipeline loops.
+  const isValidConnection = useCallback(
+    (connection: Edge | Connection) => {
+      const fromChain = connection.sourceHandle === PIPELINE_OUT_HANDLE;
+      const toChain = connection.targetHandle === PIPELINE_IN_HANDLE;
+      if (fromChain !== toChain) return false;
+      return (
+        !fromChain ||
+        !closesPipelineLoop(edges, connection.source, connection.target)
+      );
+    },
+    [edges],
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -384,10 +417,36 @@ export const EditorArea = () => {
       clientY: number;
       target: EventTarget | null;
     }) => {
-      if (!selectedBlockType) return;
       const { clientX, clientY } = opts;
-
       const position = screenToFlowPosition({ x: clientX, y: clientY });
+
+      // A function becomes a pipeline step of its own, drawn as a group where
+      // it was dropped and linked into the chain by hand.
+      if (selectedFunction) {
+        if (editorMode !== 'container') return;
+        const refName = functionRefName(selectedFunction.url);
+        const step = uniqueStepName(
+          nodes
+            .filter((node) => node.type === 'pipelineGroup')
+            .map((node) => (node.data as PipelineGroupNodeData).step),
+          refName,
+        );
+        const group = pipelineGroupNode(
+          { step, functionRef: { name: refName } } as Pipeline,
+          {
+            x: position.x - PIPELINE_GROUP_MIN_WIDTH / 2,
+            y: position.y - PIPELINE_GROUP_HEADER_HEIGHT / 2,
+            width: PIPELINE_GROUP_MIN_WIDTH,
+            height: PIPELINE_GROUP_MIN_HEIGHT,
+          },
+          false,
+        );
+        // Groups go first, ahead of the blocks nested in them.
+        setNodes((nds) => [group, ...nds]);
+        return;
+      }
+
+      if (!selectedBlockType) return;
       const id = nextUniqueNodeName(nodes, selectedBlockType);
       let newNode: Node | null = null;
 
@@ -461,6 +520,7 @@ export const EditorArea = () => {
     },
     [
       selectedBlockType,
+      selectedFunction,
       nodes,
       screenToFlowPosition,
       setNodes,
@@ -590,6 +650,7 @@ export const EditorArea = () => {
           nodes={nodes}
           edges={edges}
           onConnect={onConnect}
+          isValidConnection={isValidConnection}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodesDelete={onNodesDelete}
