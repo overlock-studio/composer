@@ -68,11 +68,15 @@ export const CONNECTOR_GROUP_WIDTH = 200;
 export const CONNECTOR_GROUP_MIN_WIDTH = 160;
 export const CONNECTOR_GROUP_HEADER_HEIGHT = 32;
 export const CONNECTOR_GROUP_ROW_HEIGHT = 30;
+// Strip kept free under the last row, so the resize grip in the bottom corner
+// never sits on a row.
+export const CONNECTOR_GROUP_GRIP_SPACE = 16;
 
-/** Floor a connector node can be resized to: its header plus every row. */
+/** Floor a connector node can be resized to: its header, every row and the grip. */
 export const connectorGroupMinHeight = (rowCount: number): number =>
   CONNECTOR_GROUP_HEADER_HEIGHT +
-  Math.max(rowCount, 1) * CONNECTOR_GROUP_ROW_HEIGHT;
+  Math.max(rowCount, 1) * CONNECTOR_GROUP_ROW_HEIGHT +
+  CONNECTOR_GROUP_GRIP_SPACE;
 // Handle rows are drawn as a tree: one indent step per path segment, with the
 // line standing near the left of its step, turning towards the name on a
 // rounded corner and stopping just short of it. `REACH` is how far a first

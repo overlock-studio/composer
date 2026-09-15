@@ -25,6 +25,7 @@ import {
   connectorRowHandleId,
   pathRows,
   connectorGroupMinHeight,
+  CONNECTOR_GROUP_GRIP_SPACE,
   CONNECTOR_GROUP_HEADER_HEIGHT,
   CONNECTOR_GROUP_MIN_WIDTH,
   CONNECTOR_GROUP_ROW_HEIGHT,
@@ -136,7 +137,10 @@ const ConnectorGroupNodeComponent = ({
         {isInput ? addButton : <div className="w-6" />}
       </div>
 
-      <div className="flex flex-col">
+      <div
+        className="flex flex-col"
+        style={{ paddingBottom: CONNECTOR_GROUP_GRIP_SPACE }}
+      >
         {rows.map((row, index) => {
           // The tree sits in the label, on the side the handle is on, so the
           // branches point back at the row they hang from.
