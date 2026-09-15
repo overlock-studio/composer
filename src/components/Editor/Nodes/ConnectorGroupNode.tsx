@@ -1,6 +1,12 @@
 'use client';
 import React, { useMemo, useState } from 'react';
-import { Node, NodeProps, Position, useConnection } from '@xyflow/react';
+import {
+  Node,
+  NodeProps,
+  NodeResizeControl,
+  Position,
+  useConnection,
+} from '@xyflow/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { ConnectorGroupNodeData } from '../../../lib/types';
 import { Connector } from '../../../api/types';
@@ -18,7 +24,10 @@ import { RowTree } from '../RowTree';
 import {
   connectorRowHandleId,
   pathRows,
+  connectorGroupMinHeight,
+  CONNECTOR_GROUP_GRIP_SPACE,
   CONNECTOR_GROUP_HEADER_HEIGHT,
+  CONNECTOR_GROUP_MIN_WIDTH,
   CONNECTOR_GROUP_ROW_HEIGHT,
 } from '../../../lib/editorUtils';
 
@@ -101,10 +110,22 @@ const ConnectorGroupNodeComponent = ({
   return (
     <div
       className="node-body"
-      style={{
-        minHeight: CONNECTOR_GROUP_HEADER_HEIGHT + CONNECTOR_GROUP_ROW_HEIGHT,
-      }}
+      style={{ minHeight: connectorGroupMinHeight(rows.length) }}
     >
+      {/* One grip, on the bottom corner facing away from the blocks, so it is
+          never on the edge the handles and their edges hang off. */}
+      <NodeResizeControl
+        position={isInput ? 'bottom-left' : 'bottom-right'}
+        minWidth={CONNECTOR_GROUP_MIN_WIDTH}
+        minHeight={connectorGroupMinHeight(rows.length)}
+        className="connector-group-resize-handle"
+      >
+        {/* Three diagonal lines, drawn for the bottom-right corner and
+            mirrored by CSS on the bottom-left one. */}
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M11 1 1 11M11 5 5 11M11 9 9 11" />
+        </svg>
+      </NodeResizeControl>
       <div
         className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 rounded-t-lg"
         style={{ height: CONNECTOR_GROUP_HEADER_HEIGHT }}
@@ -116,7 +137,10 @@ const ConnectorGroupNodeComponent = ({
         {isInput ? addButton : <div className="w-6" />}
       </div>
 
-      <div className="flex flex-col">
+      <div
+        className="flex flex-col"
+        style={{ paddingBottom: CONNECTOR_GROUP_GRIP_SPACE }}
+      >
         {rows.map((row, index) => {
           // The tree sits in the label, on the side the handle is on, so the
           // branches point back at the row they hang from.

@@ -22,6 +22,7 @@ import {
   getHandlesFromSchema,
   handleToConnector,
   CONNECTOR_GROUP_WIDTH,
+  connectorGroupMinHeight,
   PIPELINE_GROUP_GAP,
   PIPELINE_GROUP_HEADER_HEIGHT,
   PIPELINE_GROUP_MIN_HEIGHT,
@@ -296,9 +297,10 @@ const buildPipelineGroups = (
 
 /**
  * The container's own inputs and outputs, as one node each: inputs left of the
- * blocks, outputs to their right. Both are ordinary draggable nodes, so
- * `previous` positions are carried over rather than recomputed once the user
- * has placed them.
+ * blocks, outputs to their right. Both are ordinary draggable, resizable
+ * nodes, so `previous` positions and sizes are carried over rather than
+ * recomputed once the user has placed them. A height the user chose still grows
+ * to fit rows added since.
  */
 export const buildConnectorNodes = (
   connectors: Connector[],
@@ -307,10 +309,12 @@ export const buildConnectorNodes = (
   previous: RFNode[] = [],
 ): RFNode[] => {
   const { minX, maxX, minY } = blockBounds(blockNodes);
-  const placed = new Map(previous.map((node) => [node.id, node.position]));
+  const placed = new Map(previous.map((node) => [node.id, node]));
 
   return (['input', 'output'] as const).map((connection) => {
     const id = connectorGroupId(connection);
+    const side = sideOf(connectors, connection);
+    const before = placed.get(id);
     const defaultX =
       connection === 'input'
         ? minX - CONNECTOR_COLUMN_GAP - CONNECTOR_GROUP_WIDTH
@@ -319,12 +323,21 @@ export const buildConnectorNodes = (
     return {
       id,
       type: 'connectorGroup',
-      position: placed.get(id) ?? { x: defaultX, y: minY },
+      position: before?.position ?? { x: defaultX, y: minY },
       style: { width: CONNECTOR_GROUP_WIDTH },
+      ...(before?.width !== undefined ? { width: before.width } : {}),
+      ...(before?.height !== undefined
+        ? {
+            height: Math.max(
+              before.height,
+              connectorGroupMinHeight(pathRows(side).length),
+            ),
+          }
+        : {}),
       draggable: true,
       data: {
         connection,
-        connectors: sideOf(connectors, connection),
+        connectors: side,
         setConnectors,
       },
     };
