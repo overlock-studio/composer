@@ -120,7 +120,17 @@
       }
     }
 
+    /* Blocks stand above the edge layer, so connections run behind them
+       instead of across their faces. React Flow writes the node z-index
+       inline, so the rule has to be important to land. */
     &.react-flow__node-resource {
+      z-index: 10001 !important;
+
+      &.selected,
+      &.dragging {
+        z-index: 10004 !important;
+      }
+
       .node-body {
         overflow: visible;
       }
