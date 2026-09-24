@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo, useState } from 'react';
-import { Node, NodeProps, Position, useConnection } from '@xyflow/react';
+import { Node, NodeProps, Position } from '@xyflow/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { ConnectorGroupNodeData } from '../../../lib/types';
 import { Connector } from '../../../api/types';
@@ -15,6 +15,7 @@ import {
 } from '../../ui/dialog';
 import { EditConnectorsMenu } from '../Menus';
 import { RowTree } from '../RowTree';
+import { useDraggedHandleType } from '../../../lib/useDraggedHandleType';
 import {
   connectorRowHandleId,
   pathRows,
@@ -78,7 +79,7 @@ const ConnectorGroupNodeComponent = ({
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<Connector | null>(null);
   const [deleting, setDeleting] = useState<Connector | null>(null);
-  const inProgress = !!useConnection()?.inProgress;
+  const draggedFrom = useDraggedHandleType();
 
   const rows = useMemo(() => pathRows(connectors), [connectors]);
   // Connectors are the composite's own fields, so each node is named after the
@@ -156,11 +157,9 @@ const ConnectorGroupNodeComponent = ({
               position={isInput ? Position.Right : Position.Left}
               id={connectorRowHandleId(row.path, connection)}
               style={{ top: `${rowCentre(index)}px` }}
-              // Either side can start an edge; only an output can end one, and
-              // inputs stop being drop targets while a connection is in flight.
-              isConnectableStart={true}
-              isConnectableEnd={!isInput}
-              isConnectable={isInput ? !inProgress : true}
+              // Either end can start an edge, and while one is being drawn
+              // only rows of the other type can take it.
+              isConnectable={draggedFrom !== (isInput ? 'source' : 'target')}
               inactiveClass={'opacity-30'}
               path={row.path}
               description={row.item?.description ?? ''}

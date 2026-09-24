@@ -1,11 +1,12 @@
 'use client';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ConnectorNodeData } from '../../../lib/types';
-import { Node, NodeProps, Position, useConnection } from '@xyflow/react';
+import { Node, NodeProps, Position } from '@xyflow/react';
 import { CustomHandle } from '../CustomHandle';
 import { ConnectorNodeToolbar } from '../Toolbars/ConnectorNodeToolbar';
 import { ConnectorNodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
+import { useDraggedHandleType } from '../../../lib/useDraggedHandleType';
 
 const ConnectorNodeComponent = ({
   id,
@@ -14,15 +15,12 @@ const ConnectorNodeComponent = ({
 }: NodeProps<Node<ConnectorNodeData>>) => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   useNodeDeleteShortcut(selected, () => setOpenDeleteDialog(true));
-  const connection = useConnection();
+  const draggedFrom = useDraggedHandleType();
 
-  const isInProgress = useMemo(() => connection?.inProgress, [connection]);
-
+  // While an edge is being drawn only the other end's type can take it.
   const getIsConnectable = useCallback(
-    (type: string) => ({
-      isConnectable: !(isInProgress && type === 'source'),
-    }),
-    [isInProgress],
+    (type: string) => ({ isConnectable: type !== draggedFrom }),
+    [draggedFrom],
   );
 
   const commonHandleStyle = { top: '50%', transform: 'translateY(-50%)' };
@@ -46,7 +44,6 @@ const ConnectorNodeComponent = ({
           type="target"
           position={Position.Left}
           id={`target-${data.connector.path}`}
-          isConnectableStart={true}
           inactiveClass={'opacity-30'}
           {...getIsConnectable('target')}
           style={{
@@ -67,7 +64,6 @@ const ConnectorNodeComponent = ({
           type="source"
           position={Position.Right}
           id={`source-${data.connector.path}`}
-          isConnectableEnd={false}
           inactiveClass={'opacity-30'}
           {...getIsConnectable('source')}
           style={
