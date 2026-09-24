@@ -1,6 +1,6 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { Checkbox } from '../../ui/checkbox';
 import { HandleTreeNode, HandlesTreeProps } from '../../../lib/types';
 import { cn } from '../../../lib/utils';
@@ -82,6 +82,7 @@ type TreeRowProps = {
   checkedSet: Set<string>;
   expanded: Set<string>;
   onToggleExpanded: (value: string) => void;
+  onAddItem?: (value: string) => void;
   onToggleChecked: (node: HandleTreeNode, depth: number, next: boolean) => void;
 };
 
@@ -91,6 +92,7 @@ const TreeRow = ({
   checkedSet,
   expanded,
   onToggleExpanded,
+  onAddItem,
   onToggleChecked,
 }: TreeRowProps) => {
   const open = isOpen(node, depth, expanded);
@@ -135,6 +137,17 @@ const TreeRow = ({
         >
           {node.label}
         </label>
+        {node.itemSchema && onAddItem && (
+          <button
+            type="button"
+            onClick={() => onAddItem(node.value)}
+            aria-label={`Add ${node.label} item`}
+            title="Add item"
+            className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
       {open && (
         <div>
@@ -146,6 +159,7 @@ const TreeRow = ({
               checkedSet={checkedSet}
               expanded={expanded}
               onToggleExpanded={onToggleExpanded}
+              onAddItem={onAddItem}
               onToggleChecked={onToggleChecked}
             />
           ))}
@@ -164,6 +178,7 @@ export const HandlesTree = ({
   treeData,
   checked,
   onCheckedChange,
+  onAddItem,
 }: HandlesTreeProps) => {
   const checkedSet = useMemo(() => new Set(checked), [checked]);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
@@ -175,6 +190,17 @@ export const HandlesTree = ({
       return next;
     });
   }, []);
+
+  // The array opens on the item just added, so it is in view to pick from.
+  const addItem = useMemo(
+    () =>
+      onAddItem &&
+      ((value: string) => {
+        setExpanded((prev) => new Set(prev).add(value));
+        onAddItem(value);
+      }),
+    [onAddItem],
+  );
 
   const onToggleChecked = useCallback(
     (node: HandleTreeNode, depth: number, next: boolean) => {
@@ -195,6 +221,7 @@ export const HandlesTree = ({
           checkedSet={checkedSet}
           expanded={expanded}
           onToggleExpanded={onToggleExpanded}
+          onAddItem={addItem}
           onToggleChecked={onToggleChecked}
         />
       ))}

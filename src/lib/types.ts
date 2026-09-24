@@ -45,6 +45,8 @@ export type HandleTreeNode = {
   title?: string;
   disabled?: boolean;
   children?: HandleTreeNode[];
+  // Set on array fields: the schema each `[n]` item added under it is built from.
+  itemSchema?: JSONSchemaProps;
 };
 
 export type CompositionData = {
@@ -258,6 +260,8 @@ export type HandlesTreeProps = {
   treeData: HandleTreeNode[];
   checked: string[];
   onCheckedChange: (checked: string[]) => void;
+  // Adds the next `[n]` item under the array field at this path.
+  onAddItem?: (path: string) => void;
 };
 
 export type NodeDeletionDialogProps = {

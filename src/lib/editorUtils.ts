@@ -215,6 +215,9 @@ export const buildTreeData = (
         ? buildTreeData(propSchema, fullPath)
         : undefined,
       title: propSchema.description,
+      ...(propSchema.type === 'array' && propSchema.items
+        ? { itemSchema: propSchema.items }
+        : {}),
     };
 
     result.push(treeNode);
@@ -222,6 +225,63 @@ export const buildTreeData = (
 
   return result;
 };
+
+const ARRAY_ITEM = /\[(\d+)\]$/;
+
+/**
+ * How many `[n]` items each array field already has, read off the paths of a
+ * block's handles: an array at `a.b` holding a handle `a.b[2].c` has three.
+ */
+export const arrayItemCounts = (paths: string[]): Map<string, number> => {
+  const counts = new Map<string, number>();
+  for (const path of paths) {
+    const segments = path.split('.');
+    segments.forEach((segment, index) => {
+      const match = ARRAY_ITEM.exec(segment);
+      if (!match) return;
+      const array = [
+        ...segments.slice(0, index),
+        segment.slice(0, match.index),
+      ].join('.');
+      counts.set(array, Math.max(counts.get(array) ?? 0, Number(match[1]) + 1));
+    });
+  }
+  return counts;
+};
+
+/**
+ * Tree with its array fields filled in: `counts` items under each, named
+ * `field[0]` to `field[n]` and built from the array's item schema, so an item
+ * holding an object can be opened up like any other field.
+ */
+export const withArrayItems = (
+  nodes: HandleTreeNode[],
+  counts: Map<string, number>,
+): HandleTreeNode[] =>
+  nodes.map((node) => {
+    const { itemSchema } = node;
+    const count = itemSchema ? (counts.get(node.value) ?? 0) : 0;
+    const children = node.children
+      ? withArrayItems(node.children, counts)
+      : undefined;
+    if (!itemSchema || count === 0) {
+      return children ? { ...node, children } : node;
+    }
+
+    const name = node.value.split('.').pop();
+    const items = Array.from({ length: count }, (_, index) => {
+      const value = `${node.value}[${index}]`;
+      const fields = buildTreeData(itemSchema, [value]);
+      return {
+        value,
+        label: `${name}[${index}]`,
+        title: itemSchema.description,
+        disabled: false,
+        children: fields.length ? withArrayItems(fields, counts) : undefined,
+      } satisfies HandleTreeNode;
+    });
+    return { ...node, children: items };
+  });
 
 export const extractConnectors = (
   obj: JsonObject,
