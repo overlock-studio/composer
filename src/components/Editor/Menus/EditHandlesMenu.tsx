@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useUpdateNodeInternals } from '@xyflow/react';
 import { Button } from '../../ui/button';
 import {
@@ -10,22 +10,17 @@ import {
   DialogTitle,
 } from '../../ui/dialog';
 import { ScrollArea } from '../../ui/scroll-area';
-import { EditHandlesMenuProps, Handle, HandleTreeNode } from '../../../lib/types';
+import {
+  EditHandlesMenuProps,
+  Handle,
+  HandleTreeNode,
+} from '../../../lib/types';
 import { useEditorActions } from '../EditorAreaContext';
 import { HandlesTree } from './HandlesTree';
 
-const collectLeafNodes = (nodes: HandleTreeNode[]): HandleTreeNode[] => {
-  const result: HandleTreeNode[] = [];
-  const visit = (node: HandleTreeNode) => {
-    if (!node.children || node.children.length === 0) {
-      result.push(node);
-      return;
-    }
-    node.children.forEach(visit);
-  };
-  nodes.forEach(visit);
-  return result;
-};
+// Every node in tree order: a picked parent is a key just like a picked field.
+const flattenNodes = (nodes: HandleTreeNode[]): HandleTreeNode[] =>
+  nodes.flatMap((node) => [node, ...flattenNodes(node.children ?? [])]);
 
 export const EditHandlesMenu = ({
   nodeId,
@@ -47,16 +42,6 @@ export const EditHandlesMenu = ({
     }
   }, [open, handles]);
 
-  const handleCheckChange = useCallback((path: string, isChecked: boolean) => {
-    setChecked((prev) => {
-      if (isChecked) {
-        if (prev.includes(path)) return prev;
-        return [...prev, path];
-      }
-      return prev.filter((p) => p !== path);
-    });
-  }, []);
-
   const handleSave = () => {
     const removedHandles = handles.filter(
       (handle) => !checked.includes(handle.path),
@@ -76,7 +61,7 @@ export const EditHandlesMenu = ({
     );
 
     const checkedSet = new Set(checked);
-    const updatedHandles: Handle[] = collectLeafNodes(treeData)
+    const updatedHandles: Handle[] = flattenNodes(treeData)
       .filter((node) => checkedSet.has(node.value))
       .map((node) => ({
         path: node.value,
@@ -99,7 +84,7 @@ export const EditHandlesMenu = ({
           <HandlesTree
             treeData={treeData}
             checked={checked}
-            onCheckChange={handleCheckChange}
+            onCheckedChange={setChecked}
           />
         </ScrollArea>
         <DialogFooter>
