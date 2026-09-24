@@ -1,5 +1,8 @@
 # @overlock-studio/composer
 
+[![stable](https://img.shields.io/github/v/release/overlock-studio/composer?label=stable)](https://github.com/overlock-studio/composer/releases/latest)
+[![unstable](https://img.shields.io/github/v/release/overlock-studio/composer?include_prereleases&sort=semver&label=unstable)](https://github.com/overlock-studio/composer/releases)
+
 Visual editor library for Crossplane configurations. Node-based canvas with parsers and serializers for YAML round-trip.
 
 ## Install
