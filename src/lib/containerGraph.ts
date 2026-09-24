@@ -29,7 +29,6 @@ import {
   getHandlesFromSchema,
   handleToConnector,
   CONNECTOR_GROUP_WIDTH,
-  connectorGroupMinHeight,
   PIPELINE_GROUP_GAP,
   PIPELINE_GROUP_HEADER_HEIGHT,
   PIPELINE_GROUP_MIN_HEIGHT,
@@ -343,9 +342,7 @@ export const buildConnectorNodes = (
     const side = sideOf(connectors, connection);
     const before = placed.get(id);
     // A node already on the canvas wins over what was stored for it.
-    const saved = before
-      ? { ...before.position, width: before.width, height: before.height }
-      : stored[connection];
+    const saved = before ? before.position : stored[connection];
     const defaultX =
       connection === 'input'
         ? minX - CONNECTOR_COLUMN_GAP - CONNECTOR_GROUP_WIDTH
@@ -356,15 +353,6 @@ export const buildConnectorNodes = (
       type: 'connectorGroup',
       position: saved ? { x: saved.x, y: saved.y } : { x: defaultX, y: minY },
       style: { width: CONNECTOR_GROUP_WIDTH },
-      ...(saved?.width !== undefined ? { width: saved.width } : {}),
-      ...(saved?.height !== undefined
-        ? {
-            height: Math.max(
-              saved.height,
-              connectorGroupMinHeight(pathRows(side).length),
-            ),
-          }
-        : {}),
       draggable: true,
       data: {
         connection,

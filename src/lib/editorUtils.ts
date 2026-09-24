@@ -63,22 +63,19 @@ export const MIN_CONTAINER_WIDTH = 500;
 export const CONTAINER_NODE_WIDTH = 340;
 export const CONTAINER_HANDLE_SPACING = 30;
 
-// The two nodes holding a container's connectors while it is open: a header
-// plus one fixed-height row per connector, so a row's handle can be placed by
-// index.
+// The two nodes holding a container's connectors while it is open: a header,
+// one fixed-height row per connector and a footer holding the + button, so a
+// row's handle can be placed by index and the node's height follows its rows.
 export const CONNECTOR_GROUP_WIDTH = 200;
-export const CONNECTOR_GROUP_MIN_WIDTH = 160;
 export const CONNECTOR_GROUP_HEADER_HEIGHT = 32;
 export const CONNECTOR_GROUP_ROW_HEIGHT = 30;
-// Strip kept free under the last row, so the resize grip in the bottom corner
-// never sits on a row.
-export const CONNECTOR_GROUP_GRIP_SPACE = 16;
+export const CONNECTOR_GROUP_FOOTER_HEIGHT = 30;
 
-/** Floor a connector node can be resized to: its header, every row and the grip. */
-export const connectorGroupMinHeight = (rowCount: number): number =>
+/** Height of a connector node: its header, every row and the footer. */
+export const connectorGroupHeight = (rowCount: number): number =>
   CONNECTOR_GROUP_HEADER_HEIGHT +
-  Math.max(rowCount, 1) * CONNECTOR_GROUP_ROW_HEIGHT +
-  CONNECTOR_GROUP_GRIP_SPACE;
+  rowCount * CONNECTOR_GROUP_ROW_HEIGHT +
+  CONNECTOR_GROUP_FOOTER_HEIGHT;
 // Handle rows are drawn as a tree: one indent step per path segment, with the
 // line standing near the left of its step, turning towards the name on a
 // rounded corner and stopping just short of it. `REACH` is how far a first
