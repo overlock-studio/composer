@@ -8,6 +8,7 @@ import {
   type EditorDataAdapter,
 } from '@overlock-studio/composer';
 
+import { packageRef, packageVersion } from './packageRef';
 import { sampleDependencies } from './sample';
 
 const providers: CrossplaneProviderDB[] = sampleDependencies
@@ -20,7 +21,7 @@ const providers: CrossplaneProviderDB[] = sampleDependencies
     family: d.package.split('/').slice(-2, -1)[0] ?? 'provider',
     familyName: d.package.split('/').slice(-2, -1)[0] ?? undefined,
     url: d.package,
-    version: d.version.replace(/^[>=<~^ ]+/, '') || undefined,
+    version: packageVersion(d.version),
   }));
 
 const functions: CrossplaneFunctionDB[] = sampleDependencies
@@ -30,7 +31,7 @@ const functions: CrossplaneFunctionDB[] = sampleDependencies
     title: d.package.split('/').pop() ?? d.package,
     description: `Demo function entry parsed from crossplane.yaml (${d.package})`,
     url: d.package,
-    version: d.version.replace(/^[>=<~^ ]+/, '') || undefined,
+    version: packageVersion(d.version),
   }));
 
 const configuration: ConfigurationDB = {
@@ -54,6 +55,26 @@ const fetchFromServer = async (url: string): Promise<BlockType[]> => {
   return (await res.json()) as BlockType[];
 };
 
+// A build has no dev server to pull packages through, so it carries the block
+// types of the sample providers as files, listed by package in index.json.
+const buildFile = (file: string): Promise<Response> =>
+  fetch(`${import.meta.env.BASE_URL}${file}`);
+
+let buildIndex: Promise<Record<string, string>> | undefined;
+
+const fetchFromBuild = async (url: string): Promise<BlockType[]> => {
+  buildIndex ??= buildFile('blocktypes/index.json').then(
+    (res) => res.json() as Promise<Record<string, string>>,
+  );
+  const file = (await buildIndex)[url];
+  if (!file) {
+    throw new Error(`not among the providers built into the demo`);
+  }
+  return (await (await buildFile(file)).json()) as BlockType[];
+};
+
+const fetchBlockTypes = import.meta.env.DEV ? fetchFromServer : fetchFromBuild;
+
 export const demoAdapter: EditorDataAdapter = {
   getBlocks: async () => [],
   updateBlocks: async () => true,
@@ -62,7 +83,7 @@ export const demoAdapter: EditorDataAdapter = {
       return crossplaneCoreBlockTypes;
     }
     try {
-      return await fetchFromServer(url);
+      return await fetchBlockTypes(url);
     } catch (err) {
       console.warn(`[composer-demo] getBlockTypes(${url}) failed:`, err);
       return [];
@@ -82,9 +103,7 @@ export const demoAdapter: EditorDataAdapter = {
   getConfigurationData: async () => ({
     compositions: [],
     xrdBlockType: [],
-    providerUrls: providers.map((p) =>
-      p.version ? `${p.url}:${p.version}` : p.url,
-    ),
+    providerUrls: providers.map((p) => packageRef(p.url, p.version)),
     functionUrls: [],
   }),
   createConfiguration: async () => configuration._id,

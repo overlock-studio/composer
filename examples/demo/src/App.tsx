@@ -10,10 +10,7 @@ import '@overlock-studio/composer/styles/editor.css';
 import '@xyflow/react/dist/style.css';
 
 import { demoAdapter } from './adapter';
-
-// The dev server keeps the last save in memory, seeded from
-// samples/blocks.json when it starts.
-const BLOCKS_URL = '/api/blocks';
+import { blocksStoredIn, loadBlocks, storeBlocks } from './blocksStore';
 
 type Theme = 'light' | 'dark';
 
@@ -24,8 +21,7 @@ export default function App() {
   const [lastSave, setLastSave] = useState<ComposerSavePayload | null>(null);
 
   useEffect(() => {
-    fetch(BLOCKS_URL)
-      .then((res) => res.json() as Promise<Block[]>)
+    loadBlocks()
       .then(setBlocks)
       .catch((err) => setLoadError(String(err)));
   }, []);
@@ -43,11 +39,7 @@ export default function App() {
     setLastSave(payload);
     setShowPayload(true);
     console.log('[composer-demo] onSave payload', payload);
-    fetch(BLOCKS_URL, {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload.blocks),
-    }).catch((err) =>
+    storeBlocks(payload.blocks).catch((err) =>
       console.error('[composer-demo] storing blocks failed', err),
     );
   };
@@ -58,7 +50,7 @@ export default function App() {
         <div className="flex items-baseline gap-3">
           <h1 className="text-sm font-semibold">Composer demo</h1>
           <span className="text-xs text-muted-foreground">
-            Saves are kept in the dev server&apos;s memory and loaded on reload.
+            Saves are kept in {blocksStoredIn} and loaded on reload.
           </span>
         </div>
         <div className="flex gap-1">
