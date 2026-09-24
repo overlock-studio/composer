@@ -144,7 +144,6 @@ const ContainerNodeComponent = ({
               position={Position.Left}
               id={connector.path}
               style={{ top: `${CONTAINER_HANDLE_SPACING * (index + 2)}px` }}
-              isConnectableStart={false}
               inactiveClass={'opacity-30'}
               description={connector.description}
               path={connector.path}

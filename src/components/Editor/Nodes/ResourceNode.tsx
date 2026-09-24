@@ -7,17 +7,12 @@ import React, {
   useRef,
 } from 'react';
 import { Handle, ResourceNodeData } from '../../../lib/types';
-import {
-  Node,
-  NodeProps,
-  Position,
-  useConnection,
-  useReactFlow,
-} from '@xyflow/react';
+import { Node, NodeProps, Position, useReactFlow } from '@xyflow/react';
 import { Box, Plus, Trash2 } from 'lucide-react';
 import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { CustomHandle } from '../CustomHandle';
 import { useEditorActions } from '../EditorAreaContext';
+import { useDraggedHandleType } from '../../../lib/useDraggedHandleType';
 import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 import { Button } from '../../ui/button';
 import { EditHandlesMenu } from '../Menus';
@@ -55,7 +50,7 @@ const ResourceNodeComponent = ({
   const prevHandlesRef = useRef<Handle[]>(
     data.currentHandles || data.initialHandles,
   );
-  const connection = useConnection();
+  const draggedFrom = useDraggedHandleType();
   const { setNodes, resolveBlockType } = useEditorActions();
   const { getIntersectingNodes, getNode } = useReactFlow();
 
@@ -155,16 +150,19 @@ const ResourceNodeComponent = ({
     nodeHeight,
   ]);
 
+  // While an edge is being drawn only the other end's type can take it, and a
+  // status field is never written to.
   const getIsConnectable = useCallback(
     (handleId: string, type: string) => {
-      if (!connection?.inProgress) return { isConnectable: true };
+      if (!draggedFrom) return { isConnectable: true };
 
       const isNotConnectable =
-        handleId.startsWith('status') || type === 'source';
+        type === draggedFrom ||
+        (type === 'target' && handleId.startsWith('status'));
 
       return { isConnectable: !isNotConnectable };
     },
-    [connection],
+    [draggedFrom],
   );
 
   return (
@@ -236,7 +234,6 @@ const ResourceNodeComponent = ({
               position={Position.Left}
               id={row.path}
               style={{ top: `${SPACE_BETWEEN_HANDLES * (index + 2)}px` }}
-              isConnectableStart={row.path.endsWith('ref.name')}
               connectionCount={row.path.endsWith('ref.name') ? 1 : 0}
               inactiveClass={'opacity-30'}
               description={row.item?.description ?? ''}
@@ -261,7 +258,6 @@ const ResourceNodeComponent = ({
               position={Position.Right}
               id={row.path}
               style={{ top: `${SPACE_BETWEEN_HANDLES * (index + 2)}px` }}
-              isConnectableEnd={false}
               inactiveClass={'opacity-30'}
               description={row.item?.description ?? ''}
               path={row.path}
