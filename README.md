@@ -2,8 +2,6 @@
 
 Visual editor library for Crossplane configurations. Node-based canvas with parsers and serializers for YAML round-trip.
 
-Live demo: [main](https://overlock-studio.github.io/composer/main/) · [v1](https://overlock-studio.github.io/composer/v1/)
-
 ## Install
 
 ```bash
