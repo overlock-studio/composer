@@ -530,6 +530,24 @@ export const connectorRowHandleId = (
   connection: 'input' | 'output',
 ): string => (connection === 'output' ? `target-${path}` : `source-${path}`);
 
+/**
+ * Connector made for a block handle whose edge was dropped on the + of the spec
+ * or status node. It takes only the handle's own name rather than its whole
+ * path, so it lands at the top of the section instead of copying the block's
+ * nesting into the composite.
+ */
+export const connectorForDroppedHandle = (
+  handlePath: string,
+  connection: 'input' | 'output',
+  handle?: Handle,
+): Connector => ({
+  connection,
+  path: `${connection === 'output' ? 'status' : 'spec'}.${handlePath.split('.').pop()}`,
+  type: handle?.schemaType || 'string',
+  required: false,
+  description: handle?.description ?? '',
+});
+
 export function handleToConnector(handle: Handle): Connector {
   return {
     connection: handle.type === 'source' ? 'output' : 'input',
