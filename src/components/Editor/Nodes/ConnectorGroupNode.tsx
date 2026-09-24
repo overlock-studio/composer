@@ -91,11 +91,16 @@ const ConnectorGroupNodeComponent = ({
     ? 'justify-end pr-[17px] pl-2'
     : 'justify-start pl-[17px] pr-2';
 
+  // An edge dragged from a block handle this node could wire to can be
+  // dropped on the + to add a connector for it, so the + lights up meanwhile.
+  const takesDrop = draggedFrom === (isInput ? 'target' : 'source');
+
   const addButton = (
     <Button
       size="icon"
       variant="ghost"
-      className="h-6 w-6 [&_svg]:size-3.5"
+      className={`h-6 w-6 [&_svg]:size-3.5 ${takesDrop ? 'bg-accent text-accent-foreground ring-1 ring-sidebar-primary' : ''}`}
+      data-connector-add={connection}
       onClick={() => setAddOpen(true)}
       aria-label={`Add ${title.toLowerCase()} field`}
     >

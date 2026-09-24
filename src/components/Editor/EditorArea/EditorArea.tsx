@@ -9,6 +9,7 @@ import {
   Background,
   Connection,
   Edge,
+  FinalConnectionState,
   Node,
   useNodesInitialized,
 } from '@xyflow/react';
@@ -16,6 +17,8 @@ import '@xyflow/react/dist/style.css';
 import { useEditorAreaContext } from '../EditorAreaContext';
 import {
   buildTreeData,
+  connectorForDroppedHandle,
+  connectorRowHandleId,
   EDGE_TYPES,
   NODE_TYPES,
   CONTAINER_NODE_WIDTH,
@@ -30,6 +33,7 @@ import {
 import {
   buildConnectorNodes,
   buildContainerGraph,
+  connectorGroupId,
   connectorHandleIds,
   holdsResourceBlocks,
   isConnectorGroupId,
@@ -45,7 +49,10 @@ import {
 import { useToast } from '../../../hooks/use-toast';
 import { Spinner } from '../../Spinner';
 import { Block, Connector, Pipeline } from '../../../api/types';
-import type { PipelineGroupNodeData } from '../../../lib/types';
+import type {
+  PipelineGroupNodeData,
+  ResourceNodeData,
+} from '../../../lib/types';
 import logger from '../../../lib/logger';
 
 const useDocumentColorMode = (): 'light' | 'dark' => {
@@ -392,6 +399,60 @@ export const EditorArea = () => {
     [setEdges],
   );
 
+  // An edge from a block handle dropped on the + of the spec or status node
+  // adds a connector named after that handle and wires the edge to it. Spec
+  // rows feed block inputs and status rows take block outputs, so each + only
+  // answers the one kind of handle.
+  const onConnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent, state: FinalConnectionState) => {
+      const { fromNode, fromHandle } = state;
+      if (state.isValid || !fromNode || !fromHandle?.id) return;
+      if (isConnectorGroupId(fromNode.id)) return;
+
+      const point = 'changedTouches' in event ? event.changedTouches[0] : event;
+      const connection = document
+        .elementFromPoint(point.clientX, point.clientY)
+        ?.closest<HTMLElement>('[data-connector-add]')?.dataset.connectorAdd;
+      if (connection !== 'input' && connection !== 'output') return;
+      if (fromHandle.type !== (connection === 'input' ? 'target' : 'source'))
+        return;
+
+      const data = fromNode.data as Partial<ResourceNodeData>;
+      const handle = (data.currentHandles ?? data.initialHandles)?.find(
+        (item) => item.path === fromHandle.id,
+      );
+      const connector = connectorForDroppedHandle(
+        fromHandle.id,
+        connection,
+        handle,
+      );
+      setContainerConnectors((prev) =>
+        prev.some(
+          (item) =>
+            item.path === connector.path &&
+            item.connection === connector.connection,
+        )
+          ? prev
+          : [...prev, connector],
+      );
+
+      const row = {
+        node: connectorGroupId(connection),
+        handle: connectorRowHandleId(connector.path, connection),
+      };
+      const block = { node: fromNode.id, handle: fromHandle.id };
+      const [source, target] =
+        connection === 'input' ? [row, block] : [block, row];
+      onConnect({
+        source: source.node,
+        sourceHandle: source.handle,
+        target: target.node,
+        targetHandle: target.handle,
+      });
+    },
+    [onConnect, setContainerConnectors],
+  );
+
   // Chain handles only meet each other, and never so that the pipeline loops.
   const isValidConnection = useCallback(
     (connection: Edge | Connection) => {
@@ -650,6 +711,7 @@ export const EditorArea = () => {
           nodes={nodes}
           edges={edges}
           onConnect={onConnect}
+          onConnectEnd={onConnectEnd}
           isValidConnection={isValidConnection}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
