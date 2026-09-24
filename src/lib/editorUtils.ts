@@ -11,8 +11,11 @@ import {
 } from './types';
 import { ResourceNode } from '../components/Editor/Nodes/ResourceNode';
 import { CustomEdge } from '../components/Editor/CustomEdge';
+import { PipelineEdge } from '../components/Editor/PipelineEdge';
 import { ContainerNode } from '../components/Editor/Nodes/ContainerNode';
 import { ConnectorNode } from '../components/Editor/Nodes/ConnectorNode';
+import { ConnectorGroupNode } from '../components/Editor/Nodes/ConnectorGroupNode';
+import { PipelineGroupNode } from '../components/Editor/Nodes/PipelineGroupNode';
 import { Connector } from '../api/types';
 import { JSONSchemaProps } from './jsonSchema';
 
@@ -20,10 +23,13 @@ export const NODE_TYPES: NodeTypes = {
   resource: ResourceNode,
   container: ContainerNode,
   connector: ConnectorNode,
+  connectorGroup: ConnectorGroupNode,
+  pipelineGroup: PipelineGroupNode,
 };
 
 export const EDGE_TYPES = {
   customEdge: CustomEdge,
+  pipelineEdge: PipelineEdge,
 };
 
 export const TRANSFORMERS_DEFAULT: {
@@ -51,6 +57,51 @@ export const MIN_RESOURCE_NODE_SPACING = 25;
 
 export const MIN_CONTAINER_HEIGHT = 300;
 export const MIN_CONTAINER_WIDTH = 500;
+
+// Container nodes render as regular nodes: a header plus one handle row per
+// connector, so their width is fixed and their height follows the content.
+export const CONTAINER_NODE_WIDTH = 340;
+export const CONTAINER_HANDLE_SPACING = 30;
+
+// The two nodes holding a container's connectors while it is open: a header
+// plus one fixed-height row per connector, so a row's handle can be placed by
+// index.
+export const CONNECTOR_GROUP_WIDTH = 200;
+export const CONNECTOR_GROUP_MIN_WIDTH = 160;
+export const CONNECTOR_GROUP_HEADER_HEIGHT = 32;
+export const CONNECTOR_GROUP_ROW_HEIGHT = 30;
+// Strip kept free under the last row, so the resize grip in the bottom corner
+// never sits on a row.
+export const CONNECTOR_GROUP_GRIP_SPACE = 16;
+
+/** Floor a connector node can be resized to: its header, every row and the grip. */
+export const connectorGroupMinHeight = (rowCount: number): number =>
+  CONNECTOR_GROUP_HEADER_HEIGHT +
+  Math.max(rowCount, 1) * CONNECTOR_GROUP_ROW_HEIGHT +
+  CONNECTOR_GROUP_GRIP_SPACE;
+// Handle rows are drawn as a tree: one indent step per path segment, with the
+// line standing near the left of its step, turning towards the name on a
+// rounded corner and stopping just short of it. `REACH` is how far a first
+// child climbs out of its own row towards the row it hangs from, kept short of
+// that row's centre so the line clears the name it starts under.
+export const ROW_TREE_INDENT = 14;
+export const ROW_TREE_STEM = 5;
+export const ROW_TREE_RADIUS = 4;
+export const ROW_TREE_GAP = 3;
+export const ROW_TREE_REACH = 7;
+
+// Pipeline steps are drawn as subflow groups: a header strip plus padding
+// around whatever blocks the step holds. The minimum is kept small so a step
+// opens close to the size of its contents.
+export const PIPELINE_GROUP_HEADER_HEIGHT = 30;
+export const PIPELINE_GROUP_PADDING = 16;
+export const PIPELINE_GROUP_MIN_WIDTH = 240;
+export const PIPELINE_GROUP_MIN_HEIGHT = 110;
+export const PIPELINE_GROUP_GAP = 80;
+
+// Handles carrying the chain from one pipeline step to the next.
+export const PIPELINE_IN_HANDLE = 'pipeline-in';
+export const PIPELINE_OUT_HANDLE = 'pipeline-out';
 
 // Height of the container node header. Child nodes are kept below this so they
 // don't overlap the header (title/actions) when placed or dragged.
@@ -263,6 +314,24 @@ export function generateBezierPoints(
   return points;
 }
 
+/**
+ * Where along an edge its menu point sits. The middle of the edge, unless the
+ * transformers already occupy it: with an odd number of them one sits exactly
+ * at the halfway mark, so the point moves to the middle of the free gap
+ * closest to it instead of on top of a transformer.
+ */
+export function edgeMenuPointT(transformerCount: number): number {
+  const gaps = transformerCount + 1;
+  let best = 0.5 / gaps;
+  for (let gap = 1; gap < gaps; gap++) {
+    const t = (gap + 0.5) / gaps;
+    if (Math.abs(t - 0.5) < Math.abs(best - 0.5)) {
+      best = t;
+    }
+  }
+  return best;
+}
+
 export function getInitialPosition(
   defaultPosition: DefaultPosition,
   boundWidth: number,
@@ -332,6 +401,138 @@ export function calculateConstrainedPosition(
   };
 }
 
+/**
+ * Short label per connector: the last path segment, qualified with its parent
+ * when that segment alone would be ambiguous within the set.
+ */
+export function connectorLabels(
+  connectors: Connector[] | undefined,
+): Record<string, string> {
+  const counts: Record<string, number> = {};
+  for (const connector of connectors || []) {
+    const last = connector.path.split('.').pop() || connector.path;
+    counts[last] = (counts[last] || 0) + 1;
+  }
+
+  const labels: Record<string, string> = {};
+  for (const connector of connectors || []) {
+    const segments = connector.path.split('.');
+    const last = segments[segments.length - 1] || connector.path;
+    const parent = segments[segments.length - 2];
+    labels[connector.path] =
+      counts[last] > 1 && parent ? `${parent}.${last}` : last;
+  }
+  return labels;
+}
+
+/**
+ * One row of a node that lists paths: the segment it is named after, plus
+ * where it sits in the tree its path belongs to, for the node to draw the
+ * lines from.
+ *
+ * Branch rows are materialised from the path segments, so `spec.db.engine`
+ * gives a `db` row even when nothing declares `spec.db` itself. Every row is a
+ * handle, and `path` is the field it wires to.
+ */
+export type PathRow<T> = {
+  path: string;
+  name: string;
+  /** How far the row is indented; 0 for a row hanging off the node header. */
+  depth: number;
+  /** Where in its group of siblings the row sits, for the shape of its elbow. */
+  isFirst: boolean;
+  isLast: boolean;
+  /**
+   * One flag per ancestor column left of the row's own, saying whether that
+   * ancestor still has rows below — the columns a line has to run through.
+   */
+  guides: boolean[];
+  /** Absent on a branch row that only exists to hold its children. */
+  item?: T;
+};
+
+type PathTreeNode<T> = {
+  name: string;
+  path: string;
+  item?: T;
+  children: PathTreeNode<T>[];
+};
+
+// A column holds one half of the schema, and says so in its own title or in
+// the side it sits on, so that first segment is not repeated on every row.
+const ROW_ROOT_SEGMENTS = ['spec', 'status'];
+
+/**
+ * Paths as tree rows, in the order they come in: a row per segment, parents
+ * before the fields they hold, each carrying its own place in the tree.
+ *
+ * Feed it one column's worth at a time — the connectors of one connector node,
+ * or the handles down one side of a block — since the tree is what that column
+ * draws.
+ */
+export function pathRows<T extends { path: string }>(
+  items: T[] | undefined,
+): PathRow<T>[] {
+  const roots: PathTreeNode<T>[] = [];
+  const byPath = new Map<string, PathTreeNode<T>>();
+
+  for (const item of items || []) {
+    const segments = item.path.split('.').filter(Boolean);
+    if (!segments.length) continue;
+    const first =
+      segments.length > 1 && ROW_ROOT_SEGMENTS.includes(segments[0]) ? 1 : 0;
+
+    let siblings = roots;
+    for (let index = first; index < segments.length; index++) {
+      const path = segments.slice(0, index + 1).join('.');
+      let node = byPath.get(path);
+      if (!node) {
+        node = { name: segments[index], path, children: [] };
+        byPath.set(path, node);
+        siblings.push(node);
+      }
+      siblings = node.children;
+    }
+    const own = byPath.get(segments.join('.'));
+    if (own) own.item = item;
+  }
+
+  const rows: PathRow<T>[] = [];
+  const walk = (
+    nodes: PathTreeNode<T>[],
+    depth: number,
+    guides: boolean[],
+  ): void => {
+    nodes.forEach((node, index) => {
+      const isLast = index === nodes.length - 1;
+      rows.push({
+        path: node.path,
+        name: node.name,
+        depth,
+        isFirst: index === 0,
+        isLast,
+        guides,
+        item: node.item,
+      });
+      // Top-level rows hang off the header rather than off a row, so nothing
+      // runs through the column they would otherwise open.
+      walk(node.children, depth + 1, depth ? [...guides, !isLast] : []);
+    });
+  };
+  walk(roots, 0, []);
+
+  return rows;
+}
+
+/**
+ * Handle a connector row occupies on its group node: Spec rows start edges,
+ * Status rows end them — see `ConnectorGroupNode`.
+ */
+export const connectorRowHandleId = (
+  path: string,
+  connection: 'input' | 'output',
+): string => (connection === 'output' ? `target-${path}` : `source-${path}`);
+
 export function handleToConnector(handle: Handle): Connector {
   return {
     connection: handle.type === 'source' ? 'output' : 'input',
@@ -370,18 +571,27 @@ function rectsIntersect(a: NodeRect, b: NodeRect, margin = 0): boolean {
   );
 }
 
+// Nodes that are laid out rather than jostled: connectors are placed by hand,
+// and a pipeline group's footprint follows the blocks it holds.
+const isNonCollidingNode = (node: Node): boolean =>
+  node.type === 'connector' ||
+  node.type === 'connectorGroup' ||
+  node.type === 'pipelineGroup';
+
 export function resolveNodeCollisions(
   draggedNode: Node,
   allNodes: Node[],
   setNodes: (updateFn: (nodes: Node[]) => Node[]) => void,
 ): void {
+  if (isNonCollidingNode(draggedNode)) return;
+
   const isResourceNode = draggedNode.type === 'resource';
   const spacing = isResourceNode ? MIN_RESOURCE_NODE_SPACING : MIN_NODE_SPACING;
   const maxIterations = 50;
 
   // Filter nodes that can collide with dragged node
   const collidableNodes = allNodes.filter((node) => {
-    if (node.type === 'connector') return false;
+    if (isNonCollidingNode(node)) return false;
 
     // Container nodes only collide with other container nodes
     if (draggedNode.type === 'container' && node.type !== 'container')
@@ -516,7 +726,7 @@ export function moveIntersectingNodes(
 
   intersectingNodes.forEach((node) => {
     if (node.id === resizedNode.id) return;
-    if (node.type === 'connector') return;
+    if (isNonCollidingNode(node)) return;
 
     if (resizedNode.type === 'container' && node.type !== 'container') return;
     if (isResourceNode && node.type !== 'resource') return;

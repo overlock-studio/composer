@@ -21,14 +21,23 @@ import { useEditorActions } from '../EditorAreaContext';
 import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 import { Button } from '../../ui/button';
 import { EditHandlesMenu } from '../Menus';
+import { RowTree } from '../RowTree';
 import {
   buildTreeData,
   moveIntersectingNodes,
+  pathRows,
   RESOURCE_NODE_WIDTH,
 } from '../../../lib/editorUtils';
 
 const SPACE_BETWEEN_HANDLES = 30;
 const MIN_RESOURCE_NODE_HEIGHT = 80;
+
+// The two columns split the node between them, each reading outwards towards
+// its own handles: targets left to right, sources right-aligned. The column
+// owns the half, so a row fills it and long names truncate inside it rather
+// than running into the other side.
+const TARGET_ROW = 'flex w-full items-center justify-start pl-[10px] pr-1';
+const SOURCE_ROW = 'flex w-full items-center justify-end pr-[10px] pl-1';
 
 const ResourceNodeComponent = ({
   id,
@@ -78,39 +87,25 @@ const ResourceNodeComponent = ({
     prevHandlesRef.current = handles;
   }, [handles, id, setNodes]);
 
+  // Each side of the block is its own tree, so the two columns are built and
+  // measured apart. Branch rows are rows like any other, which is why the
+  // height follows them rather than the handle count.
+  const targetRows = useMemo(
+    () => pathRows(handles.filter((handle) => handle.type === 'target')),
+    [handles],
+  );
+  const sourceRows = useMemo(
+    () => pathRows(handles.filter((handle) => handle.type === 'source')),
+    [handles],
+  );
+
   const nodeHeight = useMemo(() => {
-    const sourceCount = handles.filter(
-      (handle) => handle.type === 'source',
-    ).length;
-    const targetCount = handles.filter(
-      (handle) => handle.type === 'target',
-    ).length;
-    const maxHandlesCount = Math.max(sourceCount, targetCount);
+    const maxRowCount = Math.max(targetRows.length, sourceRows.length);
     return Math.max(
-      (maxHandlesCount + 2) * SPACE_BETWEEN_HANDLES,
+      (maxRowCount + 2) * SPACE_BETWEEN_HANDLES,
       MIN_RESOURCE_NODE_HEIGHT,
     );
-  }, [handles]);
-
-  const handleLabels = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const h of handles) {
-      const last = h.path.split('.').pop() || h.path;
-      counts[last] = (counts[last] || 0) + 1;
-    }
-    const labels: Record<string, string> = {};
-    for (const h of handles) {
-      const segments = h.path.split('.');
-      const last = segments[segments.length - 1] || h.path;
-      if (counts[last] > 1) {
-        const parent = segments[segments.length - 2];
-        labels[h.path] = parent ? `${parent}.${last}` : last;
-      } else {
-        labels[h.path] = last;
-      }
-    }
-    return labels;
-  }, [handles]);
+  }, [targetRows, sourceRows]);
 
   useEffect(() => {
     setNodes((currentNodes) =>
@@ -233,48 +228,54 @@ const ResourceNodeComponent = ({
         setMenuOpen={setEditOpen}
       />
       <div className="flex flex-row justify-between">
-        <div className="flex flex-col">
-          {handles
-            .filter((handle) => handle.type === 'target')
-            .map((targetHandle, index) => (
-              <CustomHandle
-                key={targetHandle.path}
-                type="target"
-                position={Position.Left}
-                id={targetHandle.path}
-                style={{ top: `${SPACE_BETWEEN_HANDLES * (index + 2)}px` }}
-                isConnectableStart={targetHandle.path.endsWith('ref.name')}
-                connectionCount={
-                  targetHandle.path.endsWith('ref.name') ? 1 : 0
-                }
-                inactiveClass={'opacity-30'}
-                description={targetHandle.description}
-                path={targetHandle.path}
-                label={handleLabels[targetHandle.path]}
-                variant="block"
-                {...getIsConnectable(targetHandle.path, 'target')}
-              />
-            ))}
+        <div className="flex w-1/2 flex-col">
+          {targetRows.map((row, index) => (
+            <CustomHandle
+              key={row.path}
+              type="target"
+              position={Position.Left}
+              id={row.path}
+              style={{ top: `${SPACE_BETWEEN_HANDLES * (index + 2)}px` }}
+              isConnectableStart={row.path.endsWith('ref.name')}
+              connectionCount={row.path.endsWith('ref.name') ? 1 : 0}
+              inactiveClass={'opacity-30'}
+              description={row.item?.description ?? ''}
+              path={row.path}
+              label={
+                <>
+                  <RowTree row={row} height={SPACE_BETWEEN_HANDLES} />
+                  <span className="min-w-0 truncate">{row.name}</span>
+                </>
+              }
+              labelClassName={TARGET_ROW}
+              variant="block"
+              {...getIsConnectable(row.path, 'target')}
+            />
+          ))}
         </div>
-        <div className="flex flex-col">
-          {handles
-            .filter((handle) => handle.type === 'source')
-            .map((sourceHandle, index) => (
-              <CustomHandle
-                key={sourceHandle.path}
-                type="source"
-                position={Position.Right}
-                id={sourceHandle.path}
-                style={{ top: `${SPACE_BETWEEN_HANDLES * (index + 2)}px` }}
-                isConnectableEnd={false}
-                inactiveClass={'opacity-30'}
-                description={sourceHandle.description}
-                path={sourceHandle.path}
-                label={handleLabels[sourceHandle.path]}
-                variant="block"
-                {...getIsConnectable(sourceHandle.path, 'source')}
-              />
-            ))}
+        <div className="flex w-1/2 flex-col">
+          {sourceRows.map((row, index) => (
+            <CustomHandle
+              key={row.path}
+              type="source"
+              position={Position.Right}
+              id={row.path}
+              style={{ top: `${SPACE_BETWEEN_HANDLES * (index + 2)}px` }}
+              isConnectableEnd={false}
+              inactiveClass={'opacity-30'}
+              description={row.item?.description ?? ''}
+              path={row.path}
+              label={
+                <>
+                  <span className="min-w-0 truncate">{row.name}</span>
+                  <RowTree row={row} height={SPACE_BETWEEN_HANDLES} mirrored />
+                </>
+              }
+              labelClassName={SOURCE_ROW}
+              variant="block"
+              {...getIsConnectable(row.path, 'source')}
+            />
+          ))}
         </div>
       </div>
       <NodeDeletionDialog

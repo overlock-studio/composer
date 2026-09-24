@@ -116,11 +116,21 @@
     &.react-flow__node-container {
       z-index: 10002;
       .node-body {
-        display: block;
+        overflow: visible;
       }
     }
 
+    /* Blocks stand above the edge layer, so connections run behind them
+       instead of across their faces. React Flow writes the node z-index
+       inline, so the rule has to be important to land. */
     &.react-flow__node-resource {
+      z-index: 10001 !important;
+
+      &.selected,
+      &.dragging {
+        z-index: 10004 !important;
+      }
+
       .node-body {
         overflow: visible;
       }
@@ -142,6 +152,127 @@
         }
         &.source {
           right: 5px;
+        }
+      }
+    }
+
+    &.react-flow__node-connectorGroup {
+      .node-body {
+        overflow: visible;
+      }
+
+      /* A grip of three diagonal lines tucked inside the corner, clear of the
+         rounded border. Faint at rest, full strength while the node is hovered
+         or selected. The library centres handles on the corner with
+         `translate`, so that is reset in favour of the offsets below. */
+      .react-flow__resize-control.handle.connector-group-resize-handle {
+        z-index: 5;
+        width: 14px;
+        height: 14px;
+        padding: 1px;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        opacity: 0.5;
+        translate: none;
+        transition: opacity 0.15s ease;
+
+        &.right {
+          transform: translate(calc(-100% - 2px), calc(-100% - 2px));
+        }
+
+        &.left {
+          transform: translate(2px, calc(-100% - 2px)) scaleX(-1);
+        }
+
+        svg {
+          display: block;
+          width: 100%;
+          height: 100%;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.25;
+          stroke-linecap: round;
+        }
+
+        &:hover {
+          color: hsl(var(--sidebar-primary));
+        }
+      }
+
+      &:hover,
+      &.selected {
+        .react-flow__resize-control.handle.connector-group-resize-handle {
+          opacity: 1;
+        }
+      }
+    }
+
+    /* Pipeline steps are backdrops for the blocks they hold, so they sit behind
+       every other node and stay out of the way of pointer events. */
+    &.react-flow__node-pipelineGroup {
+      z-index: -1 !important;
+      box-shadow: none;
+
+      &.selected .pipeline-group {
+        border-color: hsl(var(--sidebar-primary) / 0.7);
+      }
+
+      .pipeline-group {
+        width: 100%;
+        height: 100%;
+        border-radius: var(--node-border-radius);
+        border: 1px solid hsl(var(--muted-foreground) / 0.45);
+        background: hsl(var(--muted-foreground) / 0.12);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .pipeline-group-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 10px;
+        border-bottom: 1px solid hsl(var(--muted-foreground) / 0.3);
+        border-radius: var(--node-border-radius) var(--node-border-radius) 0 0;
+        background: hsl(var(--muted-foreground) / 0.1);
+      }
+
+      .pipeline-group-empty {
+        margin: auto;
+        padding: 0 16px;
+        font-size: 10px;
+        text-align: center;
+        color: hsl(var(--muted-foreground));
+      }
+
+      .pipeline-group-resize-line {
+        border-color: hsl(var(--sidebar-primary) / 0.7);
+      }
+
+      .pipeline-group-resize-handle {
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+        border: 1px solid hsl(var(--background));
+        background: hsl(var(--sidebar-primary));
+      }
+
+      /* The chain between steps: muted rather than the block palette, since it
+         carries order rather than data. Placement is set inline on the handle,
+         so only looks are set here. */
+      .react-flow__handle.pipeline-group-handle {
+        width: 9px;
+        height: 9px;
+        border: 2px solid hsl(var(--muted-foreground) / 0.7);
+        background: hsl(var(--background));
+        cursor: crosshair;
+        animation: none;
+
+        &:hover {
+          animation: none;
+          border-color: hsl(var(--muted-foreground) / 0.7);
         }
       }
     }
@@ -169,6 +300,54 @@
     }
   }
 
+  /* The menu point is the only thing to click on a data edge, so the line
+     itself lets the pointer through to the canvas behind it. */
+  .react-flow__edge.react-flow__edge-customEdge {
+    pointer-events: none;
+  }
+
+  /* Chain between consecutive pipeline steps: structural, so it reads as a
+     hint rather than a data edge. */
+  .react-flow__edge.pipeline-step-edge {
+    pointer-events: none;
+
+    .react-flow__edge-path {
+      stroke: hsl(var(--muted-foreground) / 0.85);
+      stroke-width: 1.5;
+      stroke-dasharray: 5 4;
+    }
+  }
+
+  /* Unlinks two pipeline steps: small and muted like the chain it sits on. */
+  .pipeline-edge-unlink {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 1px solid hsl(var(--muted-foreground) / 0.6);
+    border-radius: 100%;
+    background: hsl(var(--background));
+    color: hsl(var(--muted-foreground));
+    pointer-events: all;
+    cursor: pointer;
+
+    svg {
+      width: 10px;
+      height: 10px;
+    }
+
+    &:hover {
+      color: rgb(248, 113, 113);
+      border-color: rgb(248, 113, 113);
+    }
+  }
+
   .transformer-wrapper {
     z-index: 10000;
     position: absolute;
@@ -179,8 +358,8 @@
       display: flex;
       padding: 2px;
       border-radius: 100%;
-      width: 30px;
-      height: 30px;
+      width: 15px;
+      height: 15px;
       background-color: var(--text-color);
       pointer-events: all;
       cursor: pointer;
@@ -208,7 +387,50 @@
         height: 100%;
         width: 100%;
         z-index: 1;
+
+        svg {
+          width: 9px;
+          height: 9px;
+        }
       }
+    }
+  }
+
+  /* The one target that opens an edge's menu: always visible, in the colour the
+     edge gradient reaches at its middle so it reads as part of the line. Solid
+     at rest, hollowed out to the canvas colour while hovered or while its menu
+     is open, and zoomed with the canvas like the transformer chips. */
+  .edge-menu-point {
+    --edge-point-color: #6c6ed8;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10000;
+    display: flex;
+    width: 10px;
+    height: 10px;
+    padding: 2px;
+    border: none;
+    border-radius: 100%;
+    background: var(--edge-point-color);
+    pointer-events: all;
+    cursor: pointer;
+
+    &:after {
+      content: '';
+      width: 100%;
+      height: 100%;
+      border-radius: 100%;
+      background: var(--edge-point-color);
+      transition: background-color 0.15s ease;
+    }
+
+    /* Hovering, or having the menu open, hollows the point out to the canvas
+       colour, so the ring reads as a target rather than a filled dot. */
+    &:hover:after,
+    &.is-active:after {
+      background: hsl(var(--background));
     }
   }
 }

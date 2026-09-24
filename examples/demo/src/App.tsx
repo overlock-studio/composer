@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Button,
   ComposerEditor,
+  type Block,
   type ComposerEditorHandle,
   type ComposerSavePayload,
 } from '@overlock-studio/composer';
@@ -9,13 +10,25 @@ import '@overlock-studio/composer/styles/editor.css';
 import '@xyflow/react/dist/style.css';
 
 import { demoAdapter } from './adapter';
-import { sampleFiles, sampleHashes, sampleLayout } from './sample';
+
+// The dev server keeps the last save in memory, seeded from
+// samples/blocks.json when it starts.
+const BLOCKS_URL = '/api/blocks';
 
 type Theme = 'light' | 'dark';
 
 export default function App() {
   const editorRef = useRef<ComposerEditorHandle>(null);
+  const [blocks, setBlocks] = useState<Block[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [lastSave, setLastSave] = useState<ComposerSavePayload | null>(null);
+
+  useEffect(() => {
+    fetch(BLOCKS_URL)
+      .then((res) => res.json() as Promise<Block[]>)
+      .then(setBlocks)
+      .catch((err) => setLoadError(String(err)));
+  }, []);
   const [showPayload, setShowPayload] = useState(false);
   const [theme, setTheme] = useState<Theme>(() =>
     document.documentElement.classList.contains('dark') ? 'dark' : 'light',
@@ -30,6 +43,13 @@ export default function App() {
     setLastSave(payload);
     setShowPayload(true);
     console.log('[composer-demo] onSave payload', payload);
+    fetch(BLOCKS_URL, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload.blocks),
+    }).catch((err) =>
+      console.error('[composer-demo] storing blocks failed', err),
+    );
   };
 
   return (
@@ -38,7 +58,7 @@ export default function App() {
         <div className="flex items-baseline gap-3">
           <h1 className="text-sm font-semibold">Composer demo</h1>
           <span className="text-xs text-muted-foreground">
-            Mounts ComposerEditor with a minimal XRD + Composition.
+            Saves are kept in the dev server&apos;s memory and loaded on reload.
           </span>
         </div>
         <div className="flex gap-1">
@@ -71,15 +91,18 @@ export default function App() {
 
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <ComposerEditor
-            ref={editorRef}
-            files={sampleFiles}
-            crossplaneFile="crossplane.yaml"
-            hashes={sampleHashes}
-            layout={sampleLayout}
-            adapter={demoAdapter}
-            onSave={handleSave}
-          />
+          {blocks ? (
+            <ComposerEditor
+              ref={editorRef}
+              blocks={blocks}
+              adapter={demoAdapter}
+              onSave={handleSave}
+            />
+          ) : (
+            <p className="p-4 text-xs text-muted-foreground">
+              {loadError ? `Could not load blocks: ${loadError}` : 'Loading…'}
+            </p>
+          )}
         </div>
         {showPayload && (
           <aside className="w-[28rem] shrink-0 overflow-auto border-l border-border/70 bg-muted/40 p-3 text-xs">

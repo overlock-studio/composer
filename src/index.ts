@@ -37,6 +37,17 @@ export type {
   PackageDependency,
 } from './lib/parser';
 export {
+  BLOCK_TYPES,
+  connectorsBlockId,
+  functionBlockId,
+  restoreBlocks,
+} from './lib/compositionInputs';
+export type {
+  ConnectorLayout,
+  ContainerLayout,
+  LayoutBox,
+} from './lib/containerLayout';
+export {
   serializeCrossplaneFiles,
   type SerializerInput,
   type SerializerCompositionInput,

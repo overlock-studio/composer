@@ -4,12 +4,15 @@ import {
   OnEdgesChange,
   OnNodesChange,
   Position,
+  Viewport,
 } from '@xyflow/react';
 import { LucideIcon } from 'lucide-react';
 import { Dispatch, ReactNode, SetStateAction } from 'react';
 import { Block, BlockType, Connector, Pipeline } from '../api/types';
 import { EditorDataAdapter, EditorEntityRef } from '../api/adapter';
+import type { CrossplaneFunctionDB } from '../api/typesDB';
 import { JSONSchemaProps } from './jsonSchema';
+import type { ContainerLayout } from './containerLayout';
 
 export type JsonPrimitive = number | string | boolean | null;
 
@@ -83,9 +86,29 @@ export type ActiveHandle = {
   type: 'source' | 'target';
 };
 
+// The editor shows either the container-level graph or the blocks of a single
+// container. Both surfaces share one node/edge store.
+export type EditorMode = 'containers' | 'container';
+
+// What the container level looked like when a container was opened, plus the
+// connectors being edited inside it. Saving merges the open container's canvas
+// back into this, so what is written never depends on which level is on screen.
+export type ContainerSession = {
+  containerId: string;
+  nodes: Node[];
+  edges: Edge[];
+  viewport: Viewport;
+  connectors: Connector[];
+};
+
 export type EditorAreaContextType = {
   selectedBlockType: BlockType | undefined;
   setSelectedBlockType: Dispatch<SetStateAction<BlockType | undefined>>;
+  // The function being dragged from the sidebar, dropped as a pipeline step.
+  selectedFunction: CrossplaneFunctionDB | undefined;
+  setSelectedFunction: Dispatch<
+    SetStateAction<CrossplaneFunctionDB | undefined>
+  >;
   nodes: Node[];
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
   onNodesChange: OnNodesChange<Node>;
@@ -102,6 +125,13 @@ export type EditorAreaContextType = {
   adapter: EditorDataAdapter;
   entityRef: EditorEntityRef;
   registerBlockTypes: (types: BlockType[]) => void;
+  editorMode: EditorMode;
+  activeContainerId: string | null;
+  // Null unless a container is open. Held as a ref so parking a graph never
+  // re-renders the nodes subscribing to this context.
+  containerSession: React.MutableRefObject<ContainerSession | null>;
+  openContainer: (containerId: string) => void;
+  closeContainer: () => void;
   resolveBlockType: (
     apiVersion: string | undefined,
     kind: string | undefined,
@@ -161,12 +191,25 @@ export type ContainerNodeData = {
   connectors: Connector[];
   childBlocks: Block[];
   reactFlowRef: React.MutableRefObject<HTMLDivElement | null>;
-  initialWidth?: number;
-  initialHeight?: number;
   kind?: string;
   apiVersion?: string;
   blockType?: BlockType;
   functions?: Pipeline[];
+  // How the container was last arranged in edit mode, if it has been.
+  containerLayout?: ContainerLayout;
+  // The loaded block's own `data`, handed back untouched on save.
+  blockData?: Record<string, unknown>;
+};
+
+// A pipeline step of the open container, drawn as a subflow group. Only the
+// patch-and-transform step holds resource blocks; the others are placeholders
+// until their own behaviour is built.
+export type PipelineGroupNodeData = {
+  step: string;
+  functionName?: string;
+  holdsResources: boolean;
+  // The whole step, so what the editor does not model is written back as is.
+  fn: Pipeline;
 };
 
 export type ConnectorNodeData = {
@@ -174,6 +217,14 @@ export type ConnectorNodeData = {
   nodeId: string;
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
   label?: string;
+};
+
+// One of the two nodes holding a container's connectors while it is open: the
+// whole list moves together, and each row carries the handle blocks wire to.
+export type ConnectorGroupNodeData = {
+  connection: 'input' | 'output';
+  connectors: Connector[];
+  setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
 };
 
 export type HandlesStates = {
@@ -191,6 +242,8 @@ export type EditConnectorsMenuProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   connector?: Connector;
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
+  // Direction a newly added connector starts on.
+  defaultConnection?: 'input' | 'output';
 };
 
 export type EditHandlesMenuProps = {
@@ -235,7 +288,6 @@ export type SaveConfigurationDialogProps = {
 export type CustomEdgeData = {
   isHovered?: boolean;
   transformers?: Transformer[];
-  reactFlowRef: React.MutableRefObject<HTMLDivElement | null>;
 };
 
 export type CustomEdgeToolbarProps = {

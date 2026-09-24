@@ -6,6 +6,7 @@ import {
 } from './types';
 import {
   ConfigurationDB,
+  CrossplaneFunctionDB,
   CrossplaneProviderDB,
   TemplateDB,
 } from './typesDB';
@@ -29,6 +30,11 @@ export type EditorDataAdapter = {
 
   listCrossplaneProviders: () => Promise<{
     crossplaneProviders: CrossplaneProviderDB[];
+    totalCount: number;
+  }>;
+
+  listCrossplaneFunctions: () => Promise<{
+    crossplaneFunctions: CrossplaneFunctionDB[];
     totalCount: number;
   }>;
 

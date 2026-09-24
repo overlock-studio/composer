@@ -21,13 +21,19 @@ interface IHandleProps extends HandleProps {
   path: string;
   description: string;
   variant?: 'block' | 'container';
-  label?: string;
+  label?: React.ReactNode;
+  // Replaces the width/padding of the label slot, for nodes whose rows are not
+  // the two half-width columns of a block.
+  labelClassName?: string;
 }
 
 const CustomHandleComponent = ({
   id,
   type,
-  isConnectable,
+  // A handle whose node says nothing about it is connectable; leaving this
+  // undefined made every such handle fall into `inactiveClass` and read as
+  // disabled, which is how the container's own handles were being drawn.
+  isConnectable = true,
   className,
   connectionCount = 0,
   inactiveClass = '',
@@ -35,16 +41,21 @@ const CustomHandleComponent = ({
   description,
   variant = 'block',
   label,
+  labelClassName,
   ...props
 }: IHandleProps) => {
   const displayLabel = label ?? path.split('.').pop();
+  const blockLabel = `text-[10px] text-foreground opacity-80 h-[30px] leading-[30px] py-[1px] ${
+    labelClassName ?? 'pl-[10px] pr-[10px] w-1/2'
+  }`;
   const connections = useNodeConnections({
     id: id || undefined,
     handleType: type,
   });
 
   const nodeId = useNodeId();
-  const { activeHandle, setActiveHandle } = useEditorActions();
+  const { activeHandle, setActiveHandle, setNodes, setEdges } =
+    useEditorActions();
   const isOwnerSelected = useStore((s) =>
     nodeId ? (s.nodeLookup.get(nodeId)?.selected ?? false) : false,
   );
@@ -58,16 +69,29 @@ const CustomHandleComponent = ({
 
   const handleClick = (e: React.MouseEvent) => {
     if (!nodeId) return;
+    // The click is kept off the pane so React Flow does not clear the focus
+    // this handle is about to take, which is why everything else has to be
+    // unfocused here rather than by the canvas.
     e.stopPropagation();
     if (isActiveByClick) {
       setActiveHandle(null);
-    } else {
-      setActiveHandle({
-        nodeId,
-        handleId: id ?? '',
-        type: type as 'source' | 'target',
-      });
+      return;
     }
+    setActiveHandle({
+      nodeId,
+      handleId: id ?? '',
+      type: type as 'source' | 'target',
+    });
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.selected && node.id !== nodeId
+          ? { ...node, selected: false }
+          : node,
+      ),
+    );
+    setEdges((eds) =>
+      eds.map((edge) => (edge.selected ? { ...edge, selected: false } : edge)),
+    );
   };
 
   const isConnectableValue =
@@ -80,9 +104,7 @@ const CustomHandleComponent = ({
         <TooltipTrigger asChild>
           <div>
             {type === 'source' && variant === 'block' && (
-              <div className="text-[10px] text-foreground opacity-80 h-[30px] leading-[30px] py-[1px] pl-[10px] pr-[10px] w-1/2">
-                {displayLabel}
-              </div>
+              <div className={blockLabel}>{displayLabel}</div>
             )}
             {type === 'source' && variant === 'container' && (
               <div className="absolute right-full -mr-[7px] text-[10px] text-foreground opacity-80 h-[48px] leading-[48px]">
@@ -98,9 +120,7 @@ const CustomHandleComponent = ({
               className={`${className || ''} ${!isConnectableValue ? inactiveClass : ''} ${isHandleActive ? 'is-active' : ''}`}
             />
             {type === 'target' && variant === 'block' && (
-              <div className="text-[10px] text-foreground opacity-80 h-[30px] leading-[30px] py-[1px] pl-[10px] w-1/2">
-                {displayLabel}
-              </div>
+              <div className={blockLabel}>{displayLabel}</div>
             )}
             {type === 'target' && variant === 'container' && (
               <div className="absolute left-full -ml-[7px] text-[10px] text-foreground opacity-80 h-[48px] leading-[48px]">

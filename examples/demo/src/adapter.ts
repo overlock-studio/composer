@@ -3,6 +3,7 @@ import {
   isCrossplaneCoreUrl,
   type BlockType,
   type ConfigurationDB,
+  type CrossplaneFunctionDB,
   type CrossplaneProviderDB,
   type EditorDataAdapter,
 } from '@overlock-studio/composer';
@@ -22,11 +23,21 @@ const providers: CrossplaneProviderDB[] = sampleDependencies
     version: d.version.replace(/^[>=<~^ ]+/, '') || undefined,
   }));
 
+const functions: CrossplaneFunctionDB[] = sampleDependencies
+  .filter((d) => d.kind === 'function')
+  .map((d, idx) => ({
+    _id: `fn-${idx + 1}`,
+    title: d.package.split('/').pop() ?? d.package,
+    description: `Demo function entry parsed from crossplane.yaml (${d.package})`,
+    url: d.package,
+    version: d.version.replace(/^[>=<~^ ]+/, '') || undefined,
+  }));
+
 const configuration: ConfigurationDB = {
   _id: 'composer',
   name: 'demo-configuration',
   providers: providers.map((p) => p._id),
-  functions: [],
+  functions: functions.map((f) => f._id),
   deployId: null,
 };
 
@@ -63,6 +74,10 @@ export const demoAdapter: EditorDataAdapter = {
   listCrossplaneProviders: async () => ({
     crossplaneProviders: providers,
     totalCount: providers.length,
+  }),
+  listCrossplaneFunctions: async () => ({
+    crossplaneFunctions: functions,
+    totalCount: functions.length,
   }),
   getConfigurationData: async () => ({
     compositions: [],

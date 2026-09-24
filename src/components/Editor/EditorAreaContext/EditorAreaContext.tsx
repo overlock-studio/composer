@@ -4,14 +4,17 @@ import React, {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
   ActiveHandle,
+  ContainerSession,
   EditorActionsContextType,
   EditorAreaContextType,
   EditorAreaProviderProps,
   EditorGraphContextType,
+  EditorMode,
 } from '../../../lib/types';
 import { Edge, Node, useEdgesState, useNodesState } from '@xyflow/react';
 import { Block, BlockType } from '../../../api/types';
@@ -44,6 +47,10 @@ const noopAdapter: EditorDataAdapter = {
     crossplaneProviders: [],
     totalCount: 0,
   }),
+  listCrossplaneFunctions: async () => ({
+    crossplaneFunctions: [],
+    totalCount: 0,
+  }),
   getConfigurationData: async () => ({
     compositions: [],
     xrdBlockType: [],
@@ -59,6 +66,8 @@ const noopAdapter: EditorDataAdapter = {
 const EditorActionsContext = createContext<EditorActionsContextType>({
   selectedBlockType: undefined,
   setSelectedBlockType: () => undefined,
+  selectedFunction: undefined,
+  setSelectedFunction: () => undefined,
   setNodes: () => undefined,
   onNodesChange: () => undefined,
   setEdges: () => undefined,
@@ -73,6 +82,11 @@ const EditorActionsContext = createContext<EditorActionsContextType>({
   adapter: noopAdapter,
   entityRef: { entity: null, entityId: null },
   registerBlockTypes: () => undefined,
+  editorMode: 'containers',
+  activeContainerId: null,
+  containerSession: { current: null },
+  openContainer: () => undefined,
+  closeContainer: () => undefined,
   resolveBlockType: () => undefined,
 });
 
@@ -87,6 +101,8 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
   entityRef,
 }) => {
   const [selectedBlockType, setSelectedBlockType] = useState<BlockType>();
+  const [selectedFunction, setSelectedFunction] =
+    useState<EditorActionsContextType['selectedFunction']>();
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -95,6 +111,21 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
   const [blockTypeRegistry, setBlockTypeRegistry] = useState<
     Record<string, BlockType>
   >({});
+  const [activeContainerId, setActiveContainerId] = useState<string | null>(
+    null,
+  );
+  // Lives here rather than in the editor area so saving can reach it without
+  // caring which level is on screen.
+  const containerSession = useRef<ContainerSession | null>(null);
+  const editorMode: EditorMode = activeContainerId ? 'container' : 'containers';
+
+  const openContainer = useCallback((containerId: string) => {
+    setActiveContainerId(containerId);
+  }, []);
+
+  const closeContainer = useCallback(() => {
+    setActiveContainerId(null);
+  }, []);
 
   const registerBlockTypes = useCallback((types: BlockType[]) => {
     if (!types.length) return;
@@ -163,6 +194,8 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
     () => ({
       selectedBlockType,
       setSelectedBlockType,
+      selectedFunction,
+      setSelectedFunction,
       setNodes,
       onNodesChange,
       setEdges,
@@ -177,10 +210,16 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
       adapter,
       entityRef,
       registerBlockTypes,
+      editorMode,
+      activeContainerId,
+      containerSession,
+      openContainer,
+      closeContainer,
       resolveBlockType,
     }),
     [
       selectedBlockType,
+      selectedFunction,
       setNodes,
       onNodesChange,
       setEdges,
@@ -193,6 +232,10 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
       adapter,
       entityRef,
       registerBlockTypes,
+      editorMode,
+      activeContainerId,
+      openContainer,
+      closeContainer,
       resolveBlockType,
     ],
   );

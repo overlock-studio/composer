@@ -1,0 +1,738 @@
+import type { Edge as RFEdge, Node as RFNode } from '@xyflow/react';
+import type {
+  Block,
+  BlockType,
+  Connector,
+  Edge as ApiEdge,
+  Pipeline,
+} from '../api/types';
+import type {
+  ConnectorGroupNodeData,
+  ContainerNodeData,
+  CustomEdgeData,
+  Handle,
+  PipelineGroupNodeData,
+  ResourceNodeData,
+} from './types';
+import {
+  PATCH_AND_TRANSFORM_STEP,
+  type ContainerLayout,
+  type LayoutBox,
+} from './containerLayout';
+import { collectPipeline, pipelineEdge } from './pipelineChain';
+import {
+  buildTreeData,
+  connectorRowHandleId,
+  pathRows,
+  connectorToHandle,
+  getHandleByPath,
+  getHandlesFromSchema,
+  handleToConnector,
+  CONNECTOR_GROUP_WIDTH,
+  connectorGroupMinHeight,
+  PIPELINE_GROUP_GAP,
+  PIPELINE_GROUP_HEADER_HEIGHT,
+  PIPELINE_GROUP_MIN_HEIGHT,
+  PIPELINE_GROUP_MIN_WIDTH,
+  PIPELINE_GROUP_PADDING,
+  RESOURCE_NODE_WIDTH,
+} from './editorUtils';
+
+const BLOCK_START = { x: 320, y: 80 };
+const BLOCK_SPACING = 40;
+const DEFAULT_BLOCK_HEIGHT = 160;
+
+// The two connector nodes flank the blocks, far enough out to leave room for
+// the edges running between them.
+const CONNECTOR_COLUMN_GAP = 220;
+
+const CONNECTOR_GROUP_ID_PREFIX = 'connectors:';
+
+export const connectorGroupId = (connection: 'input' | 'output'): string =>
+  `${CONNECTOR_GROUP_ID_PREFIX}${connection}`;
+
+export const isConnectorGroupId = (id: string): boolean =>
+  id.startsWith(CONNECTOR_GROUP_ID_PREFIX);
+
+const isInput = (connector: Connector): boolean =>
+  connector.connection !== 'output';
+
+const sideOf = (
+  connectors: Connector[],
+  connection: 'input' | 'output',
+): Connector[] =>
+  connectors.filter((connector) =>
+    connection === 'input' ? isInput(connector) : !isInput(connector),
+  );
+
+/**
+ * Every handle the two connector nodes expose, branch rows included: a path a
+ * connector only passes through is still a row, and still wireable.
+ */
+export const connectorHandleIds = (connectors: Connector[]): Set<string> => {
+  const ids = new Set<string>();
+  for (const connection of ['input', 'output'] as const) {
+    for (const row of pathRows(sideOf(connectors, connection))) {
+      ids.add(connectorRowHandleId(row.path, connection));
+    }
+  }
+  return ids;
+};
+
+export { PATCH_AND_TRANSFORM_STEP } from './containerLayout';
+
+const PIPELINE_GROUP_ID_PREFIX = 'pipeline:';
+
+export const pipelineGroupId = (step: string): string =>
+  `${PIPELINE_GROUP_ID_PREFIX}${step}`;
+
+export const isPipelineGroupId = (id: string): boolean =>
+  id.startsWith(PIPELINE_GROUP_ID_PREFIX);
+
+/** The one pipeline group blocks live in — the connector columns line up with it. */
+export const holdsResourceBlocks = (node: RFNode): boolean =>
+  node.type === 'pipelineGroup' &&
+  !!(node.data as PipelineGroupNodeData | undefined)?.holdsResources;
+
+const functionName = (fn: Pipeline): string | undefined =>
+  (fn.functionRef as { name?: string } | undefined)?.name;
+
+/**
+ * Steps of the container's pipeline. A composition written the flat way has no
+ * pipeline of its own, so it gets the patch-and-transform step its resources
+ * already belong to — the serializer keeps writing them back where it found
+ * them either way.
+ */
+export const pipelineSteps = (
+  functions: Pipeline[] | undefined,
+): Pipeline[] => {
+  const steps = (functions ?? []).filter((fn) => !!fn?.step);
+  if (steps.some((fn) => fn.step === PATCH_AND_TRANSFORM_STEP)) return steps;
+  return [...steps, { step: PATCH_AND_TRANSFORM_STEP } as Pipeline];
+};
+
+/** Inverse of `connectorRowHandleId`: back to the composite field path. */
+const connectorPathFromHandleId = (
+  handleId: string | null | undefined,
+): string => (handleId ?? '').replace(/^(source|target)-/, '');
+
+const handlesForBlock = (block: Block, blockType: BlockType): Handle[] => {
+  const handles: Handle[] =
+    block.connectors && block.connectors.length > 0
+      ? block.connectors.map(connectorToHandle)
+      : getHandlesFromSchema({ schema: blockType.schema });
+
+  // Patched paths that the schema does not expose still need a handle to hang
+  // their edge on.
+  const ensure = (path: string | undefined, type: 'source' | 'target') => {
+    if (!path || handles.some((handle) => handle.path === path)) return;
+    const fromSchema = getHandleByPath(blockType.schema, path);
+    handles.push(fromSchema ?? { path, description: '', type });
+  };
+
+  for (const edge of block.edges ?? []) {
+    if (edge.source === block.id) ensure(edge.sourceHandle, 'source');
+    if (edge.target === block.id) ensure(edge.targetHandle, 'target');
+  }
+
+  return handles;
+};
+
+type ColumnBounds = { minX: number; maxX: number; minY: number };
+
+const blockBounds = (blockNodes: RFNode[]): ColumnBounds => {
+  if (!blockNodes.length) {
+    return {
+      minX: BLOCK_START.x,
+      maxX: BLOCK_START.x + RESOURCE_NODE_WIDTH,
+      minY: BLOCK_START.y,
+    };
+  }
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+
+  for (const node of blockNodes) {
+    const width = Number(
+      node.measured?.width ?? node.style?.width ?? RESOURCE_NODE_WIDTH,
+    );
+    minX = Math.min(minX, node.position.x);
+    maxX = Math.max(maxX, node.position.x + width);
+    minY = Math.min(minY, node.position.y);
+  }
+
+  return { minX, maxX, minY };
+};
+
+// All that sizing a group around its blocks needs to know about them.
+type Footprint = Pick<RFNode, 'position' | 'style'>;
+
+/** Footprint the patch-and-transform group needs to hold its blocks. */
+const patchGroupBox = (blockNodes: Footprint[]): LayoutBox => {
+  if (!blockNodes.length) {
+    return {
+      x: BLOCK_START.x - PIPELINE_GROUP_PADDING,
+      y: BLOCK_START.y - PIPELINE_GROUP_PADDING - PIPELINE_GROUP_HEADER_HEIGHT,
+      width: PIPELINE_GROUP_MIN_WIDTH,
+      height: PIPELINE_GROUP_MIN_HEIGHT,
+    };
+  }
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const node of blockNodes) {
+    const width = Number(node.style?.width ?? RESOURCE_NODE_WIDTH);
+    const height = Number(node.style?.height ?? DEFAULT_BLOCK_HEIGHT);
+    minX = Math.min(minX, node.position.x);
+    minY = Math.min(minY, node.position.y);
+    maxX = Math.max(maxX, node.position.x + width);
+    maxY = Math.max(maxY, node.position.y + height);
+  }
+
+  const x = minX - PIPELINE_GROUP_PADDING;
+  const y = minY - PIPELINE_GROUP_PADDING - PIPELINE_GROUP_HEADER_HEIGHT;
+  return {
+    x,
+    y,
+    width: Math.max(
+      PIPELINE_GROUP_MIN_WIDTH,
+      maxX + PIPELINE_GROUP_PADDING - x,
+    ),
+    height: Math.max(
+      PIPELINE_GROUP_MIN_HEIGHT,
+      maxY + PIPELINE_GROUP_PADDING - y,
+    ),
+  };
+};
+
+/**
+ * Where each pipeline step's group sits. A step whose group was stored keeps
+ * that box; the rest are stacked top to bottom in pipeline order: the
+ * patch-and-transform group sized around the blocks it holds, the others above
+ * and below it sharing its width so the column lines up.
+ */
+export const pipelineGroupBoxes = (
+  functions: Pipeline[] | undefined,
+  blockNodes: Footprint[],
+  stored: Record<string, LayoutBox> = {},
+): { steps: Pipeline[]; patchIndex: number; boxes: LayoutBox[] } => {
+  const steps = pipelineSteps(functions);
+  const patchIndex = steps.findIndex(
+    (fn) => fn.step === PATCH_AND_TRANSFORM_STEP,
+  );
+  const patchBox =
+    stored[PATCH_AND_TRANSFORM_STEP] ?? patchGroupBox(blockNodes);
+
+  const boxes: LayoutBox[] = new Array(steps.length);
+  boxes[patchIndex] = patchBox;
+
+  let above = patchBox.y;
+  for (let i = patchIndex - 1; i >= 0; i--) {
+    above -= PIPELINE_GROUP_GAP + PIPELINE_GROUP_MIN_HEIGHT;
+    boxes[i] = stored[steps[i].step] ?? {
+      x: patchBox.x,
+      y: above,
+      width: patchBox.width,
+      height: PIPELINE_GROUP_MIN_HEIGHT,
+    };
+  }
+
+  let below = patchBox.y + patchBox.height;
+  for (let i = patchIndex + 1; i < steps.length; i++) {
+    below += PIPELINE_GROUP_GAP;
+    boxes[i] = stored[steps[i].step] ?? {
+      x: patchBox.x,
+      y: below,
+      width: patchBox.width,
+      height: PIPELINE_GROUP_MIN_HEIGHT,
+    };
+    below += PIPELINE_GROUP_MIN_HEIGHT;
+  }
+
+  return { steps, patchIndex, boxes };
+};
+
+/** A pipeline step drawn as a group at `box`. */
+export const pipelineGroupNode = (
+  fn: Pipeline,
+  box: LayoutBox,
+  holdsResources: boolean,
+): RFNode => {
+  const data: PipelineGroupNodeData = {
+    step: fn.step,
+    functionName: functionName(fn),
+    holdsResources,
+    fn,
+  };
+  return {
+    id: pipelineGroupId(fn.step),
+    type: 'pipelineGroup',
+    position: { x: box.x, y: box.y },
+    style: { width: box.width, height: box.height },
+    draggable: true,
+    // Selectable so the resize handles have something to appear on.
+    selectable: true,
+    data,
+  };
+};
+
+/**
+ * One group per pipeline step, placed by `pipelineGroupBoxes`. Blocks become
+ * children of the patch-and-transform group, so dragging it takes them along.
+ */
+const buildPipelineGroups = (
+  functions: Pipeline[] | undefined,
+  blockNodes: RFNode[],
+  stored?: Record<string, LayoutBox>,
+): { groups: RFNode[]; children: RFNode[]; edges: RFEdge[] } => {
+  const { steps, patchIndex, boxes } = pipelineGroupBoxes(
+    functions,
+    blockNodes,
+    stored,
+  );
+  const patchBox = boxes[patchIndex];
+
+  const groups = steps.map((fn, index) =>
+    pipelineGroupNode(fn, boxes[index], index === patchIndex),
+  );
+
+  const patchGroup = groups[patchIndex];
+  const children = blockNodes.map((node) => ({
+    ...node,
+    parentId: patchGroup.id,
+    extent: 'parent' as const,
+    position: {
+      x: node.position.x - patchBox.x,
+      y: node.position.y - patchBox.y,
+    },
+  }));
+
+  // The pipeline runs its steps in order, so consecutive groups are chained
+  // down the column. From there the chain is the user's to rewire.
+  const edges: RFEdge[] = groups
+    .slice(1)
+    .map((group, index) => pipelineEdge(groups[index].id, group.id));
+
+  return { groups, children, edges };
+};
+
+/**
+ * The container's own inputs and outputs, as one node each: inputs left of the
+ * blocks, outputs to their right. Both are ordinary draggable, resizable
+ * nodes, so their positions and sizes are carried over from the `previous`
+ * nodes, or from the `stored` layout when the container is opened, rather than
+ * recomputed once the user has placed them. A height the user chose still grows
+ * to fit rows added since.
+ */
+export const buildConnectorNodes = (
+  connectors: Connector[],
+  setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>,
+  blockNodes: RFNode[],
+  previous: RFNode[] = [],
+  stored: ContainerLayout['connectors'] = {},
+): RFNode[] => {
+  const { minX, maxX, minY } = blockBounds(blockNodes);
+  const placed = new Map(previous.map((node) => [node.id, node]));
+
+  return (['input', 'output'] as const).map((connection) => {
+    const id = connectorGroupId(connection);
+    const side = sideOf(connectors, connection);
+    const before = placed.get(id);
+    // A node already on the canvas wins over what was stored for it.
+    const saved = before
+      ? { ...before.position, width: before.width, height: before.height }
+      : stored[connection];
+    const defaultX =
+      connection === 'input'
+        ? minX - CONNECTOR_COLUMN_GAP - CONNECTOR_GROUP_WIDTH
+        : maxX + CONNECTOR_COLUMN_GAP;
+
+    return {
+      id,
+      type: 'connectorGroup',
+      position: saved ? { x: saved.x, y: saved.y } : { x: defaultX, y: minY },
+      style: { width: CONNECTOR_GROUP_WIDTH },
+      ...(saved?.width !== undefined ? { width: saved.width } : {}),
+      ...(saved?.height !== undefined
+        ? {
+            height: Math.max(
+              saved.height,
+              connectorGroupMinHeight(pathRows(side).length),
+            ),
+          }
+        : {}),
+      draggable: true,
+      data: {
+        connection,
+        connectors: side,
+        setConnectors,
+      },
+    };
+  });
+};
+
+/**
+ * Graph shown when a container is opened for editing: one group per pipeline
+ * step with the blocks living inside the patch-and-transform one, the two nodes
+ * holding the container's inputs and outputs, and the edges running between
+ * them. Edges to composite paths the container does not expose as a connector
+ * are left out, exactly as they are at the container level.
+ */
+export const buildContainerGraph = (
+  container: RFNode,
+  setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>,
+): { nodes: RFNode[]; edges: RFEdge[] } => {
+  const data = (container.data ?? {}) as ContainerNodeData;
+  const blocks = data.childBlocks ?? [];
+  const connectors = data.connectors ?? [];
+  const nodes: RFNode[] = [];
+  let offset = 0;
+
+  for (const block of blocks) {
+    const blockType = block.blockType;
+    if (!blockType?.schema) continue;
+
+    const initialHandles = handlesForBlock(block, blockType);
+    const position = block.position ?? {
+      x: BLOCK_START.x,
+      y: BLOCK_START.y + offset,
+    };
+    offset += (block.size?.height ?? 0) + BLOCK_SPACING;
+
+    nodes.push({
+      id: block.id,
+      type: 'resource',
+      position,
+      style: { width: RESOURCE_NODE_WIDTH },
+      draggable: true,
+      data: {
+        label: block.name ?? block.id,
+        name: block.name ?? block.id,
+        initialHandles,
+        currentHandles:
+          block.connectors && block.connectors.length > 0
+            ? block.connectors.map(connectorToHandle)
+            : undefined,
+        treeData: buildTreeData(blockType.schema),
+        apiEdges: block.edges,
+        blockType,
+      },
+    });
+  }
+
+  const blockIds = new Set(nodes.map((node) => node.id));
+  // A composite path is on the canvas when it has a row, which a branch the
+  // connectors only pass through has just as much as a connector itself.
+  const rowPaths = (connection: 'input' | 'output'): Set<string> =>
+    new Set(
+      pathRows(sideOf(connectors, connection)).map((row) => row.path),
+    );
+  const inputs = rowPaths('input');
+  const outputs = rowPaths('output');
+
+  const edges: RFEdge[] = [];
+
+  for (const block of blocks) {
+    for (const edge of block.edges ?? []) {
+      let source = edge.source;
+      let sourceHandle = edge.sourceHandle ?? undefined;
+      let target = edge.target;
+      let targetHandle = edge.targetHandle ?? undefined;
+
+      // An endpoint on the container itself is a patch from/to the composite:
+      // on this canvas it hangs off the matching connector node.
+      if (source === container.id) {
+        if (!inputs.has(sourceHandle ?? '')) continue;
+        source = connectorGroupId('input');
+        sourceHandle = connectorRowHandleId(sourceHandle ?? '', 'input');
+      } else if (!blockIds.has(source)) {
+        continue;
+      }
+
+      if (target === container.id) {
+        if (!outputs.has(targetHandle ?? '')) continue;
+        target = connectorGroupId('output');
+        targetHandle = connectorRowHandleId(targetHandle ?? '', 'output');
+      } else if (!blockIds.has(target)) {
+        continue;
+      }
+
+      const id = `${source}-${sourceHandle}-${target}-${targetHandle}`;
+      if (edges.some((existing) => existing.id === id)) continue;
+      edges.push({
+        id,
+        type: 'customEdge',
+        source,
+        sourceHandle,
+        target,
+        targetHandle,
+        data: { transformers: edge.transformers },
+      });
+    }
+  }
+
+  const {
+    groups,
+    children,
+    edges: pipelineEdges,
+  } = buildPipelineGroups(data.functions, nodes, data.containerLayout?.groups);
+
+  return {
+    // A group has to precede its children for React Flow to nest them.
+    nodes: [
+      ...groups,
+      ...children,
+      ...buildConnectorNodes(
+        connectors,
+        setConnectors,
+        groups.filter(holdsResourceBlocks),
+        [],
+        data.containerLayout?.connectors,
+      ),
+    ],
+    edges: [...pipelineEdges, ...edges],
+  };
+};
+
+/**
+ * Turns the edges of an open container's canvas back into the per-block edges
+ * the serializer reads: an endpoint on a connector node becomes an endpoint on
+ * the container itself, at that connector's own path.
+ */
+const collectContainerEdges = (
+  containerId: string,
+  blockIds: Set<string>,
+  graphEdges: RFEdge[],
+): Map<string, ApiEdge[]> => {
+  const byBlock = new Map<string, ApiEdge[]>();
+
+  for (const edge of graphEdges) {
+    const sourceIsConnector = isConnectorGroupId(edge.source);
+    const targetIsConnector = isConnectorGroupId(edge.target);
+    // An edge between two connectors has no block to hang off.
+    if (sourceIsConnector && targetIsConnector) continue;
+
+    const source = sourceIsConnector ? containerId : edge.source;
+    const target = targetIsConnector ? containerId : edge.target;
+
+    // Patches belong to the resource they are written on, so a composite
+    // endpoint hands ownership to the block at the other end; a block-to-block
+    // edge is kept on its source so it survives a trip out of edit mode.
+    const owner = blockIds.has(source) ? source : target;
+    if (!blockIds.has(owner)) continue;
+
+    const transformers = (edge.data as CustomEdgeData | undefined)
+      ?.transformers;
+
+    byBlock.set(owner, [
+      ...(byBlock.get(owner) ?? []),
+      {
+        source,
+        sourceHandle: sourceIsConnector
+          ? connectorPathFromHandleId(edge.sourceHandle)
+          : (edge.sourceHandle ?? undefined),
+        target,
+        targetHandle: targetIsConnector
+          ? connectorPathFromHandleId(edge.targetHandle)
+          : (edge.targetHandle ?? undefined),
+        ...(transformers ? { transformers } : {}),
+      },
+    ]);
+  }
+
+  return byBlock;
+};
+
+/**
+ * Folds an edited container graph back into the container node, so the blocks
+ * it carries — their layout, handles and patches — stay in sync with what was
+ * done on its own canvas.
+ */
+export const collectContainerBlocks = (
+  container: RFNode,
+  graphNodes: RFNode[],
+  graphEdges: RFEdge[],
+): Block[] => {
+  const data = (container.data ?? {}) as ContainerNodeData;
+  const previous = new Map(
+    (data.childBlocks ?? []).map((block) => [block.id, block]),
+  );
+  const blockNodes = graphNodes.filter((node) => node.type === 'resource');
+  const edgesByBlock = collectContainerEdges(
+    container.id,
+    new Set(blockNodes.map((node) => node.id)),
+    graphEdges,
+  );
+
+  // Blocks sit inside a pipeline group, so their positions are relative to it.
+  // Blocks are stored with canvas positions, which is what they are rebuilt
+  // from, so the group's own offset is folded back in here.
+  const groupPositions = new Map(
+    graphNodes
+      .filter((node) => node.type === 'pipelineGroup')
+      .map((node) => [node.id, node.position]),
+  );
+  const canvasPosition = (node: RFNode): { x: number; y: number } => {
+    const origin = node.parentId
+      ? groupPositions.get(node.parentId)
+      : undefined;
+    return origin
+      ? { x: node.position.x + origin.x, y: node.position.y + origin.y }
+      : node.position;
+  };
+
+  return blockNodes.map((node) => {
+    const nodeData = (node.data ?? {}) as ResourceNodeData;
+    const handles = nodeData.currentHandles ?? nodeData.initialHandles ?? [];
+    const connectors = handles.map(handleToConnector);
+    const edges = edgesByBlock.get(node.id) ?? [];
+    const position = canvasPosition(node);
+    const existing = previous.get(node.id);
+
+    if (existing) {
+      return { ...existing, position, connectors, edges };
+    }
+
+    return {
+      id: node.id,
+      parentId: container.id,
+      name: node.id,
+      position,
+      edges,
+      blockType: nodeData.blockType,
+      connectors,
+    };
+  });
+};
+
+/**
+ * The container level with one container's edits folded in. Saving and leaving
+ * edit mode both go through this, so what is written is the whole
+ * configuration no matter which level happens to be on screen.
+ */
+export const mergeContainerIntoNodes = (
+  parkedNodes: RFNode[],
+  containerId: string,
+  graphNodes: RFNode[],
+  graphEdges: RFEdge[],
+  connectors: Connector[],
+): RFNode[] => {
+  const container = parkedNodes.find((node) => node.id === containerId);
+  if (!container) return parkedNodes;
+
+  const childBlocks = collectContainerBlocks(container, graphNodes, graphEdges);
+  const containerLayout = collectContainerLayout(graphNodes);
+  // The steps and their order are whatever the groups and their chain say.
+  const functions = collectPipeline(graphNodes, graphEdges);
+
+  return parkedNodes.map((node) =>
+    node.id === containerId
+      ? {
+          ...node,
+          data: {
+            ...node.data,
+            childBlocks,
+            connectors,
+            containerLayout,
+            functions,
+          },
+        }
+      : node,
+  );
+};
+
+const sizeOf = (
+  node: RFNode,
+  axis: 'width' | 'height',
+  fallback: number,
+): number =>
+  Math.round(
+    Number(node[axis] ?? node.measured?.[axis] ?? node.style?.[axis] ?? fallback),
+  );
+
+/**
+ * The arrangement of an open container's canvas: where each pipeline group
+ * sits and how big it is, and where the Spec and Status nodes were put. A
+ * connector node's size is only kept once the user has resized it, so an
+ * untouched one keeps following its rows.
+ */
+export const collectContainerLayout = (
+  graphNodes: RFNode[],
+): ContainerLayout => {
+  const layout: ContainerLayout = { groups: {}, connectors: {} };
+
+  for (const node of graphNodes) {
+    const x = Math.round(node.position.x);
+    const y = Math.round(node.position.y);
+
+    if (node.type === 'pipelineGroup') {
+      const { step } = node.data as PipelineGroupNodeData;
+      layout.groups[step] = {
+        x,
+        y,
+        width: sizeOf(node, 'width', PIPELINE_GROUP_MIN_WIDTH),
+        height: sizeOf(node, 'height', PIPELINE_GROUP_MIN_HEIGHT),
+      };
+    } else if (node.type === 'connectorGroup') {
+      const { connection } = node.data as ConnectorGroupNodeData;
+      layout.connectors[connection] = {
+        x,
+        y,
+        ...(node.width !== undefined ? { width: Math.round(node.width) } : {}),
+        ...(node.height !== undefined
+          ? { height: Math.round(node.height) }
+          : {}),
+      };
+    }
+  }
+
+  return layout;
+};
+
+const roundBox = ({ x, y, width, height }: LayoutBox): LayoutBox => ({
+  x: Math.round(x),
+  y: Math.round(y),
+  width: Math.round(width),
+  height: Math.round(height),
+});
+
+/**
+ * A container's full edit-mode layout — a box for every pipeline group and
+ * wherever the Spec and Status nodes were put — with the origin its blocks are
+ * placed relative to: the group holding them. A container that was never opened
+ * gets the groups it would open with, so its blocks have an origin too. Steps
+ * that are gone get no box.
+ */
+export const resolveContainerLayout = (data: {
+  functions?: Pipeline[];
+  childBlocks?: Block[];
+  containerLayout?: ContainerLayout;
+}): { layout: ContainerLayout; blockOrigin: { x: number; y: number } } => {
+  // The same blocks `buildContainerGraph` sizes the group around.
+  const footprints: Footprint[] = (data.childBlocks ?? []).flatMap((block) =>
+    block.blockType?.schema && block.position
+      ? [{ position: block.position, style: { width: RESOURCE_NODE_WIDTH } }]
+      : [],
+  );
+  const { steps, patchIndex, boxes } = pipelineGroupBoxes(
+    data.functions,
+    footprints,
+    data.containerLayout?.groups,
+  );
+  const rounded = boxes.map(roundBox);
+
+  const groups: ContainerLayout['groups'] = {};
+  steps.forEach((fn, index) => {
+    groups[fn.step] = rounded[index];
+  });
+
+  const origin = rounded[patchIndex];
+  return {
+    layout: { groups, connectors: { ...data.containerLayout?.connectors } },
+    blockOrigin: { x: origin.x, y: origin.y },
+  };
+};

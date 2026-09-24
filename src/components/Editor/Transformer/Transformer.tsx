@@ -52,8 +52,13 @@ export const Transformer = ({
               </div>
             </PopoverTrigger>
             <PopoverContent
+              side="top"
+              sideOffset={4}
+              // Anchored to the chip rather than lifted by a fixed distance, so
+              // the menu keeps its gap whatever size the chip is drawn at.
               style={{
-                transform: `translateY(-70px) scale(${1 / zoom})`,
+                transform: `scale(${1 / zoom})`,
+                transformOrigin: 'bottom center',
                 zIndex: 10003,
               }}
             >
