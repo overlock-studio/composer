@@ -257,7 +257,7 @@ export type EditHandlesMenuProps = {
 export type HandlesTreeProps = {
   treeData: HandleTreeNode[];
   checked: string[];
-  onCheckChange: (path: string, checked: boolean) => void;
+  onCheckedChange: (checked: string[]) => void;
 };
 
 export type NodeDeletionDialogProps = {
