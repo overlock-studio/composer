@@ -1,12 +1,6 @@
 'use client';
 import React, { useMemo, useState } from 'react';
-import {
-  Node,
-  NodeProps,
-  NodeResizeControl,
-  Position,
-  useConnection,
-} from '@xyflow/react';
+import { Node, NodeProps, Position, useConnection } from '@xyflow/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { ConnectorGroupNodeData } from '../../../lib/types';
 import { Connector } from '../../../api/types';
@@ -24,10 +18,9 @@ import { RowTree } from '../RowTree';
 import {
   connectorRowHandleId,
   pathRows,
-  connectorGroupMinHeight,
-  CONNECTOR_GROUP_GRIP_SPACE,
+  connectorGroupHeight,
+  CONNECTOR_GROUP_FOOTER_HEIGHT,
   CONNECTOR_GROUP_HEADER_HEIGHT,
-  CONNECTOR_GROUP_MIN_WIDTH,
   CONNECTOR_GROUP_ROW_HEIGHT,
 } from '../../../lib/editorUtils';
 
@@ -71,9 +64,11 @@ const ConnectorRowActions = ({
 
 /**
  * One of the two nodes a container's connectors live in while it is open:
- * inputs to the left of the blocks, outputs to their right. Each row is a
- * labelled handle, the whole list moves as one node, and the header's + adds
- * another connector.
+ * inputs to the left of the blocks, outputs to their right. Rather than a box,
+ * each is drawn as the one side facing the blocks: a vertical line the handles
+ * hang off, rounded at both ends, with the title on top. Each row is a
+ * labelled handle, the whole list moves as one node, and the + under the rows
+ * adds another connector.
  */
 const ConnectorGroupNodeComponent = ({
   data,
@@ -109,38 +104,23 @@ const ConnectorGroupNodeComponent = ({
 
   return (
     <div
-      className="node-body"
-      style={{ minHeight: connectorGroupMinHeight(rows.length) }}
+      className={`node-body connector-group-body ${isInput ? 'connector-group-body-spec' : 'connector-group-body-status'}`}
+      style={
+        {
+          minHeight: connectorGroupHeight(rows.length),
+          '--connector-group-header-height': `${CONNECTOR_GROUP_HEADER_HEIGHT}px`,
+        } as React.CSSProperties
+      }
     >
-      {/* One grip, on the bottom corner facing away from the blocks, so it is
-          never on the edge the handles and their edges hang off. */}
-      <NodeResizeControl
-        position={isInput ? 'bottom-left' : 'bottom-right'}
-        minWidth={CONNECTOR_GROUP_MIN_WIDTH}
-        minHeight={connectorGroupMinHeight(rows.length)}
-        className="connector-group-resize-handle"
-      >
-        {/* Three diagonal lines, drawn for the bottom-right corner and
-            mirrored by CSS on the bottom-left one. */}
-        <svg viewBox="0 0 12 12" aria-hidden="true">
-          <path d="M11 1 1 11M11 5 5 11M11 9 9 11" />
-        </svg>
-      </NodeResizeControl>
+      {/* The title sits on top of the side line. */}
       <div
-        className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 rounded-t-lg"
+        className={`flex items-center px-2 ${isInput ? 'justify-end' : 'justify-start'}`}
         style={{ height: CONNECTOR_GROUP_HEADER_HEIGHT }}
       >
-        {/* The + sits on the side the handles are on, so each node reads
-            outwards from the blocks it wires to. */}
-        {!isInput && addButton}
-        <div className="flex-1 text-center text-sm font-medium">{title}</div>
-        {isInput ? addButton : <div className="w-6" />}
+        <div className="text-sm font-medium">{title}</div>
       </div>
 
-      <div
-        className="flex flex-col"
-        style={{ paddingBottom: CONNECTOR_GROUP_GRIP_SPACE }}
-      >
+      <div className="flex flex-col">
         {rows.map((row, index) => {
           // The tree sits in the label, on the side the handle is on, so the
           // branches point back at the row they hang from.
@@ -202,6 +182,14 @@ const ConnectorGroupNodeComponent = ({
             />
           );
         })}
+      </div>
+
+      {/* The + closes the list, next to the line like one more row. */}
+      <div
+        className={`flex items-center ${isInput ? 'justify-end pr-[17px]' : 'justify-start pl-[17px]'}`}
+        style={{ height: CONNECTOR_GROUP_FOOTER_HEIGHT }}
+      >
+        {addButton}
       </div>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>

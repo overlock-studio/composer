@@ -161,51 +161,39 @@
         overflow: visible;
       }
 
-      /* A grip of three diagonal lines tucked inside the corner, clear of the
-         rounded border. Faint at rest, full strength while the node is hovered
-         or selected. The library centres handles on the corner with
-         `translate`, so that is reset in favour of the offsets below. */
-      .react-flow__resize-control.handle.connector-group-resize-handle {
-        z-index: 5;
-        width: 14px;
-        height: 14px;
-        padding: 1px;
-        border: none;
-        border-radius: 0;
+      /* Only the side facing the blocks is drawn: a line down the handle
+         edge, curling in at the top and bottom, starting below the title. */
+      .node-body.connector-group-body {
+        position: relative;
         background: transparent;
-        color: hsl(var(--muted-foreground));
-        opacity: 0.5;
-        translate: none;
-        transition: opacity 0.15s ease;
+        outline: none;
+        border-radius: 0;
 
-        &.right {
-          transform: translate(calc(-100% - 2px), calc(-100% - 2px));
-        }
-
-        &.left {
-          transform: translate(2px, calc(-100% - 2px)) scaleX(-1);
-        }
-
-        svg {
-          display: block;
-          width: 100%;
-          height: 100%;
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 1.25;
-          stroke-linecap: round;
-        }
-
-        &:hover {
-          color: hsl(var(--sidebar-primary));
+        &::before {
+          content: '';
+          position: absolute;
+          top: var(--connector-group-header-height);
+          bottom: 0;
+          width: 12px;
+          border: 2px solid hsl(var(--muted-foreground));
+          pointer-events: none;
         }
       }
 
-      &:hover,
-      &.selected {
-        .react-flow__resize-control.handle.connector-group-resize-handle {
-          opacity: 1;
-        }
+      .node-body.connector-group-body-spec::before {
+        right: 0;
+        border-left: none;
+        border-radius: 0 var(--node-border-radius) var(--node-border-radius) 0;
+      }
+
+      .node-body.connector-group-body-status::before {
+        left: 0;
+        border-right: none;
+        border-radius: var(--node-border-radius) 0 0 var(--node-border-radius);
+      }
+
+      &.selected .node-body.connector-group-body::before {
+        border-color: #8b5cf6;
       }
     }
 
