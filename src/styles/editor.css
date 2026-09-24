@@ -161,6 +161,41 @@
         overflow: visible;
       }
 
+      /* Only the side facing the blocks is drawn: a line down the handle
+         edge, curling in at the top and bottom, starting below the title. */
+      .node-body.connector-group-body {
+        position: relative;
+        background: transparent;
+        outline: none;
+        border-radius: 0;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: var(--connector-group-header-height);
+          bottom: 0;
+          width: 12px;
+          border: 2px solid hsl(var(--muted-foreground) / 0.3);
+          pointer-events: none;
+        }
+      }
+
+      .node-body.connector-group-body-spec::before {
+        right: 0;
+        border-left: none;
+        border-radius: 0 var(--node-border-radius) var(--node-border-radius) 0;
+      }
+
+      .node-body.connector-group-body-status::before {
+        left: 0;
+        border-right: none;
+        border-radius: var(--node-border-radius) 0 0 var(--node-border-radius);
+      }
+
+      &.selected .node-body.connector-group-body::before {
+        border-color: #8b5cf6;
+      }
+
       /* A grip of three diagonal lines tucked inside the corner, clear of the
          rounded border. Faint at rest, full strength while the node is hovered
          or selected. The library centres handles on the corner with

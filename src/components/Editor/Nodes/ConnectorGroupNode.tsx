@@ -71,7 +71,9 @@ const ConnectorRowActions = ({
 
 /**
  * One of the two nodes a container's connectors live in while it is open:
- * inputs to the left of the blocks, outputs to their right. Each row is a
+ * inputs to the left of the blocks, outputs to their right. Rather than a box,
+ * each is drawn as the one side facing the blocks: a vertical line the handles
+ * hang off, rounded at both ends, with the title on top. Each row is a
  * labelled handle, the whole list moves as one node, and the header's + adds
  * another connector.
  */
@@ -109,8 +111,13 @@ const ConnectorGroupNodeComponent = ({
 
   return (
     <div
-      className="node-body"
-      style={{ minHeight: connectorGroupMinHeight(rows.length) }}
+      className={`node-body connector-group-body ${isInput ? 'connector-group-body-spec' : 'connector-group-body-status'}`}
+      style={
+        {
+          minHeight: connectorGroupMinHeight(rows.length),
+          '--connector-group-header-height': `${CONNECTOR_GROUP_HEADER_HEIGHT}px`,
+        } as React.CSSProperties
+      }
     >
       {/* One grip, on the bottom corner facing away from the blocks, so it is
           never on the edge the handles and their edges hang off. */}
@@ -126,15 +133,15 @@ const ConnectorGroupNodeComponent = ({
           <path d="M11 1 1 11M11 5 5 11M11 9 9 11" />
         </svg>
       </NodeResizeControl>
+      {/* The title sits on top of the side line, with the + tucked in next
+          to it on the inner side. */}
       <div
-        className="flex items-center border-b-[2px] border-muted-foreground/20 px-2 rounded-t-lg"
+        className={`flex items-center gap-1 ${isInput ? 'justify-end' : 'justify-start'}`}
         style={{ height: CONNECTOR_GROUP_HEADER_HEIGHT }}
       >
-        {/* The + sits on the side the handles are on, so each node reads
-            outwards from the blocks it wires to. */}
+        {isInput && addButton}
+        <div className="text-sm font-medium">{title}</div>
         {!isInput && addButton}
-        <div className="flex-1 text-center text-sm font-medium">{title}</div>
-        {isInput ? addButton : <div className="w-6" />}
       </div>
 
       <div
