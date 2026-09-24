@@ -1,0 +1,16 @@
+# Sections of the changelog GitHub generates for each release, sorted by the
+# labels on the merged pull requests.
+changelog:
+  categories:
+    - title: 🚀 Features
+      labels:
+        - enhancement
+    - title: 🐛 Bug Fixes
+      labels:
+        - bug
+    - title: 📝 Documentation
+      labels:
+        - documentation
+    - title: Other Changes
+      labels:
+        - '*'
