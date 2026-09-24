@@ -1,0 +1,50 @@
+name: Deploy demo
+
+# Each release line keeps its own copy of the demo on GitHub Pages, at
+# /<repo>/<branch>/ (main, v1, v2, …). A deploy only replaces its own folder.
+on:
+  push:
+    branches:
+      - main
+      - 'v[0-9]*'
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref_name == 'main' || startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: |
+          corepack enable
+          corepack prepare yarn@4.4.1 --activate
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build demo
+        run: yarn demo:build
+        env:
+          DEMO_BASE: /${{ github.event.repository.name }}/${{ github.ref_name }}/
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: examples/demo/dist
+          destination_dir: ${{ github.ref_name }}
