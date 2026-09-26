@@ -23,7 +23,7 @@ yarn build
 
 ## What it does
 
-- Loads a minimal Crossplane bundle (`crossplane.yaml` + XRD + one Composition with a `nop` managed resource).
+- Loads a minimal Crossplane bundle (`crossplane.yaml` + XRD + one Composition with two `nop` managed resources: one writes `status.size`, the other reads it back, relaying the value through the composite's status).
 - Mounts `<ComposerEditor />` with a stubbed `EditorDataAdapter`.
 - Captures the `onSave` payload and renders it in a side panel for inspection.
 - A header button calls the imperative `editorRef.current?.save()` to exercise the ref handle.
