@@ -746,6 +746,12 @@ export const EditorArea = () => {
                 <stop offset="0%" stopColor="#ae53ba" />
                 <stop offset="100%" stopColor="#2a8af6" />
               </linearGradient>
+              {/* A status field read back flows right to left, into a block
+                  left of the Status node, so its colours run the other way. */}
+              <linearGradient id="edge-gradient-reversed">
+                <stop offset="0%" stopColor="#2a8af6" />
+                <stop offset="100%" stopColor="#ae53ba" />
+              </linearGradient>
             </defs>
           </svg>
         </ReactFlow>

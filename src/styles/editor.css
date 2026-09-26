@@ -443,6 +443,9 @@
     stroke-width: 2;
     stroke-opacity: 0.75;
   }
+  .react-flow__edge .react-flow__edge-path.edge-reversed {
+    stroke: url(#edge-gradient-reversed);
+  }
   .react-flow__edge .react-flow__edge-path.edge-flow-animated {
     stroke-dasharray: 8 4;
     animation: edgeDashFlow 0.8s linear infinite;
