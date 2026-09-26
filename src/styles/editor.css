@@ -161,6 +161,19 @@
         overflow: visible;
       }
 
+      /* A Status row's read handle lies over its dot, out of the way until a
+         block input is dragged, then shows as the source it has become. */
+      .react-flow__handle.status-read-handle {
+        left: 0;
+        right: auto;
+        opacity: 0;
+        pointer-events: none;
+        &.is-armed {
+          opacity: 1;
+          pointer-events: all;
+        }
+      }
+
       /* Only the side facing the blocks is drawn: a line down the handle
          edge, curling in at the top and bottom, starting below the title. */
       .node-body.connector-group-body {

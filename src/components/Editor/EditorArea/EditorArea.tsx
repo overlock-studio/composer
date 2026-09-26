@@ -454,8 +454,15 @@ export const EditorArea = () => {
   );
 
   // Chain handles only meet each other, and never so that the pipeline loops.
+  // A patch has a block at one end at least, so the spec and status nodes are
+  // not wired to each other.
   const isValidConnection = useCallback(
     (connection: Edge | Connection) => {
+      if (
+        isConnectorGroupId(connection.source) &&
+        isConnectorGroupId(connection.target)
+      )
+        return false;
       const fromChain = connection.sourceHandle === PIPELINE_OUT_HANDLE;
       const toChain = connection.targetHandle === PIPELINE_IN_HANDLE;
       if (fromChain !== toChain) return false;

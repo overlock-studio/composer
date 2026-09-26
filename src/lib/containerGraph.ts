@@ -66,13 +66,17 @@ const sideOf = (
 
 /**
  * Every handle the two connector nodes expose, branch rows included: a path a
- * connector only passes through is still a row, and still wireable.
+ * connector only passes through is still a row, and still wireable. Status
+ * rows count twice, as the end of a write and the start of a read.
  */
 export const connectorHandleIds = (connectors: Connector[]): Set<string> => {
   const ids = new Set<string>();
   for (const connection of ['input', 'output'] as const) {
     for (const row of pathRows(sideOf(connectors, connection))) {
       ids.add(connectorRowHandleId(row.path, connection));
+      if (connection === 'output') {
+        ids.add(connectorRowHandleId(row.path, connection, 'source'));
+      }
     }
   }
   return ids;
@@ -416,9 +420,7 @@ export const buildContainerGraph = (
   // A composite path is on the canvas when it has a row, which a branch the
   // connectors only pass through has just as much as a connector itself.
   const rowPaths = (connection: 'input' | 'output'): Set<string> =>
-    new Set(
-      pathRows(sideOf(connectors, connection)).map((row) => row.path),
-    );
+    new Set(pathRows(sideOf(connectors, connection)).map((row) => row.path));
   const inputs = rowPaths('input');
   const outputs = rowPaths('output');
 
@@ -432,11 +434,19 @@ export const buildContainerGraph = (
       let targetHandle = edge.targetHandle ?? undefined;
 
       // An endpoint on the container itself is a patch from/to the composite:
-      // on this canvas it hangs off the matching connector node.
+      // on this canvas it hangs off the matching connector node. A patch can
+      // read a status field as well as a spec one, when the composite relays
+      // a value from one resource to another.
       if (source === container.id) {
-        if (!inputs.has(sourceHandle ?? '')) continue;
-        source = connectorGroupId('input');
-        sourceHandle = connectorRowHandleId(sourceHandle ?? '', 'input');
+        const path = sourceHandle ?? '';
+        const connection = inputs.has(path)
+          ? 'input'
+          : outputs.has(path)
+            ? 'output'
+            : undefined;
+        if (!connection) continue;
+        source = connectorGroupId(connection);
+        sourceHandle = connectorRowHandleId(path, connection, 'source');
       } else if (!blockIds.has(source)) {
         continue;
       }
@@ -639,7 +649,9 @@ const sizeOf = (
   fallback: number,
 ): number =>
   Math.round(
-    Number(node[axis] ?? node.measured?.[axis] ?? node.style?.[axis] ?? fallback),
+    Number(
+      node[axis] ?? node.measured?.[axis] ?? node.style?.[axis] ?? fallback,
+    ),
   );
 
 /**

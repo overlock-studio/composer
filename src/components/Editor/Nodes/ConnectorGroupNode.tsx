@@ -1,6 +1,12 @@
 'use client';
 import React, { useMemo, useState } from 'react';
-import { Node, NodeProps, Position } from '@xyflow/react';
+import {
+  Handle,
+  Node,
+  NodeProps,
+  Position,
+  useConnection,
+} from '@xyflow/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { ConnectorGroupNodeData } from '../../../lib/types';
 import { Connector } from '../../../api/types';
@@ -16,6 +22,7 @@ import {
 import { EditConnectorsMenu } from '../Menus';
 import { RowTree } from '../RowTree';
 import { useDraggedHandleType } from '../../../lib/useDraggedHandleType';
+import { isConnectorGroupId } from '../../../lib/containerGraph';
 import {
   connectorRowHandleId,
   pathRows,
@@ -94,6 +101,12 @@ const ConnectorGroupNodeComponent = ({
   // An edge dragged from a block handle this node could wire to can be
   // dropped on the + to add a connector for it, so the + lights up meanwhile.
   const takesDrop = draggedFrom === (isInput ? 'target' : 'source');
+  // A block input dragged here reads the status field back, so each Status row
+  // swaps its dot for the source handle hidden under it until the drag ends.
+  const fromBlock = useConnection(
+    (state) => state.inProgress && !isConnectorGroupId(state.fromNode.id),
+  );
+  const readsStatus = !isInput && fromBlock && draggedFrom === 'target';
 
   const addButton = (
     <Button
@@ -156,34 +169,48 @@ const ConnectorGroupNodeComponent = ({
           );
 
           return (
-            <CustomHandle
-              key={row.path}
-              type={isInput ? 'source' : 'target'}
-              position={isInput ? Position.Right : Position.Left}
-              id={connectorRowHandleId(row.path, connection)}
-              style={{ top: `${rowCentre(index)}px` }}
-              // Either end can start an edge, and while one is being drawn
-              // only rows of the other type can take it.
-              isConnectable={draggedFrom !== (isInput ? 'source' : 'target')}
-              inactiveClass={'opacity-30'}
-              path={row.path}
-              description={row.item?.description ?? ''}
-              variant="block"
-              labelClassName={`group/row flex w-full items-center gap-1 ${rowSide}`}
-              label={
-                isInput ? (
-                  <>
-                    {actions}
-                    {treeLabel}
-                  </>
-                ) : (
-                  <>
-                    {treeLabel}
-                    {actions}
-                  </>
-                )
-              }
-            />
+            <React.Fragment key={row.path}>
+              <CustomHandle
+                type={isInput ? 'source' : 'target'}
+                position={isInput ? Position.Right : Position.Left}
+                id={connectorRowHandleId(row.path, connection)}
+                style={{ top: `${rowCentre(index)}px` }}
+                // Either end can start an edge, and while one is being drawn
+                // only rows of the other type can take it. A Status row takes
+                // a block input too, on its read handle.
+                isConnectable={!isInput || draggedFrom !== 'source'}
+                inactiveClass={'opacity-30'}
+                path={row.path}
+                description={row.item?.description ?? ''}
+                variant="block"
+                labelClassName={`group/row flex w-full items-center gap-1 ${rowSide}`}
+                label={
+                  isInput ? (
+                    <>
+                      {actions}
+                      {treeLabel}
+                    </>
+                  ) : (
+                    <>
+                      {treeLabel}
+                      {actions}
+                    </>
+                  )
+                }
+              />
+              {!isInput && (
+                <Handle
+                  type="source"
+                  position={Position.Left}
+                  id={connectorRowHandleId(row.path, connection, 'source')}
+                  style={{ top: `${rowCentre(index)}px` }}
+                  // Only ever the end of an edge: starting one from the row
+                  // still draws a write, from its dot.
+                  isConnectableStart={false}
+                  className={`status-read-handle ${readsStatus ? 'is-armed' : ''}`}
+                />
+              )}
+            </React.Fragment>
           );
         })}
       </div>
