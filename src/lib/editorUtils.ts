@@ -583,12 +583,14 @@ export function pathRows<T extends { path: string }>(
 
 /**
  * Handle a connector row occupies on its group node: Spec rows start edges,
- * Status rows end them — see `ConnectorGroupNode`.
+ * Status rows end them — see `ConnectorGroupNode`. A Status row also has a
+ * `source` handle, for a patch that reads the status field back into a block.
  */
 export const connectorRowHandleId = (
   path: string,
   connection: 'input' | 'output',
-): string => (connection === 'output' ? `target-${path}` : `source-${path}`);
+  type: 'source' | 'target' = connection === 'output' ? 'target' : 'source',
+): string => `${type}-${path}`;
 
 /**
  * Connector made for a block handle whose edge was dropped on the + of the spec

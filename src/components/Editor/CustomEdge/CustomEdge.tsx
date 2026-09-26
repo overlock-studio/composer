@@ -21,6 +21,7 @@ import {
 import { CustomEdgeToolbar } from '../Toolbars';
 import { Transformer } from '../Transformer';
 import { useEditorActions } from '../EditorAreaContext';
+import { connectorGroupId } from '../../../lib/containerGraph';
 
 const CustomEdgeComponent = ({
   id,
@@ -64,6 +65,9 @@ const CustomEdgeComponent = ({
   );
 
   const isFlowActive = isHandleFlowActive || isSourceSelected || isTargetSelected;
+
+  // Reads a status field back into a block, against the usual direction.
+  const isStatusRead = source === connectorGroupId('output');
 
   useEffect(() => {
     setEdges((eds) =>
@@ -234,7 +238,7 @@ const CustomEdgeComponent = ({
       <path
         id={id}
         style={style}
-        className={`react-flow__edge-path nopan nodrag ${isFlowActive ? 'edge-flow-animated' : ''}`}
+        className={`react-flow__edge-path nopan nodrag ${isFlowActive ? 'edge-flow-animated' : ''} ${isStatusRead ? 'edge-reversed' : ''}`}
         d={edgePath}
       />
       <EdgeLabelRenderer>

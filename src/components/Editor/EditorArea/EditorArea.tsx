@@ -454,8 +454,15 @@ export const EditorArea = () => {
   );
 
   // Chain handles only meet each other, and never so that the pipeline loops.
+  // A patch has a block at one end at least, so the spec and status nodes are
+  // not wired to each other.
   const isValidConnection = useCallback(
     (connection: Edge | Connection) => {
+      if (
+        isConnectorGroupId(connection.source) &&
+        isConnectorGroupId(connection.target)
+      )
+        return false;
       const fromChain = connection.sourceHandle === PIPELINE_OUT_HANDLE;
       const toChain = connection.targetHandle === PIPELINE_IN_HANDLE;
       if (fromChain !== toChain) return false;
@@ -738,6 +745,12 @@ export const EditorArea = () => {
               <linearGradient id="edge-gradient">
                 <stop offset="0%" stopColor="#ae53ba" />
                 <stop offset="100%" stopColor="#2a8af6" />
+              </linearGradient>
+              {/* A status field read back flows right to left, into a block
+                  left of the Status node, so its colours run the other way. */}
+              <linearGradient id="edge-gradient-reversed">
+                <stop offset="0%" stopColor="#2a8af6" />
+                <stop offset="100%" stopColor="#ae53ba" />
               </linearGradient>
             </defs>
           </svg>

@@ -10,7 +10,7 @@
     },
     "size": {
       "width": 340,
-      "height": 346
+      "height": 526
     },
     "edges": [],
     "blockType": {
@@ -234,7 +234,7 @@
     },
     "size": {
       "width": 332,
-      "height": 222
+      "height": 402
     },
     "edges": [
       {
@@ -263,7 +263,7 @@
     "name": "auto-ready",
     "position": {
       "x": 24,
-      "y": 336
+      "y": 516
     },
     "size": {
       "width": 332,
@@ -302,6 +302,47 @@
         "sourceHandle": "status.atProvider.fields",
         "target": "demo-app-composition",
         "targetHandle": "status.size"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-app-composition_nop-reader",
+    "parentId": "demo-app-composition:function:patch-and-transform",
+    "name": "demo-app-composition_nop-reader",
+    "position": {
+      "x": 16,
+      "y": 226
+    },
+    "size": {
+      "width": 300,
+      "height": 160
+    },
+    "edges": [
+      {
+        "source": "demo-app-composition",
+        "sourceHandle": "status.size",
+        "target": "demo-app-composition_nop-reader",
+        "targetHandle": "spec.forProvider.fields"
       }
     ],
     "blockType": {
