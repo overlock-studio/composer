@@ -138,6 +138,27 @@
         z-index: 10004 !important;
       }
 
+      /* A block's dots take the colour of their edges: blue where Spec and
+         Status feed its inputs, violet where its outputs leave. */
+      .react-flow__handle.target {
+        background-color: #9aaeff;
+        border-color: #2d2dff;
+        &:hover,
+        &.is-active {
+          animation: pulseNeonSource 1.2s ease-in-out infinite;
+          border-color: #fff;
+        }
+      }
+      .react-flow__handle.source {
+        background-color: #a686ca;
+        border-color: #63319b;
+        &:hover,
+        &.is-active {
+          animation: pulseNeonTarget 1.2s ease-in-out infinite;
+          border-color: #fff;
+        }
+      }
+
       .node-body {
         overflow: visible;
       }
