@@ -190,7 +190,7 @@
       "y": -156
     },
     "size": {
-      "width": 332,
+      "width": 712,
       "height": 110
     },
     "edges": [
@@ -233,8 +233,8 @@
       "y": 34
     },
     "size": {
-      "width": 332,
-      "height": 402
+      "width": 712,
+      "height": 622
     },
     "edges": [
       {
@@ -263,10 +263,10 @@
     "name": "auto-ready",
     "position": {
       "x": 24,
-      "y": 516
+      "y": 736
     },
     "size": {
-      "width": 332,
+      "width": 712,
       "height": 110
     },
     "edges": [],
@@ -330,8 +330,8 @@
     "parentId": "demo-app-composition:function:patch-and-transform",
     "name": "demo-app-composition_nop-reader",
     "position": {
-      "x": 16,
-      "y": 226
+      "x": 396,
+      "y": 146
     },
     "size": {
       "width": 300,
@@ -343,6 +343,165 @@
         "sourceHandle": "status.size",
         "target": "demo-app-composition_nop-reader",
         "targetHandle": "spec.forProvider.fields"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-app-composition_nop-database",
+    "parentId": "demo-app-composition:function:patch-and-transform",
+    "name": "demo-app-composition_nop-database",
+    "position": {
+      "x": 16,
+      "y": 246
+    },
+    "size": {
+      "width": 300,
+      "height": 160
+    },
+    "edges": [
+      {
+        "source": "demo-app-composition",
+        "sourceHandle": "spec.database.engine",
+        "target": "demo-app-composition_nop-database",
+        "targetHandle": "spec.forProvider.fields.engine"
+      },
+      {
+        "source": "demo-app-composition",
+        "sourceHandle": "spec.database.version",
+        "target": "demo-app-composition_nop-database",
+        "targetHandle": "spec.forProvider.fields.version"
+      },
+      {
+        "source": "demo-app-composition_nop-database",
+        "sourceHandle": "status.atProvider.fields.endpoint",
+        "target": "demo-app-composition",
+        "targetHandle": "status.database.endpoint"
+      },
+      {
+        "source": "demo-app-composition_nop-database",
+        "sourceHandle": "status.atProvider.fields.ready",
+        "target": "demo-app-composition",
+        "targetHandle": "status.database.ready"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-app-composition_nop-backup",
+    "parentId": "demo-app-composition:function:patch-and-transform",
+    "name": "demo-app-composition_nop-backup",
+    "position": {
+      "x": 396,
+      "y": 346
+    },
+    "size": {
+      "width": 300,
+      "height": 160
+    },
+    "edges": [
+      {
+        "source": "demo-app-composition",
+        "sourceHandle": "spec.database.backup.enabled",
+        "target": "demo-app-composition_nop-backup",
+        "targetHandle": "spec.forProvider.fields.enabled"
+      },
+      {
+        "source": "demo-app-composition",
+        "sourceHandle": "spec.database.backup.retention",
+        "target": "demo-app-composition_nop-backup",
+        "targetHandle": "spec.forProvider.fields.retention"
+      },
+      {
+        "source": "demo-app-composition",
+        "sourceHandle": "status.database.endpoint",
+        "target": "demo-app-composition_nop-backup",
+        "targetHandle": "spec.forProvider.fields.endpoint"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-app-composition_nop-network",
+    "parentId": "demo-app-composition:function:patch-and-transform",
+    "name": "demo-app-composition_nop-network",
+    "position": {
+      "x": 16,
+      "y": 446
+    },
+    "size": {
+      "width": 300,
+      "height": 160
+    },
+    "edges": [
+      {
+        "source": "demo-app-composition",
+        "sourceHandle": "spec.region",
+        "target": "demo-app-composition_nop-network",
+        "targetHandle": "spec.forProvider.fields.region"
+      },
+      {
+        "source": "demo-app-composition",
+        "sourceHandle": "status.database.ready",
+        "target": "demo-app-composition_nop-network",
+        "targetHandle": "spec.forProvider.fields.databaseReady"
       }
     ],
     "blockType": {
