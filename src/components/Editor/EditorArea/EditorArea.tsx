@@ -33,9 +33,11 @@ import {
   PIPELINE_IN_HANDLE,
   PIPELINE_OUT_HANDLE,
   RESOURCE_NODE_WIDTH,
+  handleRow,
   resolveNodeCollisions,
   touchesActiveHandle,
 } from '../../../lib/editorUtils';
+import { EdgeFocusContext } from '../../../lib/edgeFocus';
 import {
   buildConnectorNodes,
   buildContainerGraph,
@@ -680,33 +682,70 @@ export const EditorArea = () => {
     );
   }, [nodes, edges, activeHandle]);
 
-  // Blocks step back behind whatever has the focus: while a handle is lit,
+  // Blocks step back behind whatever has the focus. While a handle is lit,
   // the blocks wired to it through an edge stay as they are, so what the field
-  // feeds or comes from stands out; while blocks are selected, only they do.
-  // Only what is drawn changes; the graph itself is left alone.
-  const displayNodes = useMemo(() => {
-    let kept: Set<string> | undefined;
+  // feeds or comes from stands out. While blocks are selected, they do, and so
+  // do the blocks taking their outputs — straight from them, or relayed
+  // through a Status field they write — together with the edges on the way,
+  // which do not touch the selection themselves. Only what is drawn changes;
+  // the graph itself is left alone.
+  const focus = useMemo(() => {
+    const relayEdges = new Set<string>();
+    const dataEdges = edges.filter((edge) => edge.type === 'customEdge');
+
     if (activeHandle) {
-      kept = new Set([activeHandle.nodeId]);
-      for (const edge of edges) {
-        if (edge.type !== 'customEdge') continue;
+      const kept = new Set([activeHandle.nodeId]);
+      for (const edge of dataEdges) {
         if (!touchesActiveHandle(activeHandle, edge)) continue;
         kept.add(edge.source);
         kept.add(edge.target);
       }
-    } else {
-      const selected = nodes.filter(
-        (node) => node.type === 'resource' && node.selected,
-      );
-      if (selected.length) kept = new Set(selected.map((node) => node.id));
+      return { kept, relayEdges };
     }
+
+    const selected = nodes.filter(
+      (node) => node.type === 'resource' && node.selected,
+    );
+    if (!selected.length) return { kept: undefined, relayEdges };
+
+    const kept = new Set(selected.map((node) => node.id));
+    const status = connectorGroupId('output');
+    const written = new Set<string>();
+    for (const edge of dataEdges) {
+      if (!selected.some((node) => node.id === edge.source)) continue;
+      if (edge.target === status) {
+        written.add(handleRow(edge.targetHandle));
+      } else if (!isConnectorGroupId(edge.target)) {
+        kept.add(edge.target);
+      }
+    }
+    for (const edge of dataEdges) {
+      if (edge.source !== status) continue;
+      if (!written.has(handleRow(edge.sourceHandle))) continue;
+      kept.add(edge.target);
+      relayEdges.add(edge.id);
+    }
+    return { kept, relayEdges };
+  }, [nodes, edges, activeHandle]);
+
+  // The same set for as long as it holds the same edges: `focus` is worked out
+  // again on every drag frame, and a new set each time would re-render every
+  // edge along with it.
+  const relayKey = [...focus.relayEdges].sort().join('\n');
+  const relayEdges = useMemo(
+    () => new Set(relayKey ? relayKey.split('\n') : []),
+    [relayKey],
+  );
+
+  const displayNodes = useMemo(() => {
+    const { kept } = focus;
     if (!kept) return nodes;
     return nodes.map((node) =>
       node.type === 'resource' && !kept.has(node.id)
         ? { ...node, className: `${node.className ?? ''} node-dimmed` }
         : node,
     );
-  }, [nodes, edges, activeHandle]);
+  }, [nodes, focus]);
 
   // Focus follows the last thing touched: clicking the canvas or a node body
   // drops the handle the user lit up earlier, instead of leaving it glowing
@@ -768,42 +807,44 @@ export const EditorArea = () => {
   return (
     <>
       {!blocksLoading ? (
-        <ReactFlow
-          colorMode={colorMode}
-          nodes={displayNodes}
-          edges={edges}
-          onConnect={onConnect}
-          onConnectEnd={onConnectEnd}
-          isValidConnection={isValidConnection}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodesDelete={onNodesDelete}
-          onNodeDragStop={onNodeDragStop}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          nodeTypes={NODE_TYPES}
-          edgeTypes={EDGE_TYPES}
-          onEdgeMouseEnter={onEdgeMouseEnter}
-          onEdgeMouseLeave={onEdgeMouseLeave}
-          onPaneClick={clearHandleFocus}
-          onNodeClick={clearHandleFocus}
-          minZoom={0.1}
-          multiSelectionKeyCode={null}
-          deleteKeyCode={null}
-          ref={reactFlowRef}
-          className={`custom-editor ${edgesFocused ? 'edges-focused' : ''}`}
-        >
-          <Controls />
-          <Background gap={12} size={1} />
-          <svg>
-            <defs>
-              <linearGradient id="edge-gradient">
-                <stop offset="0%" stopColor="#ae53ba" />
-                <stop offset="100%" stopColor="#2a8af6" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </ReactFlow>
+        <EdgeFocusContext.Provider value={relayEdges}>
+          <ReactFlow
+            colorMode={colorMode}
+            nodes={displayNodes}
+            edges={edges}
+            onConnect={onConnect}
+            onConnectEnd={onConnectEnd}
+            isValidConnection={isValidConnection}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodesDelete={onNodesDelete}
+            onNodeDragStop={onNodeDragStop}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            nodeTypes={NODE_TYPES}
+            edgeTypes={EDGE_TYPES}
+            onEdgeMouseEnter={onEdgeMouseEnter}
+            onEdgeMouseLeave={onEdgeMouseLeave}
+            onPaneClick={clearHandleFocus}
+            onNodeClick={clearHandleFocus}
+            minZoom={0.1}
+            multiSelectionKeyCode={null}
+            deleteKeyCode={null}
+            ref={reactFlowRef}
+            className={`custom-editor ${edgesFocused ? 'edges-focused' : ''}`}
+          >
+            <Controls />
+            <Background gap={12} size={1} />
+            <svg>
+              <defs>
+                <linearGradient id="edge-gradient">
+                  <stop offset="0%" stopColor="#ae53ba" />
+                  <stop offset="100%" stopColor="#2a8af6" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </ReactFlow>
+        </EdgeFocusContext.Provider>
       ) : (
         <div className="flex h-screen w-full items-center justify-center">
           <Spinner />
