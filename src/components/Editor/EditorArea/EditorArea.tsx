@@ -680,20 +680,29 @@ export const EditorArea = () => {
     );
   }, [nodes, edges, activeHandle]);
 
-  // While a handle is lit, the blocks wired to it through an edge stay as they
-  // are and the rest fade, so what the field feeds or comes from stands out.
+  // Blocks step back behind whatever has the focus: while a handle is lit,
+  // the blocks wired to it through an edge stay as they are, so what the field
+  // feeds or comes from stands out; while blocks are selected, only they do.
   // Only what is drawn changes; the graph itself is left alone.
   const displayNodes = useMemo(() => {
-    if (!activeHandle) return nodes;
-    const linked = new Set([activeHandle.nodeId]);
-    for (const edge of edges) {
-      if (edge.type !== 'customEdge') continue;
-      if (!touchesActiveHandle(activeHandle, edge)) continue;
-      linked.add(edge.source);
-      linked.add(edge.target);
+    let kept: Set<string> | undefined;
+    if (activeHandle) {
+      kept = new Set([activeHandle.nodeId]);
+      for (const edge of edges) {
+        if (edge.type !== 'customEdge') continue;
+        if (!touchesActiveHandle(activeHandle, edge)) continue;
+        kept.add(edge.source);
+        kept.add(edge.target);
+      }
+    } else {
+      const selected = nodes.filter(
+        (node) => node.type === 'resource' && node.selected,
+      );
+      if (selected.length) kept = new Set(selected.map((node) => node.id));
     }
+    if (!kept) return nodes;
     return nodes.map((node) =>
-      node.type === 'resource' && !linked.has(node.id)
+      node.type === 'resource' && !kept.has(node.id)
         ? { ...node, className: `${node.className ?? ''} node-dimmed` }
         : node,
     );
