@@ -55,6 +55,8 @@
   --node-box-shadow: none;
   --bg-color: hsl(var(--card));
   --text-color: hsl(var(--foreground));
+  --edge-input-color: #2a8af6;
+  --edge-output-color: #ae53ba;
   color: var(--text-color);
 
   &.dark {
@@ -416,6 +418,13 @@
   .edge-menu-point {
     --edge-point-color: #6c6ed8;
 
+    &.edge-input {
+      --edge-point-color: var(--edge-input-color);
+    }
+    &.edge-output {
+      --edge-point-color: var(--edge-output-color);
+    }
+
     position: absolute;
     top: 0;
     left: 0;
@@ -455,8 +464,13 @@
     stroke-width: 2;
     stroke-opacity: 0.75;
   }
-  .react-flow__edge .react-flow__edge-path.edge-reversed {
-    stroke: url(#edge-gradient-reversed);
+  /* Data edges in one colour each: blue into a block's input, violet out of
+     its output. */
+  .react-flow__edge .react-flow__edge-path.edge-input {
+    stroke: var(--edge-input-color);
+  }
+  .react-flow__edge .react-flow__edge-path.edge-output {
+    stroke: var(--edge-output-color);
   }
   .react-flow__edge .react-flow__edge-path.edge-flow-animated {
     stroke-dasharray: 8 4;
