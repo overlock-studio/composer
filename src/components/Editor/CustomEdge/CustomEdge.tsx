@@ -20,6 +20,7 @@ import {
   touchesActiveHandle,
 } from '../../../lib/editorUtils';
 import { CustomEdgeToolbar } from '../Toolbars';
+import { isConnectorGroupId } from '../../../lib/containerGraph';
 import { Transformer } from '../Transformer';
 import { useEditorActions } from '../EditorAreaContext';
 
@@ -64,10 +65,9 @@ const CustomEdgeComponent = ({
 
   const isFlowActive = isHandleFlowActive || isSourceSelected || isTargetSelected;
 
-  // The gradient runs left to right, so an edge flowing the other way — a read
-  // from Status on the right, a write into Status on the left — takes it
-  // reversed.
-  const isReversed = sourceX > targetX;
+  // An edge is coloured by what it carries: blue when it feeds a block's
+  // input from Spec or Status, violet when it leaves a block's output.
+  const kindClass = isConnectorGroupId(source) ? 'edge-input' : 'edge-output';
 
   // While other edges are active this one steps back; the canvas decides
   // whether any are (see `edges-focused` in EditorArea).
@@ -243,7 +243,7 @@ const CustomEdgeComponent = ({
       <path
         id={id}
         style={style}
-        className={`react-flow__edge-path nopan nodrag ${isFlowActive ? 'edge-flow-animated' : ''} ${isReversed ? 'edge-reversed' : ''} ${inactiveClass}`}
+        className={`react-flow__edge-path nopan nodrag ${isFlowActive ? 'edge-flow-animated' : ''} ${kindClass} ${inactiveClass}`}
         d={edgePath}
       />
       <EdgeLabelRenderer>
@@ -252,7 +252,7 @@ const CustomEdgeComponent = ({
           type="button"
           // Active only while its own menu is open: opening a transformer's
           // menu selects the edge too, and that should not light this up.
-          className={`edge-menu-point nodrag nopan ${
+          className={`edge-menu-point nodrag nopan ${kindClass} ${
             openEdgeToolbar ? 'is-active' : ''
           } ${inactiveClass}`}
           style={{

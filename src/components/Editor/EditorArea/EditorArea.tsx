@@ -773,12 +773,6 @@ export const EditorArea = () => {
                 <stop offset="0%" stopColor="#ae53ba" />
                 <stop offset="100%" stopColor="#2a8af6" />
               </linearGradient>
-              {/* An edge flowing right to left takes its colours the other
-                  way round. */}
-              <linearGradient id="edge-gradient-reversed">
-                <stop offset="0%" stopColor="#2a8af6" />
-                <stop offset="100%" stopColor="#ae53ba" />
-              </linearGradient>
             </defs>
           </svg>
         </ReactFlow>
