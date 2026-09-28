@@ -867,7 +867,16 @@ export function moveIntersectingNodes(
   }
 }
 
-/** Whether an edge starts or ends at the handle the user clicked. */
+// The row a handle belongs to. A Status row carries two handles, one for each
+// direction, told apart only by this prefix; a block's handles are named by
+// their path alone, and its inputs and outputs never share one.
+const handleRow = (handleId: string | null | undefined): string =>
+  (handleId ?? '').replace(/^(source|target)-/, '');
+
+/**
+ * Whether an edge starts or ends at the row of the handle the user clicked,
+ * whichever of the row's handles it hangs on.
+ */
 export const touchesActiveHandle = (
   activeHandle: ActiveHandle | null,
   edge: {
@@ -876,14 +885,16 @@ export const touchesActiveHandle = (
     sourceHandle?: string | null;
     targetHandle?: string | null;
   },
-): boolean =>
-  !!activeHandle &&
-  ((activeHandle.type === 'source' &&
-    activeHandle.nodeId === edge.source &&
-    activeHandle.handleId === (edge.sourceHandle ?? '')) ||
-    (activeHandle.type === 'target' &&
-      activeHandle.nodeId === edge.target &&
-      activeHandle.handleId === (edge.targetHandle ?? '')));
+): boolean => {
+  if (!activeHandle) return false;
+  const row = handleRow(activeHandle.handleId);
+  return (
+    (activeHandle.nodeId === edge.source &&
+      handleRow(edge.sourceHandle) === row) ||
+    (activeHandle.nodeId === edge.target &&
+      handleRow(edge.targetHandle) === row)
+  );
+};
 
 // A resource block is a header row, one row per path on its taller side and a
 // footer row, never shorter than the minimum.
