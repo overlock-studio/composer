@@ -22,7 +22,6 @@ import {
 import { CustomEdgeToolbar } from '../Toolbars';
 import { Transformer } from '../Transformer';
 import { useEditorActions } from '../EditorAreaContext';
-import { connectorGroupId } from '../../../lib/containerGraph';
 
 const CustomEdgeComponent = ({
   id,
@@ -65,8 +64,10 @@ const CustomEdgeComponent = ({
 
   const isFlowActive = isHandleFlowActive || isSourceSelected || isTargetSelected;
 
-  // Reads a status field back into a block, against the usual direction.
-  const isStatusRead = source === connectorGroupId('output');
+  // The gradient runs left to right, so an edge flowing the other way — a read
+  // from Status on the right, a write into Status on the left — takes it
+  // reversed.
+  const isReversed = sourceX > targetX;
 
   // While other edges are active this one steps back; the canvas decides
   // whether any are (see `edges-focused` in EditorArea).
@@ -242,7 +243,7 @@ const CustomEdgeComponent = ({
       <path
         id={id}
         style={style}
-        className={`react-flow__edge-path nopan nodrag ${isFlowActive ? 'edge-flow-animated' : ''} ${isStatusRead ? 'edge-reversed' : ''} ${inactiveClass}`}
+        className={`react-flow__edge-path nopan nodrag ${isFlowActive ? 'edge-flow-animated' : ''} ${isReversed ? 'edge-reversed' : ''} ${inactiveClass}`}
         d={edgePath}
       />
       <EdgeLabelRenderer>
