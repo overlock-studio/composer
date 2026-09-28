@@ -136,7 +136,7 @@
 
       /* Not wired to the handle that is lit (see EditorArea). */
       &.node-dimmed {
-        opacity: 0.5;
+        opacity: 0.3;
       }
 
       &.selected,
@@ -517,13 +517,13 @@
   }
 }
 
-/* While some edges are active the rest fade to half, line, menu point and
+/* While some edges are active the rest fade to 30%, line, menu point and
    transformers alike, and come back once nothing is. */
 .edge-inactive {
   transition: opacity 150ms ease;
 }
 .custom-editor.edges-focused .edge-inactive {
-  opacity: 0.5;
+  opacity: 0.3;
 }
 
 @keyframes edgeDashFlow {
