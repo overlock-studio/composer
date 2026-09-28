@@ -870,7 +870,7 @@ export function moveIntersectingNodes(
 // The row a handle belongs to. A Status row carries two handles, one for each
 // direction, told apart only by this prefix; a block's handles are named by
 // their path alone, and its inputs and outputs never share one.
-const handleRow = (handleId: string | null | undefined): string =>
+export const handleRow = (handleId: string | null | undefined): string =>
   (handleId ?? '').replace(/^(source|target)-/, '');
 
 /**
