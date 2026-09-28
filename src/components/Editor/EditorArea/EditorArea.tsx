@@ -680,6 +680,25 @@ export const EditorArea = () => {
     );
   }, [nodes, edges, activeHandle]);
 
+  // While a handle is lit, the blocks wired to it through an edge stay as they
+  // are and the rest fade, so what the field feeds or comes from stands out.
+  // Only what is drawn changes; the graph itself is left alone.
+  const displayNodes = useMemo(() => {
+    if (!activeHandle) return nodes;
+    const linked = new Set([activeHandle.nodeId]);
+    for (const edge of edges) {
+      if (edge.type !== 'customEdge') continue;
+      if (!touchesActiveHandle(activeHandle, edge)) continue;
+      linked.add(edge.source);
+      linked.add(edge.target);
+    }
+    return nodes.map((node) =>
+      node.type === 'resource' && !linked.has(node.id)
+        ? { ...node, className: `${node.className ?? ''} node-dimmed` }
+        : node,
+    );
+  }, [nodes, edges, activeHandle]);
+
   // Focus follows the last thing touched: clicking the canvas or a node body
   // drops the handle the user lit up earlier, instead of leaving it glowing
   // over an interaction it has nothing to do with.
@@ -742,7 +761,7 @@ export const EditorArea = () => {
       {!blocksLoading ? (
         <ReactFlow
           colorMode={colorMode}
-          nodes={nodes}
+          nodes={displayNodes}
           edges={edges}
           onConnect={onConnect}
           onConnectEnd={onConnectEnd}
