@@ -24,6 +24,7 @@ yarn build
 ## What it does
 
 - Loads a minimal Crossplane bundle (`crossplane.yaml` + XRD + one Composition with five `nop` managed resources wired to every spec and status field; some read status fields other resources write, relaying values through the composite's status).
+- A second Composition, `demo-akash-composition`, with twenty akash and `nop` resources of varying heights and no stored layout, to see how a large composition is arranged when it is opened.
 - Mounts `<ComposerEditor />` with a stubbed `EditorDataAdapter`.
 - Captures the `onSave` payload and renders it in a side panel for inspection.
 - A header button calls the imperative `editorRef.current?.save()` to exercise the ref handle.

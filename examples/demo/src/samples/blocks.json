@@ -452,5 +452,1576 @@
     "apiVersion": "nop.crossplane.io/v1alpha1",
     "kind": "NopResource",
     "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition",
+    "parentId": "",
+    "type": "composition",
+    "name": "demo-akash-composition",
+    "edges": [],
+    "blockType": {
+      "name": "xakashapps.demo.example.org",
+      "id": "xakashapps.demo.example.org",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "backups": {
+                "type": "object",
+                "properties": {
+                  "retention": {
+                    "type": "string"
+                  },
+                  "schedule": {
+                    "type": "string"
+                  }
+                }
+              },
+              "certificates": {
+                "type": "object",
+                "properties": {
+                  "autoRenew": {
+                    "type": "string"
+                  },
+                  "validityDays": {
+                    "type": "string"
+                  }
+                }
+              },
+              "cpu": {
+                "type": "string"
+              },
+              "deposit": {
+                "type": "string"
+              },
+              "domains": {
+                "type": "object",
+                "properties": {
+                  "api": {
+                    "type": "string"
+                  },
+                  "web": {
+                    "type": "string"
+                  }
+                }
+              },
+              "image": {
+                "type": "string"
+              },
+              "memory": {
+                "type": "string"
+              },
+              "monitoring": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "string"
+                  },
+                  "interval": {
+                    "type": "string"
+                  },
+                  "labels": {
+                    "type": "object",
+                    "properties": {
+                      "env": {
+                        "type": "string"
+                      },
+                      "team": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "name": {
+                "type": "string"
+              },
+              "namespace": {
+                "type": "string"
+              },
+              "pricing": {
+                "type": "object",
+                "properties": {
+                  "maxBids": {
+                    "type": "string"
+                  },
+                  "maxPrice": {
+                    "type": "string"
+                  },
+                  "strategy": {
+                    "type": "string"
+                  }
+                }
+              },
+              "providers": {
+                "type": "object",
+                "properties": {
+                  "excluded": {
+                    "type": "string"
+                  },
+                  "preferred": {
+                    "type": "string"
+                  }
+                }
+              },
+              "region": {
+                "type": "string"
+              },
+              "storage": {
+                "type": "string"
+              }
+            }
+          },
+          "status": {
+            "type": "object",
+            "properties": {
+              "bid": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "string"
+                  }
+                }
+              },
+              "certificates": {
+                "type": "object",
+                "properties": {
+                  "api": {
+                    "type": "object",
+                    "properties": {
+                      "fingerprint": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "web": {
+                    "type": "object",
+                    "properties": {
+                      "fingerprint": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "deployment": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  }
+                }
+              },
+              "lease": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "provider": {
+                    "type": "string"
+                  }
+                }
+              },
+              "manifest": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string"
+                  }
+                }
+              },
+              "monitoring": {
+                "type": "object",
+                "properties": {
+                  "ready": {
+                    "type": "string"
+                  }
+                }
+              },
+              "sdl": {
+                "type": "object",
+                "properties": {
+                  "hash": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "leaf": false,
+      "kind": "XAkashApp",
+      "apiVersion": "demo.example.org/v1alpha1",
+      "icon": "/@fs/home/deep/www/web7/overlock/studio/composer/src/assets/crossplane-icon.svg"
+    },
+    "connectors": [
+      {
+        "connection": "input",
+        "path": "spec.backups.retention",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.backups.schedule",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.certificates.autoRenew",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.certificates.validityDays",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.cpu",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.deposit",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.domains.api",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.domains.web",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.image",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.memory",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.monitoring.enabled",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.monitoring.interval",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.monitoring.labels.env",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.monitoring.labels.team",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.name",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.namespace",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.pricing.maxBids",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.pricing.maxPrice",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.pricing.strategy",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.providers.excluded",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.providers.preferred",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.region",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "input",
+        "path": "spec.storage",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "output",
+        "path": "status.bid.id",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "output",
+        "path": "status.bid.price",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "output",
+        "path": "status.certificates.api.fingerprint",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "output",
+        "path": "status.certificates.web.fingerprint",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "output",
+        "path": "status.deployment.id",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "output",
+        "path": "status.deployment.state",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "output",
+        "path": "status.lease.id",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "output",
+        "path": "status.lease.provider",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "output",
+        "path": "status.manifest.version",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "output",
+        "path": "status.monitoring.ready",
+        "type": "string",
+        "required": false,
+        "description": ""
+      },
+      {
+        "connection": "output",
+        "path": "status.sdl.hash",
+        "type": "string",
+        "required": false,
+        "description": ""
+      }
+    ],
+    "apiVersion": "demo.example.org/v1alpha1",
+    "kind": "XAkashApp"
+  },
+  {
+    "id": "demo-akash-composition:spec",
+    "parentId": "demo-akash-composition",
+    "type": "connectors",
+    "name": "spec",
+    "edges": [],
+    "connectors": [],
+    "data": {
+      "connection": "input"
+    }
+  },
+  {
+    "id": "demo-akash-composition:status",
+    "parentId": "demo-akash-composition",
+    "type": "connectors",
+    "name": "status",
+    "edges": [],
+    "connectors": [],
+    "data": {
+      "connection": "output"
+    }
+  },
+  {
+    "id": "demo-akash-composition:function:patch-and-transform",
+    "parentId": "demo-akash-composition",
+    "type": "function",
+    "name": "patch-and-transform",
+    "edges": [
+      {
+        "source": "demo-akash-composition:function:patch-and-transform",
+        "sourceHandle": "pipeline-out",
+        "target": "demo-akash-composition:function:auto-ready",
+        "targetHandle": "pipeline-in"
+      }
+    ],
+    "connectors": [],
+    "data": {
+      "step": "patch-and-transform",
+      "functionRef": {
+        "name": "function-patch-and-transform"
+      },
+      "input": {
+        "apiVersion": "pt.fn.crossplane.io/v1beta1",
+        "kind": "Resources"
+      }
+    }
+  },
+  {
+    "id": "demo-akash-composition:function:auto-ready",
+    "parentId": "demo-akash-composition",
+    "type": "function",
+    "name": "auto-ready",
+    "edges": [],
+    "connectors": [],
+    "data": {
+      "step": "auto-ready",
+      "functionRef": {
+        "name": "function-auto-ready"
+      }
+    }
+  },
+  {
+    "id": "demo-akash-composition_sdl",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_sdl",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.name",
+        "target": "demo-akash-composition_sdl",
+        "targetHandle": "spec.forProvider.deployment"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.image",
+        "target": "demo-akash-composition_sdl",
+        "targetHandle": "spec.forProvider.services"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.cpu",
+        "target": "demo-akash-composition_sdl",
+        "targetHandle": "spec.forProvider.profiles.compute"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.region",
+        "target": "demo-akash-composition_sdl",
+        "targetHandle": "spec.forProvider.profiles.placement"
+      },
+      {
+        "source": "demo-akash-composition_sdl",
+        "sourceHandle": "status.atProvider.hash",
+        "target": "demo-akash-composition",
+        "targetHandle": "status.sdl.hash"
+      }
+    ],
+    "blockType": {
+      "name": "SDL",
+      "id": "akash.overlock.network/v1alpha1/SDL",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "SDL",
+      "apiVersion": "akash.overlock.network/v1alpha1",
+      "title": "SDL",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "akash.overlock.network/v1alpha1",
+    "kind": "SDL",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_deployment",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_deployment",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.deposit",
+        "target": "demo-akash-composition_deployment",
+        "targetHandle": "spec.forProvider.deposit"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.name",
+        "target": "demo-akash-composition_deployment",
+        "targetHandle": "spec.forProvider.sdlRef.name"
+      },
+      {
+        "source": "demo-akash-composition_deployment",
+        "sourceHandle": "status.atProvider.deploymentId",
+        "target": "demo-akash-composition",
+        "targetHandle": "status.deployment.id"
+      },
+      {
+        "source": "demo-akash-composition_deployment",
+        "sourceHandle": "status.atProvider.state",
+        "target": "demo-akash-composition",
+        "targetHandle": "status.deployment.state"
+      }
+    ],
+    "blockType": {
+      "name": "Deployment",
+      "id": "akash.overlock.network/v1alpha1/Deployment",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "Deployment",
+      "apiVersion": "akash.overlock.network/v1alpha1",
+      "title": "Deployment",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "akash.overlock.network/v1alpha1",
+    "kind": "Deployment",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_bid-policy",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_bid-policy",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.pricing.maxPrice",
+        "target": "demo-akash-composition_bid-policy",
+        "targetHandle": "spec.forProvider.maxPrice"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.pricing.maxBids",
+        "target": "demo-akash-composition_bid-policy",
+        "targetHandle": "spec.forProvider.maxBids"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.pricing.strategy",
+        "target": "demo-akash-composition_bid-policy",
+        "targetHandle": "spec.forProvider.selectionStrategy"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.providers.preferred",
+        "target": "demo-akash-composition_bid-policy",
+        "targetHandle": "spec.forProvider.preferredProviders"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.providers.excluded",
+        "target": "demo-akash-composition_bid-policy",
+        "targetHandle": "spec.forProvider.excludedProviders"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.deployment.id",
+        "target": "demo-akash-composition_bid-policy",
+        "targetHandle": "spec.forProvider.deploymentRef.name"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.namespace",
+        "target": "demo-akash-composition_bid-policy",
+        "targetHandle": "spec.forProvider.deploymentRef.namespace"
+      }
+    ],
+    "blockType": {
+      "name": "BidPolicy",
+      "id": "akash.overlock.network/v1alpha1/BidPolicy",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "BidPolicy",
+      "apiVersion": "akash.overlock.network/v1alpha1",
+      "title": "BidPolicy",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "akash.overlock.network/v1alpha1",
+    "kind": "BidPolicy",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_bid-primary",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_bid-primary",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.deployment.id",
+        "target": "demo-akash-composition_bid-primary",
+        "targetHandle": "spec.forProvider.deploymentRef.name"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.namespace",
+        "target": "demo-akash-composition_bid-primary",
+        "targetHandle": "spec.forProvider.deploymentRef.namespace"
+      },
+      {
+        "source": "demo-akash-composition_bid-primary",
+        "sourceHandle": "status.atProvider.bidId",
+        "target": "demo-akash-composition",
+        "targetHandle": "status.bid.id"
+      },
+      {
+        "source": "demo-akash-composition_bid-primary",
+        "sourceHandle": "status.atProvider.price.amount",
+        "target": "demo-akash-composition",
+        "targetHandle": "status.bid.price"
+      }
+    ],
+    "blockType": {
+      "name": "ActiveBid",
+      "id": "akash.overlock.network/v1alpha1/ActiveBid",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "ActiveBid",
+      "apiVersion": "akash.overlock.network/v1alpha1",
+      "title": "ActiveBid",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "akash.overlock.network/v1alpha1",
+    "kind": "ActiveBid",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_bid-fallback",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_bid-fallback",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.deployment.id",
+        "target": "demo-akash-composition_bid-fallback",
+        "targetHandle": "spec.forProvider.deploymentRef.name"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.namespace",
+        "target": "demo-akash-composition_bid-fallback",
+        "targetHandle": "spec.forProvider.deploymentRef.namespace"
+      }
+    ],
+    "blockType": {
+      "name": "ActiveBid",
+      "id": "akash.overlock.network/v1alpha1/ActiveBid",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "ActiveBid",
+      "apiVersion": "akash.overlock.network/v1alpha1",
+      "title": "ActiveBid",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "akash.overlock.network/v1alpha1",
+    "kind": "ActiveBid",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_bid-backup",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_bid-backup",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.deployment.id",
+        "target": "demo-akash-composition_bid-backup",
+        "targetHandle": "spec.forProvider.deploymentRef.name"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.namespace",
+        "target": "demo-akash-composition_bid-backup",
+        "targetHandle": "spec.forProvider.deploymentRef.namespace"
+      }
+    ],
+    "blockType": {
+      "name": "ActiveBid",
+      "id": "akash.overlock.network/v1alpha1/ActiveBid",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "ActiveBid",
+      "apiVersion": "akash.overlock.network/v1alpha1",
+      "title": "ActiveBid",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "akash.overlock.network/v1alpha1",
+    "kind": "ActiveBid",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_lease",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_lease",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.bid.id",
+        "target": "demo-akash-composition_lease",
+        "targetHandle": "spec.forProvider.activeBidRef.bidId"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.bid.price",
+        "target": "demo-akash-composition_lease",
+        "targetHandle": "spec.forProvider.activeBidRef.price"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.providers.preferred",
+        "target": "demo-akash-composition_lease",
+        "targetHandle": "spec.forProvider.activeBidRef.provider"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.deployment.id",
+        "target": "demo-akash-composition_lease",
+        "targetHandle": "spec.forProvider.deploymentRef.name"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.namespace",
+        "target": "demo-akash-composition_lease",
+        "targetHandle": "spec.forProvider.deploymentRef.namespace"
+      },
+      {
+        "source": "demo-akash-composition_lease",
+        "sourceHandle": "status.atProvider.leaseId",
+        "target": "demo-akash-composition",
+        "targetHandle": "status.lease.id"
+      },
+      {
+        "source": "demo-akash-composition_lease",
+        "sourceHandle": "status.atProvider.provider",
+        "target": "demo-akash-composition",
+        "targetHandle": "status.lease.provider"
+      }
+    ],
+    "blockType": {
+      "name": "Lease",
+      "id": "akash.overlock.network/v1alpha1/Lease",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "Lease",
+      "apiVersion": "akash.overlock.network/v1alpha1",
+      "title": "Lease",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "akash.overlock.network/v1alpha1",
+    "kind": "Lease",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_cert-web",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_cert-web",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.domains.web",
+        "target": "demo-akash-composition_cert-web",
+        "targetHandle": "spec.forProvider.domains"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.certificates.validityDays",
+        "target": "demo-akash-composition_cert-web",
+        "targetHandle": "spec.forProvider.validityDays"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.certificates.autoRenew",
+        "target": "demo-akash-composition_cert-web",
+        "targetHandle": "spec.forProvider.autoRenew"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.deployment.id",
+        "target": "demo-akash-composition_cert-web",
+        "targetHandle": "spec.forProvider.deploymentRef.name"
+      },
+      {
+        "source": "demo-akash-composition_cert-web",
+        "sourceHandle": "status.atProvider.fingerprint",
+        "target": "demo-akash-composition",
+        "targetHandle": "status.certificates.web.fingerprint"
+      }
+    ],
+    "blockType": {
+      "name": "Certificate",
+      "id": "akash.overlock.network/v1alpha1/Certificate",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "Certificate",
+      "apiVersion": "akash.overlock.network/v1alpha1",
+      "title": "Certificate",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "akash.overlock.network/v1alpha1",
+    "kind": "Certificate",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_cert-api",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_cert-api",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.domains.api",
+        "target": "demo-akash-composition_cert-api",
+        "targetHandle": "spec.forProvider.domains"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.certificates.validityDays",
+        "target": "demo-akash-composition_cert-api",
+        "targetHandle": "spec.forProvider.validityDays"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.certificates.autoRenew",
+        "target": "demo-akash-composition_cert-api",
+        "targetHandle": "spec.forProvider.autoRenew"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.deployment.id",
+        "target": "demo-akash-composition_cert-api",
+        "targetHandle": "spec.forProvider.deploymentRef.name"
+      },
+      {
+        "source": "demo-akash-composition_cert-api",
+        "sourceHandle": "status.atProvider.fingerprint",
+        "target": "demo-akash-composition",
+        "targetHandle": "status.certificates.api.fingerprint"
+      }
+    ],
+    "blockType": {
+      "name": "Certificate",
+      "id": "akash.overlock.network/v1alpha1/Certificate",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "Certificate",
+      "apiVersion": "akash.overlock.network/v1alpha1",
+      "title": "Certificate",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "akash.overlock.network/v1alpha1",
+    "kind": "Certificate",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_manifest",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_manifest",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.lease.id",
+        "target": "demo-akash-composition_manifest",
+        "targetHandle": "spec.forProvider.leaseRef.name"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.namespace",
+        "target": "demo-akash-composition_manifest",
+        "targetHandle": "spec.forProvider.leaseRef.namespace"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.name",
+        "target": "demo-akash-composition_manifest",
+        "targetHandle": "spec.forProvider.certificateSecretRef.name"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.namespace",
+        "target": "demo-akash-composition_manifest",
+        "targetHandle": "spec.forProvider.certificateSecretRef.namespace"
+      },
+      {
+        "source": "demo-akash-composition_manifest",
+        "sourceHandle": "status.atProvider.manifestVersion",
+        "target": "demo-akash-composition",
+        "targetHandle": "status.manifest.version"
+      }
+    ],
+    "blockType": {
+      "name": "Manifest",
+      "id": "akash.overlock.network/v1alpha1/Manifest",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "Manifest",
+      "apiVersion": "akash.overlock.network/v1alpha1",
+      "title": "Manifest",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "akash.overlock.network/v1alpha1",
+    "kind": "Manifest",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_monitor-cpu",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_monitor-cpu",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.enabled",
+        "target": "demo-akash-composition_monitor-cpu",
+        "targetHandle": "spec.forProvider.fields.enabled"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.interval",
+        "target": "demo-akash-composition_monitor-cpu",
+        "targetHandle": "spec.forProvider.fields.interval"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.cpu",
+        "target": "demo-akash-composition_monitor-cpu",
+        "targetHandle": "spec.forProvider.fields.threshold.cpu"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.labels.team",
+        "target": "demo-akash-composition_monitor-cpu",
+        "targetHandle": "spec.forProvider.fields.labels.team"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.labels.env",
+        "target": "demo-akash-composition_monitor-cpu",
+        "targetHandle": "spec.forProvider.fields.labels.env"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_monitor-memory",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_monitor-memory",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.enabled",
+        "target": "demo-akash-composition_monitor-memory",
+        "targetHandle": "spec.forProvider.fields.enabled"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.memory",
+        "target": "demo-akash-composition_monitor-memory",
+        "targetHandle": "spec.forProvider.fields.threshold.memory"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.labels.team",
+        "target": "demo-akash-composition_monitor-memory",
+        "targetHandle": "spec.forProvider.fields.labels.team"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.labels.env",
+        "target": "demo-akash-composition_monitor-memory",
+        "targetHandle": "spec.forProvider.fields.labels.env"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_monitor-storage",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_monitor-storage",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.storage",
+        "target": "demo-akash-composition_monitor-storage",
+        "targetHandle": "spec.forProvider.fields.threshold.storage"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.interval",
+        "target": "demo-akash-composition_monitor-storage",
+        "targetHandle": "spec.forProvider.fields.interval"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.labels.team",
+        "target": "demo-akash-composition_monitor-storage",
+        "targetHandle": "spec.forProvider.fields.labels.team"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_monitor-network",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_monitor-network",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.lease.provider",
+        "target": "demo-akash-composition_monitor-network",
+        "targetHandle": "spec.forProvider.fields.target.provider"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.lease.id",
+        "target": "demo-akash-composition_monitor-network",
+        "targetHandle": "spec.forProvider.fields.target.lease"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.interval",
+        "target": "demo-akash-composition_monitor-network",
+        "targetHandle": "spec.forProvider.fields.interval"
+      },
+      {
+        "source": "demo-akash-composition_monitor-network",
+        "sourceHandle": "status.atProvider.fields.ready",
+        "target": "demo-akash-composition",
+        "targetHandle": "status.monitoring.ready"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_alert-rules",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_alert-rules",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.labels.team",
+        "target": "demo-akash-composition_alert-rules",
+        "targetHandle": "spec.forProvider.fields.route.receiver"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.labels.env",
+        "target": "demo-akash-composition_alert-rules",
+        "targetHandle": "spec.forProvider.fields.route.match.env"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.monitoring.ready",
+        "target": "demo-akash-composition_alert-rules",
+        "targetHandle": "spec.forProvider.fields.enabled"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_dashboard",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_dashboard",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.name",
+        "target": "demo-akash-composition_dashboard",
+        "targetHandle": "spec.forProvider.fields.dashboard.title"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.deployment.id",
+        "target": "demo-akash-composition_dashboard",
+        "targetHandle": "spec.forProvider.fields.dashboard.panels.deployment"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.lease.id",
+        "target": "demo-akash-composition_dashboard",
+        "targetHandle": "spec.forProvider.fields.dashboard.panels.lease"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.manifest.version",
+        "target": "demo-akash-composition_dashboard",
+        "targetHandle": "spec.forProvider.fields.dashboard.panels.version"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.sdl.hash",
+        "target": "demo-akash-composition_dashboard",
+        "targetHandle": "spec.forProvider.fields.dashboard.panels.sdl"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_backup-schedule",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_backup-schedule",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.backups.schedule",
+        "target": "demo-akash-composition_backup-schedule",
+        "targetHandle": "spec.forProvider.fields.schedule"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.backups.retention",
+        "target": "demo-akash-composition_backup-schedule",
+        "targetHandle": "spec.forProvider.fields.retention"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.storage",
+        "target": "demo-akash-composition_backup-schedule",
+        "targetHandle": "spec.forProvider.fields.volume.size"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.name",
+        "target": "demo-akash-composition_backup-schedule",
+        "targetHandle": "spec.forProvider.fields.volume.name"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_backup-verify",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_backup-verify",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.backups.schedule",
+        "target": "demo-akash-composition_backup-verify",
+        "targetHandle": "spec.forProvider.fields.schedule"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.deployment.state",
+        "target": "demo-akash-composition_backup-verify",
+        "targetHandle": "spec.forProvider.fields.deploymentState"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_log-shipper",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_log-shipper",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.name",
+        "target": "demo-akash-composition_log-shipper",
+        "targetHandle": "spec.forProvider.fields.stream.app"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.namespace",
+        "target": "demo-akash-composition_log-shipper",
+        "targetHandle": "spec.forProvider.fields.stream.namespace"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.region",
+        "target": "demo-akash-composition_log-shipper",
+        "targetHandle": "spec.forProvider.fields.stream.region"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "spec.monitoring.labels.env",
+        "target": "demo-akash-composition_log-shipper",
+        "targetHandle": "spec.forProvider.fields.stream.labels.env"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.lease.provider",
+        "target": "demo-akash-composition_log-shipper",
+        "targetHandle": "spec.forProvider.fields.stream.labels.provider"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
+  },
+  {
+    "id": "demo-akash-composition_status-reporter",
+    "parentId": "demo-akash-composition:function:patch-and-transform",
+    "name": "demo-akash-composition_status-reporter",
+    "edges": [
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.certificates.web.fingerprint",
+        "target": "demo-akash-composition_status-reporter",
+        "targetHandle": "spec.forProvider.fields.report.web"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.certificates.api.fingerprint",
+        "target": "demo-akash-composition_status-reporter",
+        "targetHandle": "spec.forProvider.fields.report.api"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.manifest.version",
+        "target": "demo-akash-composition_status-reporter",
+        "targetHandle": "spec.forProvider.fields.report.version"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.deployment.state",
+        "target": "demo-akash-composition_status-reporter",
+        "targetHandle": "spec.forProvider.fields.report.state"
+      },
+      {
+        "source": "demo-akash-composition",
+        "sourceHandle": "status.bid.price",
+        "target": "demo-akash-composition_status-reporter",
+        "targetHandle": "spec.forProvider.fields.report.price"
+      }
+    ],
+    "blockType": {
+      "name": "NopResource",
+      "id": "nop.crossplane.io/v1alpha1/NopResource",
+      "schema": {
+        "properties": {
+          "spec": {},
+          "status": {},
+          "metadata": {}
+        }
+      },
+      "leaf": true,
+      "kind": "NopResource",
+      "apiVersion": "nop.crossplane.io/v1alpha1",
+      "title": "NopResource",
+      "description": ""
+    },
+    "connectors": [],
+    "apiVersion": "nop.crossplane.io/v1alpha1",
+    "kind": "NopResource",
+    "type": "resource"
   }
 ]

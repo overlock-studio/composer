@@ -15,7 +15,6 @@ import {
 import { extractConnectors } from './editorUtils';
 import { JsonObject } from './types';
 import {
-  chessPosition,
   connectorLayoutKey,
   PATCH_AND_TRANSFORM_STEP,
   PIPELINE_LAYOUT_PREFIX,
@@ -240,13 +239,8 @@ const buildBlocksForComposition = (
   if (!name) return [];
 
   const resourceList = getBlocksResources(composition);
-  const blockX = (MIN_CONTAINER_WIDTH - BLOCK_WIDTH) / 2;
-  const chessOrigin = { x: blockX, y: CONTAINER_HEADER_HEIGHT };
-  // Blocks the layout says nothing about are arranged chess-style, counted
-  // among themselves; the container is sized around them.
-  let unplaced = 0;
-  let right = MIN_CONTAINER_WIDTH;
-  let bottom = CONTAINER_HEADER_HEIGHT;
+  const containerWidth = MIN_CONTAINER_WIDTH;
+  let currentY = CONTAINER_HEADER_HEIGHT;
 
   const containerLayout = readContainerLayout(positions);
   const blockOrigin = containerLayout.groups[PATCH_AND_TRANSFORM_STEP];
@@ -269,27 +263,21 @@ const buildBlocksForComposition = (
       const height = estimateBlockHeight();
       const savedEntry = positions[resourceName];
       const savedLayout = savedEntry ? toLayout(savedEntry) : undefined;
-      const position = savedLayout
-        ? {
-            x: savedLayout.position.x + (blockOrigin?.x ?? 0),
-            y: savedLayout.position.y + (blockOrigin?.y ?? 0),
-          }
-        : chessPosition(unplaced++, chessOrigin, {
-            width: BLOCK_WIDTH,
-            height,
-          });
-      const size = savedLayout?.size ?? { width: BLOCK_WIDTH, height };
-      right = Math.max(right, position.x + size.width + blockX);
-      bottom = Math.max(bottom, position.y + size.height);
       const block: Block = {
         id: blockId([name, resourceName]),
         parentId: name,
         name: blockId([name, resourceName]),
         // Blocks are stored relative to the group holding them and carried on
         // the canvas. A layout written before groups were stored has them on
-        // the canvas already.
-        position,
-        size,
+        // the canvas already. One the layout says nothing about is left for
+        // the canvas to place, which knows how tall it draws.
+        ...(savedLayout && {
+          position: {
+            x: savedLayout.position.x + (blockOrigin?.x ?? 0),
+            y: savedLayout.position.y + (blockOrigin?.y ?? 0),
+          },
+        }),
+        size: savedLayout?.size ?? { width: BLOCK_WIDTH, height },
         edges: patchesToEdges(name, resourceName, resource.patches),
         blockType: syntheticBlockType(apiVersion, kind, true),
         connectors: [],
@@ -297,12 +285,12 @@ const buildBlocksForComposition = (
       (block as Block & { apiVersion?: string; kind?: string }).apiVersion =
         apiVersion;
       (block as Block & { apiVersion?: string; kind?: string }).kind = kind;
+      currentY += height;
       return block;
     });
 
   const functions = composition.spec?.pipeline ?? [];
-  const containerWidth = right;
-  const containerHeight = bottom + CONTAINER_BOTTOM_PADDING;
+  const containerHeight = currentY + CONTAINER_BOTTOM_PADDING;
   const compositeRef = composition.spec?.compositeTypeRef;
   const parentBlockType =
     parentBlockTypes.find(

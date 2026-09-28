@@ -35,23 +35,57 @@ export const pipelineLayoutKey = (step: string): string =>
 export const connectorLayoutKey = (connection: 'input' | 'output'): string =>
   connection === 'input' ? '_spec' : '_status';
 
-// Room between the two columns of a chess layout, for the edges running from
-// one block to the next, and between blocks sharing a column.
+// Room between the columns of a chess layout, for the edges running from one
+// block to the next, and between blocks sharing a column.
 const CHESS_COLUMN_GAP = 80;
 const CHESS_ROW_GAP = 40;
+// A chess layout grows to the right rather than down: it has this many rows.
+// Each column holds every other one, so with an odd count the columns
+// starting on the top row hold one block more than the others.
+const CHESS_ROWS = 7;
 
 /**
- * Where block `index` goes when there is no layout saying where it is: two
- * columns, each block half a step below the one before it and in the other
- * column, like the squares of one colour on a chessboard. Neighbours sit
- * diagonally, so the edges between them and to the Spec and Status nodes fan
- * out instead of running down one line.
+ * Where blocks go when there is no layout saying where they are: a chessboard
+ * of `CHESS_ROWS` rows, blocks on the squares of one colour. Each column holds
+ * every other row, starting one row lower than the column before it, so
+ * neighbours sit diagonally and the edges between them and to the Spec and
+ * Status nodes fan out instead of running down one line. Blocks fill a column
+ * top to bottom before the next one to the right.
+ *
+ * Rows are shared by all columns, so the board stays aligned. A row starts
+ * half a step below the one above it, and never before the tallest block of
+ * the row above that, in the same columns, has ended.
  */
-export const chessPosition = (
-  index: number,
+export const chessPositions = (
+  heights: number[],
   origin: { x: number; y: number },
-  size: { width: number; height: number },
-): { x: number; y: number } => ({
-  x: origin.x + (index % 2) * (size.width + CHESS_COLUMN_GAP),
-  y: origin.y + (index * (size.height + CHESS_ROW_GAP)) / 2,
-});
+  width: number,
+): { x: number; y: number }[] => {
+  const cells: { column: number; row: number; height: number }[] = [];
+  let column = 0;
+  let row = 0;
+  for (const height of heights) {
+    if (row >= CHESS_ROWS) {
+      column += 1;
+      row = column % 2;
+    }
+    cells.push({ column, row, height });
+    row += 2;
+  }
+
+  const tallest = Array.from({ length: CHESS_ROWS }, (_, row) =>
+    Math.max(0, ...cells.filter((c) => c.row === row).map((c) => c.height)),
+  );
+  const rowY = [origin.y];
+  for (let row = 1; row < CHESS_ROWS; row++) {
+    const halfStep = rowY[row - 1] + (tallest[row - 1] + CHESS_ROW_GAP) / 2;
+    const columnFree =
+      row >= 2 ? rowY[row - 2] + tallest[row - 2] + CHESS_ROW_GAP : halfStep;
+    rowY.push(Math.max(halfStep, columnFree));
+  }
+
+  return cells.map(({ column, row }) => ({
+    x: origin.x + column * (width + CHESS_COLUMN_GAP),
+    y: rowY[row],
+  }));
+};
