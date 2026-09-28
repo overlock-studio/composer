@@ -4,14 +4,6 @@
     "parentId": "",
     "type": "composition",
     "name": "demo-app-composition",
-    "position": {
-      "x": 80,
-      "y": 80
-    },
-    "size": {
-      "width": 340,
-      "height": 526
-    },
     "edges": [],
     "blockType": {
       "name": "xdemoapps.demo.example.org",
@@ -185,14 +177,6 @@
     "parentId": "demo-app-composition",
     "type": "function",
     "name": "fetch-environment",
-    "position": {
-      "x": 24,
-      "y": -156
-    },
-    "size": {
-      "width": 712,
-      "height": 110
-    },
     "edges": [
       {
         "source": "demo-app-composition:function:fetch-environment",
@@ -228,14 +212,6 @@
     "parentId": "demo-app-composition",
     "type": "function",
     "name": "patch-and-transform",
-    "position": {
-      "x": 24,
-      "y": 34
-    },
-    "size": {
-      "width": 712,
-      "height": 622
-    },
     "edges": [
       {
         "source": "demo-app-composition:function:patch-and-transform",
@@ -261,14 +237,6 @@
     "parentId": "demo-app-composition",
     "type": "function",
     "name": "auto-ready",
-    "position": {
-      "x": 24,
-      "y": 736
-    },
-    "size": {
-      "width": 712,
-      "height": 110
-    },
     "edges": [],
     "connectors": [],
     "data": {
@@ -282,14 +250,6 @@
     "id": "demo-app-composition_nop-resource",
     "parentId": "demo-app-composition:function:patch-and-transform",
     "name": "demo-app-composition_nop-resource",
-    "position": {
-      "x": 16,
-      "y": 46
-    },
-    "size": {
-      "width": 300,
-      "height": 160
-    },
     "edges": [
       {
         "source": "demo-app-composition",
@@ -329,14 +289,6 @@
     "id": "demo-app-composition_nop-reader",
     "parentId": "demo-app-composition:function:patch-and-transform",
     "name": "demo-app-composition_nop-reader",
-    "position": {
-      "x": 396,
-      "y": 146
-    },
-    "size": {
-      "width": 300,
-      "height": 160
-    },
     "edges": [
       {
         "source": "demo-app-composition",
@@ -370,14 +322,6 @@
     "id": "demo-app-composition_nop-database",
     "parentId": "demo-app-composition:function:patch-and-transform",
     "name": "demo-app-composition_nop-database",
-    "position": {
-      "x": 16,
-      "y": 246
-    },
-    "size": {
-      "width": 300,
-      "height": 160
-    },
     "edges": [
       {
         "source": "demo-app-composition",
@@ -429,14 +373,6 @@
     "id": "demo-app-composition_nop-backup",
     "parentId": "demo-app-composition:function:patch-and-transform",
     "name": "demo-app-composition_nop-backup",
-    "position": {
-      "x": 396,
-      "y": 346
-    },
-    "size": {
-      "width": 300,
-      "height": 160
-    },
     "edges": [
       {
         "source": "demo-app-composition",
@@ -482,14 +418,6 @@
     "id": "demo-app-composition_nop-network",
     "parentId": "demo-app-composition:function:patch-and-transform",
     "name": "demo-app-composition_nop-network",
-    "position": {
-      "x": 16,
-      "y": 446
-    },
-    "size": {
-      "width": 300,
-      "height": 160
-    },
     "edges": [
       {
         "source": "demo-app-composition",
