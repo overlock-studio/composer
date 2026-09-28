@@ -16,13 +16,16 @@ import type {
 } from './types';
 import {
   chessPositions,
+  DEFAULT_STATUS_SIDE,
   PATCH_AND_TRANSFORM_STEP,
   type ContainerLayout,
+  type StatusSide,
   type LayoutBox,
 } from './containerLayout';
 import { collectPipeline, pipelineEdge } from './pipelineChain';
 import {
   buildTreeData,
+  connectorGroupHeight,
   connectorRowHandleId,
   pathRows,
   connectorToHandle,
@@ -156,7 +159,10 @@ type PlacedBlock = {
  * position when it has one, otherwise arranged chess-style by the height it
  * draws at, which its rows decide just as they do on the node itself.
  */
-const placeBlocks = (blocks: Block[]): PlacedBlock[] => {
+const placeBlocks = (
+  blocks: Block[],
+  statusSide?: StatusSide,
+): PlacedBlock[] => {
   const drawn = blocks.flatMap((block) => {
     const blockType = block.blockType;
     if (!blockType?.schema) return [];
@@ -165,7 +171,10 @@ const placeBlocks = (blocks: Block[]): PlacedBlock[] => {
       block.connectors && block.connectors.length > 0
         ? block.connectors.map(connectorToHandle)
         : undefined;
-    const height = resourceNodeHeight(currentHandles ?? initialHandles);
+    const height = resourceNodeHeight(
+      currentHandles ?? initialHandles,
+      (statusSide ?? DEFAULT_STATUS_SIDE) === 'left',
+    );
     return [{ block, blockType, initialHandles, currentHandles, height }];
   });
 
@@ -368,12 +377,113 @@ const buildPipelineGroups = (
 };
 
 /**
+ * The open container's nodes once the Status node has changed sides. Blocks
+ * with their outputs on the left grow by those rows, so they are laid out
+ * again chess-style inside their group, the group is sized around them, and
+ * the steps below it move down by as much as it grew or shrank.
+ */
+export const arrangeForStatusSide = (
+  nodes: RFNode[],
+  side: StatusSide,
+): RFNode[] => {
+  const group = nodes.find(holdsResourceBlocks);
+  if (!group) return nodes;
+  const blocks = nodes.filter(
+    (node) => node.type === 'resource' && node.parentId === group.id,
+  );
+  const heights = blocks.map((node) => {
+    const data = node.data as ResourceNodeData;
+    return resourceNodeHeight(
+      data.currentHandles ?? data.initialHandles ?? [],
+      side === 'left',
+    );
+  });
+  const positions = chessPositions(
+    heights,
+    {
+      x: PIPELINE_GROUP_PADDING,
+      y: PIPELINE_GROUP_HEADER_HEIGHT + PIPELINE_GROUP_PADDING,
+    },
+    RESOURCE_NODE_WIDTH,
+  );
+  const placed = new Map(
+    blocks.map((node, index) => [
+      node.id,
+      { position: positions[index], height: heights[index] },
+    ]),
+  );
+
+  const width = Math.max(
+    PIPELINE_GROUP_MIN_WIDTH,
+    ...positions.map(
+      ({ x }) => x + RESOURCE_NODE_WIDTH + PIPELINE_GROUP_PADDING,
+    ),
+  );
+  const height = Math.max(
+    PIPELINE_GROUP_MIN_HEIGHT,
+    ...positions.map(({ y }, i) => y + heights[i] + PIPELINE_GROUP_PADDING),
+  );
+  const oldHeight = sizeOf(group, 'height', PIPELINE_GROUP_MIN_HEIGHT);
+  const shift = height - oldHeight;
+
+  return nodes.map((node) => {
+    const block = placed.get(node.id);
+    if (block) {
+      return {
+        ...node,
+        position: block.position,
+        style: { ...node.style, height: block.height },
+      };
+    }
+    if (node.id === group.id) {
+      return {
+        ...node,
+        width,
+        height,
+        style: { ...node.style, width, height },
+      };
+    }
+    if (node.type === 'pipelineGroup' && node.position.y > group.position.y) {
+      return {
+        ...node,
+        position: { ...node.position, y: node.position.y + shift },
+      };
+    }
+    return node;
+  });
+};
+
+// Space between Spec and Status when both stand on the left.
+const CONNECTOR_STACK_GAP = 40;
+
+/**
+ * Where the Status node goes when nothing says otherwise: right of the blocks,
+ * or on the left under Spec, whose own box is given.
+ */
+export const statusNodePosition = (
+  side: StatusSide,
+  blockNodes: RFNode[],
+  spec: { x: number; y: number; height: number },
+): { x: number; y: number } => {
+  if (side === 'left') {
+    return { x: spec.x, y: spec.y + spec.height + CONNECTOR_STACK_GAP };
+  }
+  const { maxX, minY } = blockBounds(blockNodes);
+  return { x: maxX + CONNECTOR_COLUMN_GAP, y: minY };
+};
+
+/** Height the Spec node stands at: its measured one once it is on the canvas. */
+export const connectorNodeHeight = (node: RFNode | undefined, rows: number) =>
+  Number(node?.measured?.height ?? node?.height ?? connectorGroupHeight(rows));
+
+/**
  * The container's own inputs and outputs, as one node each: inputs left of the
- * blocks, outputs to their right. Both are ordinary draggable, resizable
- * nodes, so their positions and sizes are carried over from the `previous`
- * nodes, or from the `stored` layout when the container is opened, rather than
- * recomputed once the user has placed them. A height the user chose still grows
- * to fit rows added since.
+ * blocks, outputs under the inputs unless the container keeps them right of
+ * the blocks. Both are ordinary draggable, resizable nodes, so
+ * their positions and sizes are carried over from the `previous` nodes, or
+ * from the `stored` layout when the container is opened, rather than
+ * recomputed once the user has placed them. A height the user chose still
+ * grows to fit rows added since.
  */
 export const buildConnectorNodes = (
   connectors: Connector[],
@@ -381,32 +491,50 @@ export const buildConnectorNodes = (
   blockNodes: RFNode[],
   previous: RFNode[] = [],
   stored: ContainerLayout['connectors'] = {},
+  statusSide: StatusSide = DEFAULT_STATUS_SIDE,
 ): RFNode[] => {
-  const { minX, maxX, minY } = blockBounds(blockNodes);
+  const { minX, minY } = blockBounds(blockNodes);
   const placed = new Map(previous.map((node) => [node.id, node]));
 
-  return (['input', 'output'] as const).map((connection) => {
-    const id = connectorGroupId(connection);
-    const side = sideOf(connectors, connection);
-    const before = placed.get(id);
-    // A node already on the canvas wins over what was stored for it.
-    const saved = before ? before.position : stored[connection];
-    const defaultX =
-      connection === 'input'
-        ? minX - CONNECTOR_COLUMN_GAP - CONNECTOR_GROUP_WIDTH
-        : maxX + CONNECTOR_COLUMN_GAP;
+  // A node already on the canvas wins over what was stored for it.
+  const savedPosition = (connection: 'input' | 'output') =>
+    placed.get(connectorGroupId(connection))?.position ?? stored[connection];
 
+  const specBefore = placed.get(connectorGroupId('input'));
+  const specSaved = savedPosition('input');
+  const spec = specSaved
+    ? { x: specSaved.x, y: specSaved.y }
+    : { x: minX - CONNECTOR_COLUMN_GAP - CONNECTOR_GROUP_WIDTH, y: minY };
+  const side =
+    (
+      placed.get(connectorGroupId('output'))?.data as
+        ConnectorGroupNodeData | undefined
+    )?.side ?? statusSide;
+  const statusSaved = savedPosition('output');
+  const status = statusSaved
+    ? { x: statusSaved.x, y: statusSaved.y }
+    : statusNodePosition(side, blockNodes, {
+        ...spec,
+        height: connectorNodeHeight(
+          specBefore,
+          pathRows(sideOf(connectors, 'input')).length,
+        ),
+      });
+
+  return (['input', 'output'] as const).map((connection) => {
+    const data: ConnectorGroupNodeData = {
+      connection,
+      connectors: sideOf(connectors, connection),
+      setConnectors,
+      side: connection === 'input' ? 'left' : side,
+    };
     return {
-      id,
+      id: connectorGroupId(connection),
       type: 'connectorGroup',
-      position: saved ? { x: saved.x, y: saved.y } : { x: defaultX, y: minY },
+      position: connection === 'input' ? spec : status,
       style: { width: CONNECTOR_GROUP_WIDTH },
       draggable: true,
-      data: {
-        connection,
-        connectors: side,
-        setConnectors,
-      },
+      data,
     };
   });
 };
@@ -425,7 +553,10 @@ export const buildContainerGraph = (
   const data = (container.data ?? {}) as ContainerNodeData;
   const blocks = data.childBlocks ?? [];
   const connectors = data.connectors ?? [];
-  const nodes: RFNode[] = placeBlocks(blocks).map(
+  const nodes: RFNode[] = placeBlocks(
+    blocks,
+    data.containerLayout?.statusSide,
+  ).map(
     ({
       block,
       blockType,
@@ -525,6 +656,7 @@ export const buildContainerGraph = (
         groups.filter(holdsResourceBlocks),
         [],
         data.containerLayout?.connectors,
+        data.containerLayout?.statusSide,
       ),
     ],
     edges: [...pipelineEdges, ...edges],
@@ -713,7 +845,10 @@ export const collectContainerLayout = (
         height: sizeOf(node, 'height', PIPELINE_GROUP_MIN_HEIGHT),
       };
     } else if (node.type === 'connectorGroup') {
-      const { connection } = node.data as ConnectorGroupNodeData;
+      const { connection, side } = node.data as ConnectorGroupNodeData;
+      if (connection === 'output' && side !== DEFAULT_STATUS_SIDE) {
+        layout.statusSide = side;
+      }
       layout.connectors[connection] = {
         x,
         y,
@@ -749,12 +884,13 @@ export const resolveContainerLayout = (data: {
 }): { layout: ContainerLayout; blockOrigin: { x: number; y: number } } => {
   // The same blocks, placed the same way, `buildContainerGraph` sizes the
   // group around.
-  const footprints: Footprint[] = placeBlocks(data.childBlocks ?? []).map(
-    ({ position, height }) => ({
-      position,
-      style: { width: RESOURCE_NODE_WIDTH, height },
-    }),
-  );
+  const footprints: Footprint[] = placeBlocks(
+    data.childBlocks ?? [],
+    data.containerLayout?.statusSide,
+  ).map(({ position, height }) => ({
+    position,
+    style: { width: RESOURCE_NODE_WIDTH, height },
+  }));
   const { steps, patchIndex, boxes } = pipelineGroupBoxes(
     data.functions,
     footprints,
@@ -769,7 +905,13 @@ export const resolveContainerLayout = (data: {
 
   const origin = rounded[patchIndex];
   return {
-    layout: { groups, connectors: { ...data.containerLayout?.connectors } },
+    layout: {
+      groups,
+      connectors: { ...data.containerLayout?.connectors },
+      ...(data.containerLayout?.statusSide && {
+        statusSide: data.containerLayout.statusSide,
+      }),
+    },
     blockOrigin: { x: origin.x, y: origin.y },
   };
 };

@@ -111,6 +111,11 @@
         bottom: 0;
         right: unset;
       }
+      /* Outputs moved to the left edge, next to the inputs. */
+      &.source.react-flow__handle-left {
+        left: 0;
+        right: auto;
+      }
     }
 
     &.react-flow__node-container {
@@ -161,13 +166,20 @@
         overflow: visible;
       }
 
-      /* A Status row's read handle lies over its dot, out of the way until a
-         block input is dragged, then shows as the source it has become. */
-      .react-flow__handle.status-read-handle {
-        left: 0;
-        right: auto;
+      /* A Status row's second handle lies over its dot, out of the way until
+         a block handle of the dot's own kind is dragged, then shows as the
+         kind of handle it is. */
+      .react-flow__handle.connector-hidden-handle {
         opacity: 0;
         pointer-events: none;
+        &.react-flow__handle-left {
+          left: 0;
+          right: auto;
+        }
+        &.react-flow__handle-right {
+          left: auto;
+          right: 0;
+        }
         &.is-armed {
           opacity: 1;
           pointer-events: all;
@@ -193,13 +205,13 @@
         }
       }
 
-      .node-body.connector-group-body-spec::before {
+      .node-body.connector-group-body-faces-right::before {
         right: 0;
         border-left: none;
         border-radius: 0 var(--node-border-radius) var(--node-border-radius) 0;
       }
 
-      .node-body.connector-group-body-status::before {
+      .node-body.connector-group-body-faces-left::before {
         left: 0;
         border-right: none;
         border-radius: var(--node-border-radius) 0 0 var(--node-border-radius);

@@ -893,12 +893,19 @@ const MIN_RESOURCE_NODE_HEIGHT = 80;
 /**
  * Height a resource block draws at for these handles. Each side is its own
  * tree, and branch rows are rows like any other, so it follows the rows of the
- * taller side rather than the handle count.
+ * taller side rather than the handle count — or of both, stacked, when the
+ * outputs share the left edge with the inputs.
  */
-export const resourceNodeHeight = (handles: Handle[]): number => {
-  const rows = Math.max(
-    pathRows(handles.filter((handle) => handle.type === 'target')).length,
-    pathRows(handles.filter((handle) => handle.type === 'source')).length,
-  );
+export const resourceNodeHeight = (
+  handles: Handle[],
+  outputsLeft = false,
+): number => {
+  const inputs = pathRows(
+    handles.filter((handle) => handle.type === 'target'),
+  ).length;
+  const outputs = pathRows(
+    handles.filter((handle) => handle.type === 'source'),
+  ).length;
+  const rows = outputsLeft ? inputs + outputs : Math.max(inputs, outputs);
   return Math.max((rows + 2) * RESOURCE_ROW_HEIGHT, MIN_RESOURCE_NODE_HEIGHT);
 };

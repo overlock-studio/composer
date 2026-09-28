@@ -17,7 +17,6 @@ import {
   Edge,
   FinalConnectionState,
   Node,
-  useNodesInitialized,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useEditorAreaContext } from '../EditorAreaContext';
@@ -136,7 +135,6 @@ export const EditorArea = () => {
   } = useEditorAreaContext();
   const { screenToFlowPosition, fitView, getViewport, setViewport } =
     useReactFlow();
-  const nodesInitialized = useNodesInitialized();
   const { entity, entityId } = entityRef;
   const { toast } = useToast();
   const [hasInitialFitView, setHasInitialFitView] = useState(false);
@@ -268,26 +266,30 @@ export const EditorArea = () => {
     createNodesFromBlocks();
   }, [createNodesFromBlocks, blocks]);
 
+  // Fitting waits until every node on screen has been measured. React Flow's
+  // own initialized flag still describes the previous canvas for a moment
+  // after a container is opened, which fitted the view to a graph whose
+  // blocks had no size yet and left most of it off screen.
+  const nodesMeasured = useMemo(
+    () =>
+      nodes.length > 0 &&
+      nodes.every(
+        (node) =>
+          node.measured?.width !== undefined &&
+          node.measured?.height !== undefined,
+      ),
+    [nodes],
+  );
+
   useEffect(() => {
-    if (
-      nodesInitialized &&
-      !hasInitialFitView &&
-      !blocksLoading &&
-      nodes.length > 0
-    ) {
+    if (nodesMeasured && !hasInitialFitView && !blocksLoading) {
       fitView({
         maxZoom: 0.75,
         duration: 300,
       });
       setHasInitialFitView(true);
     }
-  }, [
-    nodesInitialized,
-    fitView,
-    hasInitialFitView,
-    blocksLoading,
-    nodes.length,
-  ]);
+  }, [nodesMeasured, fitView, hasInitialFitView, blocksLoading]);
 
   // Opening a container parks the container-level graph and swaps in the
   // blocks of that container; closing it folds the blocks back and restores
@@ -771,8 +773,8 @@ export const EditorArea = () => {
                 <stop offset="0%" stopColor="#ae53ba" />
                 <stop offset="100%" stopColor="#2a8af6" />
               </linearGradient>
-              {/* A status field read back flows right to left, into a block
-                  left of the Status node, so its colours run the other way. */}
+              {/* An edge flowing right to left takes its colours the other
+                  way round. */}
               <linearGradient id="edge-gradient-reversed">
                 <stop offset="0%" stopColor="#2a8af6" />
                 <stop offset="100%" stopColor="#ae53ba" />

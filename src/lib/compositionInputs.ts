@@ -1,6 +1,7 @@
 import type { Node as RFNode } from '@xyflow/react';
 import type { Block, BlockType, Connector, Pipeline } from '../api/types';
 import {
+  isStatusSide,
   PATCH_AND_TRANSFORM_STEP,
   type ContainerLayout,
 } from './containerLayout';
@@ -102,7 +103,11 @@ export const collectBlocks = (nodes: RFNode[]): Block[] =>
             edges: [],
             blockType: undefined,
             connectors: [],
-            data: { connection },
+            data: {
+              connection,
+              ...(connection === 'output' &&
+                layout.statusSide && { side: layout.statusSide }),
+            },
           };
         },
       );
@@ -224,9 +229,13 @@ export const restoreBlocks = (blocks: Block[]): Block[] => {
       });
 
       for (const block of children) {
-        if (block.type !== BLOCK_TYPES.connectors || !block.position) continue;
+        if (block.type !== BLOCK_TYPES.connectors) continue;
         const connection =
           block.data?.connection === 'output' ? 'output' : 'input';
+        if (connection === 'output' && isStatusSide(block.data?.side)) {
+          containerLayout.statusSide = block.data.side;
+        }
+        if (!block.position) continue;
         containerLayout.connectors[connection] = {
           ...block.position,
           ...block.size,

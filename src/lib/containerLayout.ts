@@ -16,10 +16,22 @@ export type ConnectorLayout = {
   height?: number;
 };
 
+/** Which side of the blocks the Status node stands on while a container is open. */
+export type StatusSide = 'left' | 'right';
+
 export type ContainerLayout = {
   groups: Record<string, LayoutBox>;
   connectors: Partial<Record<'input' | 'output', ConnectorLayout>>;
+  // Left when absent, under Spec and drawn the same way; right stands it on
+  // the far side of the blocks, the way their outputs flow.
+  statusSide?: StatusSide;
 };
+
+/** The side a container keeps Status on unless it says otherwise. */
+export const DEFAULT_STATUS_SIDE: StatusSide = 'left';
+
+export const isStatusSide = (value: unknown): value is StatusSide =>
+  value === 'left' || value === 'right';
 
 // Resource names are DNS labels and can never start with `_`, so every key the
 // editor writes for itself does, the way `_self` already does for the
