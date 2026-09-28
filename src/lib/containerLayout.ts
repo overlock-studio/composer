@@ -34,3 +34,24 @@ export const pipelineLayoutKey = (step: string): string =>
 
 export const connectorLayoutKey = (connection: 'input' | 'output'): string =>
   connection === 'input' ? '_spec' : '_status';
+
+// Room between the two columns of a chess layout, for the edges running from
+// one block to the next, and between blocks sharing a column.
+const CHESS_COLUMN_GAP = 80;
+const CHESS_ROW_GAP = 40;
+
+/**
+ * Where block `index` goes when there is no layout saying where it is: two
+ * columns, each block half a step below the one before it and in the other
+ * column, like the squares of one colour on a chessboard. Neighbours sit
+ * diagonally, so the edges between them and to the Spec and Status nodes fan
+ * out instead of running down one line.
+ */
+export const chessPosition = (
+  index: number,
+  origin: { x: number; y: number },
+  size: { width: number; height: number },
+): { x: number; y: number } => ({
+  x: origin.x + (index % 2) * (size.width + CHESS_COLUMN_GAP),
+  y: origin.y + (index * (size.height + CHESS_ROW_GAP)) / 2,
+});

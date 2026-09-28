@@ -15,6 +15,7 @@ import {
 import { extractConnectors } from './editorUtils';
 import { JsonObject } from './types';
 import {
+  chessPosition,
   connectorLayoutKey,
   PATCH_AND_TRANSFORM_STEP,
   PIPELINE_LAYOUT_PREFIX,
@@ -26,7 +27,6 @@ const BLOCK_WIDTH = 300;
 const MIN_CONTAINER_WIDTH = 500;
 const MIN_RESOURCE_NODE_HEIGHT = 80;
 const BLOCK_FOOTER_HEIGHT = 80;
-const BLOCK_SPACING = 5;
 const CONTAINER_HEADER_HEIGHT = 60;
 const CONTAINER_BOTTOM_PADDING = 20;
 
@@ -240,9 +240,13 @@ const buildBlocksForComposition = (
   if (!name) return [];
 
   const resourceList = getBlocksResources(composition);
-  const containerWidth = MIN_CONTAINER_WIDTH;
-  const blockX = (containerWidth - BLOCK_WIDTH) / 2;
-  let currentY = CONTAINER_HEADER_HEIGHT;
+  const blockX = (MIN_CONTAINER_WIDTH - BLOCK_WIDTH) / 2;
+  const chessOrigin = { x: blockX, y: CONTAINER_HEADER_HEIGHT };
+  // Blocks the layout says nothing about are arranged chess-style, counted
+  // among themselves; the container is sized around them.
+  let unplaced = 0;
+  let right = MIN_CONTAINER_WIDTH;
+  let bottom = CONTAINER_HEADER_HEIGHT;
 
   const containerLayout = readContainerLayout(positions);
   const blockOrigin = containerLayout.groups[PATCH_AND_TRANSFORM_STEP];
@@ -265,6 +269,18 @@ const buildBlocksForComposition = (
       const height = estimateBlockHeight();
       const savedEntry = positions[resourceName];
       const savedLayout = savedEntry ? toLayout(savedEntry) : undefined;
+      const position = savedLayout
+        ? {
+            x: savedLayout.position.x + (blockOrigin?.x ?? 0),
+            y: savedLayout.position.y + (blockOrigin?.y ?? 0),
+          }
+        : chessPosition(unplaced++, chessOrigin, {
+            width: BLOCK_WIDTH,
+            height,
+          });
+      const size = savedLayout?.size ?? { width: BLOCK_WIDTH, height };
+      right = Math.max(right, position.x + size.width + blockX);
+      bottom = Math.max(bottom, position.y + size.height);
       const block: Block = {
         id: blockId([name, resourceName]),
         parentId: name,
@@ -272,13 +288,8 @@ const buildBlocksForComposition = (
         // Blocks are stored relative to the group holding them and carried on
         // the canvas. A layout written before groups were stored has them on
         // the canvas already.
-        position: savedLayout
-          ? {
-              x: savedLayout.position.x + (blockOrigin?.x ?? 0),
-              y: savedLayout.position.y + (blockOrigin?.y ?? 0),
-            }
-          : { x: blockX, y: currentY },
-        size: savedLayout?.size ?? { width: BLOCK_WIDTH, height },
+        position,
+        size,
         edges: patchesToEdges(name, resourceName, resource.patches),
         blockType: syntheticBlockType(apiVersion, kind, true),
         connectors: [],
@@ -286,12 +297,12 @@ const buildBlocksForComposition = (
       (block as Block & { apiVersion?: string; kind?: string }).apiVersion =
         apiVersion;
       (block as Block & { apiVersion?: string; kind?: string }).kind = kind;
-      currentY += height + BLOCK_SPACING;
       return block;
     });
 
   const functions = composition.spec?.pipeline ?? [];
-  const containerHeight = currentY + CONTAINER_BOTTOM_PADDING;
+  const containerWidth = right;
+  const containerHeight = bottom + CONTAINER_BOTTOM_PADDING;
   const compositeRef = composition.spec?.compositeTypeRef;
   const parentBlockType =
     parentBlockTypes.find(

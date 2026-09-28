@@ -15,6 +15,7 @@ import type {
   ResourceNodeData,
 } from './types';
 import {
+  chessPosition,
   PATCH_AND_TRANSFORM_STEP,
   type ContainerLayout,
   type LayoutBox,
@@ -38,7 +39,6 @@ import {
 } from './editorUtils';
 
 const BLOCK_START = { x: 320, y: 80 };
-const BLOCK_SPACING = 40;
 const DEFAULT_BLOCK_HEIGHT = 160;
 
 // The two connector nodes flank the blocks, far enough out to leave room for
@@ -382,18 +382,20 @@ export const buildContainerGraph = (
   const blocks = data.childBlocks ?? [];
   const connectors = data.connectors ?? [];
   const nodes: RFNode[] = [];
-  let offset = 0;
+  // Blocks with no position of their own are arranged chess-style.
+  let unplaced = 0;
 
   for (const block of blocks) {
     const blockType = block.blockType;
     if (!blockType?.schema) continue;
 
     const initialHandles = handlesForBlock(block, blockType);
-    const position = block.position ?? {
-      x: BLOCK_START.x,
-      y: BLOCK_START.y + offset,
-    };
-    offset += (block.size?.height ?? 0) + BLOCK_SPACING;
+    const position =
+      block.position ??
+      chessPosition(unplaced++, BLOCK_START, {
+        width: RESOURCE_NODE_WIDTH,
+        height: DEFAULT_BLOCK_HEIGHT,
+      });
 
     nodes.push({
       id: block.id,
