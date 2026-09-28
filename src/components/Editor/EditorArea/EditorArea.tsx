@@ -685,10 +685,10 @@ export const EditorArea = () => {
   // Blocks step back behind whatever has the focus. While a handle is lit,
   // the blocks wired to it through an edge stay as they are, so what the field
   // feeds or comes from stands out. While blocks are selected, they do, and so
-  // do the blocks taking their outputs — straight from them, or relayed
-  // through a Status field they write — together with the edges on the way,
-  // which do not touch the selection themselves. Only what is drawn changes;
-  // the graph itself is left alone.
+  // do the blocks wired to them — straight, or relayed through a Status field,
+  // whether the selection writes it and they read it or the other way round —
+  // together with the edges on the way, which do not touch the selection
+  // themselves. Only what is drawn changes; the graph itself is left alone.
   const focus = useMemo(() => {
     const relayEdges = new Set<string>();
     const dataEdges = edges.filter((edge) => edge.type === 'customEdge');
@@ -709,20 +709,35 @@ export const EditorArea = () => {
     if (!selected.length) return { kept: undefined, relayEdges };
 
     const kept = new Set(selected.map((node) => node.id));
+    const isSelected = (id: string) => selected.some((node) => node.id === id);
     const status = connectorGroupId('output');
+    // Status fields the selection writes, and the ones it reads.
     const written = new Set<string>();
+    const read = new Set<string>();
     for (const edge of dataEdges) {
-      if (!selected.some((node) => node.id === edge.source)) continue;
-      if (edge.target === status) {
-        written.add(handleRow(edge.targetHandle));
-      } else if (!isConnectorGroupId(edge.target)) {
-        kept.add(edge.target);
+      if (isSelected(edge.source)) {
+        if (edge.target === status) {
+          written.add(handleRow(edge.targetHandle));
+        } else if (!isConnectorGroupId(edge.target)) {
+          kept.add(edge.target);
+        }
+      } else if (isSelected(edge.target)) {
+        if (edge.source === status) {
+          read.add(handleRow(edge.sourceHandle));
+        } else if (!isConnectorGroupId(edge.source)) {
+          kept.add(edge.source);
+        }
       }
     }
+    // One step further along the relay either way: the blocks reading what
+    // the selection writes, and the blocks writing what it reads.
     for (const edge of dataEdges) {
-      if (edge.source !== status) continue;
-      if (!written.has(handleRow(edge.sourceHandle))) continue;
-      kept.add(edge.target);
+      const readsWritten =
+        edge.source === status && written.has(handleRow(edge.sourceHandle));
+      const writesRead =
+        edge.target === status && read.has(handleRow(edge.targetHandle));
+      if (!readsWritten && !writesRead) continue;
+      kept.add(readsWritten ? edge.target : edge.source);
       relayEdges.add(edge.id);
     }
     return { kept, relayEdges };
