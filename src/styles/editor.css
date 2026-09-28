@@ -132,6 +132,12 @@
        inline, so the rule has to be important to land. */
     &.react-flow__node-resource {
       z-index: 10001 !important;
+      transition: opacity 150ms ease;
+
+      /* Not wired to the handle that is lit (see EditorArea). */
+      &.node-dimmed {
+        opacity: 0.5;
+      }
 
       &.selected,
       &.dragging {
