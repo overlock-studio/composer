@@ -21,6 +21,7 @@ import {
 } from '../../../lib/editorUtils';
 import { CustomEdgeToolbar } from '../Toolbars';
 import { isConnectorGroupId } from '../../../lib/containerGraph';
+import { useFocusedEdges } from '../../../lib/edgeFocus';
 import { Transformer } from '../Transformer';
 import { useEditorActions } from '../EditorAreaContext';
 
@@ -63,7 +64,12 @@ const CustomEdgeComponent = ({
     (s) => s.nodeLookup.get(target)?.selected ?? false,
   );
 
-  const isFlowActive = isHandleFlowActive || isSourceSelected || isTargetSelected;
+  // Edges carrying a selected block's outputs on through Status touch neither
+  // end of the selection, so the canvas says which they are (see EditorArea);
+  // they flow like the selection's own.
+  const isRelayed = useFocusedEdges().has(id);
+  const isFlowActive =
+    isHandleFlowActive || isSourceSelected || isTargetSelected || isRelayed;
 
   // An edge is coloured by what it carries: blue when it feeds a block's
   // input from Spec or Status, violet when it leaves a block's output.
