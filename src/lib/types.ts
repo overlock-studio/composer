@@ -327,6 +327,7 @@ export type TransformerProps = {
   >;
   setOpenTransformerToolbar: React.Dispatch<React.SetStateAction<boolean>>;
   transformerIndex: number;
+  className?: string;
 };
 
 export type TransformerToolbarProps = {

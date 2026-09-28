@@ -1,5 +1,6 @@
 import { NodeTypes, Node } from '@xyflow/react';
 import {
+  ActiveHandle,
   Handle,
   HandleTreeNode,
   JsonObject,
@@ -865,3 +866,21 @@ export function moveIntersectingNodes(
     );
   }
 }
+
+/** Whether an edge starts or ends at the handle the user clicked. */
+export const touchesActiveHandle = (
+  activeHandle: ActiveHandle | null,
+  edge: {
+    source: string;
+    target: string;
+    sourceHandle?: string | null;
+    targetHandle?: string | null;
+  },
+): boolean =>
+  !!activeHandle &&
+  ((activeHandle.type === 'source' &&
+    activeHandle.nodeId === edge.source &&
+    activeHandle.handleId === (edge.sourceHandle ?? '')) ||
+    (activeHandle.type === 'target' &&
+      activeHandle.nodeId === edge.target &&
+      activeHandle.handleId === (edge.targetHandle ?? '')));

@@ -452,6 +452,15 @@
   }
 }
 
+/* While some edges are active the rest fade to half, line, menu point and
+   transformers alike, and come back once nothing is. */
+.edge-inactive {
+  transition: opacity 150ms ease;
+}
+.custom-editor.edges-focused .edge-inactive {
+  opacity: 0.5;
+}
+
 @keyframes edgeDashFlow {
   to {
     stroke-dashoffset: -24;
