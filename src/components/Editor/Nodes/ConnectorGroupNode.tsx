@@ -248,6 +248,7 @@ const ConnectorGroupNodeComponent = ({
                 // either, the other kind on its hidden handle.
                 isConnectable={!isInput || draggedFrom !== 'source'}
                 inactiveClass={'opacity-30'}
+                className={isInput ? undefined : 'status-handle'}
                 path={row.path}
                 description={row.item?.description ?? ''}
                 variant="block"
@@ -275,7 +276,7 @@ const ConnectorGroupNodeComponent = ({
                   // Only ever the end of an edge: starting one from the row
                   // draws from its dot.
                   isConnectableStart={false}
-                  className={`connector-hidden-handle ${armed ? 'is-armed' : ''}`}
+                  className={`status-handle connector-hidden-handle ${armed ? 'is-armed' : ''}`}
                 />
               )}
             </React.Fragment>

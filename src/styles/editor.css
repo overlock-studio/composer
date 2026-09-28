@@ -168,6 +168,18 @@
         overflow: visible;
       }
 
+      /* Status holds what the blocks put out, so its handles take the output
+         colour whichever way round they are. */
+      .react-flow__handle.status-handle {
+        background-color: #a686ca;
+        border-color: #63319b;
+        &:hover,
+        &.is-active {
+          animation: pulseNeonTarget 1.2s ease-in-out infinite;
+          border-color: #fff;
+        }
+      }
+
       /* A Status row's second handle lies over its dot, out of the way until
          a block handle of the dot's own kind is dragged, then shows as the
          kind of handle it is. */
