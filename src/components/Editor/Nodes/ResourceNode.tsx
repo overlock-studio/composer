@@ -7,7 +7,14 @@ import React, {
   useRef,
 } from 'react';
 import { Handle, ResourceNodeData } from '../../../lib/types';
-import { Node, NodeProps, Position, useReactFlow } from '@xyflow/react';
+import {
+  Node,
+  NodeProps,
+  Position,
+  useReactFlow,
+  useStore,
+  useUpdateNodeInternals,
+} from '@xyflow/react';
 import { Box, Plus, Trash2 } from 'lucide-react';
 import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { CustomHandle } from '../CustomHandle';
@@ -17,6 +24,8 @@ import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 import { Button } from '../../ui/button';
 import { EditHandlesMenu } from '../Menus';
 import { RowTree } from '../RowTree';
+import { connectorGroupId } from '../../../lib/containerGraph';
+import type { ConnectorGroupNodeData } from '../../../lib/types';
 import {
   buildTreeData,
   moveIntersectingNodes,
@@ -93,7 +102,24 @@ const ResourceNodeComponent = ({
     [handles],
   );
 
-  const nodeHeight = useMemo(() => resourceNodeHeight(handles), [handles]);
+  // With Status on the left of the blocks, outputs join the inputs on the
+  // left edge, listed under them, so every edge meets the block on one side.
+  const outputsLeft = useStore(
+    (s) =>
+      (
+        s.nodeLookup.get(connectorGroupId('output'))?.data as
+          ConnectorGroupNodeData | undefined
+      )?.side === 'left',
+  );
+  const updateNodeInternals = useUpdateNodeInternals();
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, outputsLeft, updateNodeInternals]);
+
+  const nodeHeight = useMemo(
+    () => resourceNodeHeight(handles, outputsLeft),
+    [handles, outputsLeft],
+  );
 
   useEffect(() => {
     setNodes((currentNodes) =>
@@ -158,6 +184,39 @@ const ResourceNodeComponent = ({
     [draggedFrom],
   );
 
+  // An output row on the right edge reads towards it, mirrored; on the left
+  // edge it continues the inputs' column, below them.
+  const sourceRow = (row: (typeof sourceRows)[number], index: number) => (
+    <CustomHandle
+      key={row.path}
+      type="source"
+      position={outputsLeft ? Position.Left : Position.Right}
+      id={row.path}
+      style={{
+        top: `${SPACE_BETWEEN_HANDLES * ((outputsLeft ? targetRows.length : 0) + index + 2)}px`,
+      }}
+      inactiveClass={'opacity-30'}
+      description={row.item?.description ?? ''}
+      path={row.path}
+      label={
+        outputsLeft ? (
+          <>
+            <RowTree row={row} height={SPACE_BETWEEN_HANDLES} />
+            <span className="min-w-0 truncate">{row.name}</span>
+          </>
+        ) : (
+          <>
+            <span className="min-w-0 truncate">{row.name}</span>
+            <RowTree row={row} height={SPACE_BETWEEN_HANDLES} mirrored />
+          </>
+        )
+      }
+      labelClassName={outputsLeft ? TARGET_ROW : SOURCE_ROW}
+      variant="block"
+      {...getIsConnectable(row.path, 'source')}
+    />
+  );
+
   return (
     <div
       className="node-body"
@@ -219,7 +278,7 @@ const ResourceNodeComponent = ({
         setMenuOpen={setEditOpen}
       />
       <div className="flex flex-row justify-between">
-        <div className="flex w-1/2 flex-col">
+        <div className={`flex ${outputsLeft ? 'w-full' : 'w-1/2'} flex-col`}>
           {targetRows.map((row, index) => (
             <CustomHandle
               key={row.path}
@@ -242,30 +301,13 @@ const ResourceNodeComponent = ({
               {...getIsConnectable(row.path, 'target')}
             />
           ))}
+          {outputsLeft && sourceRows.map((row, index) => sourceRow(row, index))}
         </div>
-        <div className="flex w-1/2 flex-col">
-          {sourceRows.map((row, index) => (
-            <CustomHandle
-              key={row.path}
-              type="source"
-              position={Position.Right}
-              id={row.path}
-              style={{ top: `${SPACE_BETWEEN_HANDLES * (index + 2)}px` }}
-              inactiveClass={'opacity-30'}
-              description={row.item?.description ?? ''}
-              path={row.path}
-              label={
-                <>
-                  <span className="min-w-0 truncate">{row.name}</span>
-                  <RowTree row={row} height={SPACE_BETWEEN_HANDLES} mirrored />
-                </>
-              }
-              labelClassName={SOURCE_ROW}
-              variant="block"
-              {...getIsConnectable(row.path, 'source')}
-            />
-          ))}
-        </div>
+        {!outputsLeft && (
+          <div className="flex w-1/2 flex-col">
+            {sourceRows.map((row, index) => sourceRow(row, index))}
+          </div>
+        )}
       </div>
       <NodeDeletionDialog
         open={openDeleteDialog}

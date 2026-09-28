@@ -12,7 +12,7 @@ import { Block, BlockType, Connector, Pipeline } from '../api/types';
 import { EditorDataAdapter, EditorEntityRef } from '../api/adapter';
 import type { CrossplaneFunctionDB } from '../api/typesDB';
 import { JSONSchemaProps } from './jsonSchema';
-import type { ContainerLayout } from './containerLayout';
+import type { ContainerLayout, StatusSide } from './containerLayout';
 
 export type JsonPrimitive = number | string | boolean | null;
 
@@ -227,6 +227,8 @@ export type ConnectorGroupNodeData = {
   connection: 'input' | 'output';
   connectors: Connector[];
   setConnectors: React.Dispatch<React.SetStateAction<Connector[]>>;
+  // Where the node stands; Spec is always on the left.
+  side: StatusSide;
 };
 
 export type HandlesStates = {

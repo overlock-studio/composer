@@ -16,6 +16,8 @@ import { extractConnectors } from './editorUtils';
 import { JsonObject } from './types';
 import {
   connectorLayoutKey,
+  isStatusSide,
+  type StatusSide,
   PATCH_AND_TRANSFORM_STEP,
   PIPELINE_LAYOUT_PREFIX,
   type ContainerLayout,
@@ -133,6 +135,8 @@ export type LayoutEntry = {
   y: number;
   width?: number;
   height?: number;
+  // Only on the Status entry: which side of the blocks it stands on.
+  side?: StatusSide;
 };
 
 export type CompositionLayout = Record<string, LayoutEntry>;
@@ -187,6 +191,9 @@ const readContainerLayout = (positions: CompositionLayout): ContainerLayout => {
     if (!entry) continue;
     const { position, size } = toLayout(entry);
     layout.connectors[connection] = { ...position, ...size };
+    if (connection === 'output' && isStatusSide(entry.side)) {
+      layout.statusSide = entry.side;
+    }
   }
 
   return layout;
