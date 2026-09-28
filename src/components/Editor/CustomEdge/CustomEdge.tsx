@@ -17,6 +17,7 @@ import {
   cubicBezierPoint,
   edgeMenuPointT,
   generateBezierPoints,
+  touchesActiveHandle,
 } from '../../../lib/editorUtils';
 import { CustomEdgeToolbar } from '../Toolbars';
 import { Transformer } from '../Transformer';
@@ -48,14 +49,12 @@ const CustomEdgeComponent = ({
   const { setNodes, setEdges, activeHandle, setActiveHandle } =
     useEditorActions();
 
-  const isHandleFlowActive =
-    !!activeHandle &&
-    ((activeHandle.type === 'source' &&
-      activeHandle.nodeId === source &&
-      activeHandle.handleId === (sourceHandleId ?? '')) ||
-      (activeHandle.type === 'target' &&
-        activeHandle.nodeId === target &&
-        activeHandle.handleId === (targetHandleId ?? '')));
+  const isHandleFlowActive = touchesActiveHandle(activeHandle, {
+    source,
+    target,
+    sourceHandle: sourceHandleId,
+    targetHandle: targetHandleId,
+  });
 
   const isSourceSelected = useStore(
     (s) => s.nodeLookup.get(source)?.selected ?? false,
@@ -68,6 +67,10 @@ const CustomEdgeComponent = ({
 
   // Reads a status field back into a block, against the usual direction.
   const isStatusRead = source === connectorGroupId('output');
+
+  // While other edges are active this one steps back; the canvas decides
+  // whether any are (see `edges-focused` in EditorArea).
+  const inactiveClass = isFlowActive || selected ? '' : 'edge-inactive';
 
   useEffect(() => {
     setEdges((eds) =>
@@ -228,6 +231,7 @@ const CustomEdgeComponent = ({
           positionX={positionX}
           positionY={positionY}
           setOpenTransformerToolbar={setOpenTransformerToolbar}
+          className={inactiveClass}
         />
       );
     });
@@ -238,7 +242,7 @@ const CustomEdgeComponent = ({
       <path
         id={id}
         style={style}
-        className={`react-flow__edge-path nopan nodrag ${isFlowActive ? 'edge-flow-animated' : ''} ${isStatusRead ? 'edge-reversed' : ''}`}
+        className={`react-flow__edge-path nopan nodrag ${isFlowActive ? 'edge-flow-animated' : ''} ${isStatusRead ? 'edge-reversed' : ''} ${inactiveClass}`}
         d={edgePath}
       />
       <EdgeLabelRenderer>
@@ -249,7 +253,7 @@ const CustomEdgeComponent = ({
           // menu selects the edge too, and that should not light this up.
           className={`edge-menu-point nodrag nopan ${
             openEdgeToolbar ? 'is-active' : ''
-          }`}
+          } ${inactiveClass}`}
           style={{
             transform: `translate(-50%, -50%) translate(${menuX}px, ${menuY}px)`,
           }}

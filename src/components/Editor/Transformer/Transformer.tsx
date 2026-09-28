@@ -16,6 +16,7 @@ export const Transformer = ({
   setTransformers,
   transformerIndex,
   setOpenTransformerToolbar,
+  className,
 }: TransformerProps) => {
   const { zoom } = useViewport();
   const { setEdges } = useEditorActions();
@@ -25,7 +26,7 @@ export const Transformer = ({
   return (
     <>
       <div
-        className="transformer-wrapper"
+        className={`transformer-wrapper ${className ?? ''}`}
         style={{
           transform: `translate(-50%, -50%) translate(${positionX}px, ${positionY}px)`,
           zIndex: open ? 10003 : undefined,

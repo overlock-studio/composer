@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, {
+  useRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
   ReactFlow,
   addEdge,
@@ -29,6 +35,7 @@ import {
   PIPELINE_OUT_HANDLE,
   RESOURCE_NODE_WIDTH,
   resolveNodeCollisions,
+  touchesActiveHandle,
 } from '../../../lib/editorUtils';
 import {
   buildConnectorNodes,
@@ -124,6 +131,7 @@ export const EditorArea = () => {
     editorMode,
     activeContainerId,
     containerSession,
+    activeHandle,
     setActiveHandle,
   } = useEditorAreaContext();
   const { screenToFlowPosition, fitView, getViewport, setViewport } =
@@ -653,6 +661,23 @@ export const EditorArea = () => {
     [updateEdgeHoverState],
   );
 
+  // Whether any data edge is active — its handle clicked, an end selected, or
+  // the edge itself — in which case the rest are dimmed (see CustomEdge). The
+  // pipeline chain is not a data edge and takes no part.
+  const edgesFocused = useMemo(() => {
+    const selected = new Set(
+      nodes.filter((node) => node.selected).map((node) => node.id),
+    );
+    return edges.some(
+      (edge) =>
+        edge.type === 'customEdge' &&
+        (edge.selected ||
+          selected.has(edge.source) ||
+          selected.has(edge.target) ||
+          touchesActiveHandle(activeHandle, edge)),
+    );
+  }, [nodes, edges, activeHandle]);
+
   // Focus follows the last thing touched: clicking the canvas or a node body
   // drops the handle the user lit up earlier, instead of leaving it glowing
   // over an interaction it has nothing to do with.
@@ -736,7 +761,7 @@ export const EditorArea = () => {
           multiSelectionKeyCode={null}
           deleteKeyCode={null}
           ref={reactFlowRef}
-          className="custom-editor"
+          className={`custom-editor ${edgesFocused ? 'edges-focused' : ''}`}
         >
           <Controls />
           <Background gap={12} size={1} />
