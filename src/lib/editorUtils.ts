@@ -884,3 +884,21 @@ export const touchesActiveHandle = (
     (activeHandle.type === 'target' &&
       activeHandle.nodeId === edge.target &&
       activeHandle.handleId === (edge.targetHandle ?? '')));
+
+// A resource block is a header row, one row per path on its taller side and a
+// footer row, never shorter than the minimum.
+export const RESOURCE_ROW_HEIGHT = 30;
+const MIN_RESOURCE_NODE_HEIGHT = 80;
+
+/**
+ * Height a resource block draws at for these handles. Each side is its own
+ * tree, and branch rows are rows like any other, so it follows the rows of the
+ * taller side rather than the handle count.
+ */
+export const resourceNodeHeight = (handles: Handle[]): number => {
+  const rows = Math.max(
+    pathRows(handles.filter((handle) => handle.type === 'target')).length,
+    pathRows(handles.filter((handle) => handle.type === 'source')).length,
+  );
+  return Math.max((rows + 2) * RESOURCE_ROW_HEIGHT, MIN_RESOURCE_NODE_HEIGHT);
+};

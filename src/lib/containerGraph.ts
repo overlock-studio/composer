@@ -15,7 +15,7 @@ import type {
   ResourceNodeData,
 } from './types';
 import {
-  chessPosition,
+  chessPositions,
   PATCH_AND_TRANSFORM_STEP,
   type ContainerLayout,
   type LayoutBox,
@@ -36,6 +36,7 @@ import {
   PIPELINE_GROUP_MIN_WIDTH,
   PIPELINE_GROUP_PADDING,
   RESOURCE_NODE_WIDTH,
+  resourceNodeHeight,
 } from './editorUtils';
 
 const BLOCK_START = { x: 320, y: 80 };
@@ -139,6 +140,49 @@ const handlesForBlock = (block: Block, blockType: BlockType): Handle[] => {
   }
 
   return handles;
+};
+
+type PlacedBlock = {
+  block: Block;
+  blockType: BlockType;
+  initialHandles: Handle[];
+  currentHandles: Handle[] | undefined;
+  position: { x: number; y: number };
+  height: number;
+};
+
+/**
+ * The blocks a container draws, each where it goes on its canvas: at its own
+ * position when it has one, otherwise arranged chess-style by the height it
+ * draws at, which its rows decide just as they do on the node itself.
+ */
+const placeBlocks = (blocks: Block[]): PlacedBlock[] => {
+  const drawn = blocks.flatMap((block) => {
+    const blockType = block.blockType;
+    if (!blockType?.schema) return [];
+    const initialHandles = handlesForBlock(block, blockType);
+    const currentHandles =
+      block.connectors && block.connectors.length > 0
+        ? block.connectors.map(connectorToHandle)
+        : undefined;
+    const height = resourceNodeHeight(currentHandles ?? initialHandles);
+    return [{ block, blockType, initialHandles, currentHandles, height }];
+  });
+
+  const unplaced = drawn.filter(({ block }) => !block.position);
+  const chess = chessPositions(
+    unplaced.map(({ height }) => height),
+    BLOCK_START,
+    RESOURCE_NODE_WIDTH,
+  );
+  const positions = new Map(
+    unplaced.map(({ block }, index) => [block.id, chess[index]]),
+  );
+
+  return drawn.map((item) => ({
+    ...item,
+    position: item.block.position ?? positions.get(item.block.id)!,
+  }));
 };
 
 type ColumnBounds = { minX: number; maxX: number; minY: number };
@@ -381,42 +425,31 @@ export const buildContainerGraph = (
   const data = (container.data ?? {}) as ContainerNodeData;
   const blocks = data.childBlocks ?? [];
   const connectors = data.connectors ?? [];
-  const nodes: RFNode[] = [];
-  // Blocks with no position of their own are arranged chess-style.
-  let unplaced = 0;
-
-  for (const block of blocks) {
-    const blockType = block.blockType;
-    if (!blockType?.schema) continue;
-
-    const initialHandles = handlesForBlock(block, blockType);
-    const position =
-      block.position ??
-      chessPosition(unplaced++, BLOCK_START, {
-        width: RESOURCE_NODE_WIDTH,
-        height: DEFAULT_BLOCK_HEIGHT,
-      });
-
-    nodes.push({
+  const nodes: RFNode[] = placeBlocks(blocks).map(
+    ({
+      block,
+      blockType,
+      initialHandles,
+      currentHandles,
+      position,
+      height,
+    }) => ({
       id: block.id,
       type: 'resource',
       position,
-      style: { width: RESOURCE_NODE_WIDTH },
+      style: { width: RESOURCE_NODE_WIDTH, height },
       draggable: true,
       data: {
         label: block.name ?? block.id,
         name: block.name ?? block.id,
         initialHandles,
-        currentHandles:
-          block.connectors && block.connectors.length > 0
-            ? block.connectors.map(connectorToHandle)
-            : undefined,
+        currentHandles,
         treeData: buildTreeData(blockType.schema),
         apiEdges: block.edges,
         blockType,
       },
-    });
-  }
+    }),
+  );
 
   const blockIds = new Set(nodes.map((node) => node.id));
   // A composite path is on the canvas when it has a row, which a branch the
@@ -714,11 +747,13 @@ export const resolveContainerLayout = (data: {
   childBlocks?: Block[];
   containerLayout?: ContainerLayout;
 }): { layout: ContainerLayout; blockOrigin: { x: number; y: number } } => {
-  // The same blocks `buildContainerGraph` sizes the group around.
-  const footprints: Footprint[] = (data.childBlocks ?? []).flatMap((block) =>
-    block.blockType?.schema && block.position
-      ? [{ position: block.position, style: { width: RESOURCE_NODE_WIDTH } }]
-      : [],
+  // The same blocks, placed the same way, `buildContainerGraph` sizes the
+  // group around.
+  const footprints: Footprint[] = placeBlocks(data.childBlocks ?? []).map(
+    ({ position, height }) => ({
+      position,
+      style: { width: RESOURCE_NODE_WIDTH, height },
+    }),
   );
   const { steps, patchIndex, boxes } = pipelineGroupBoxes(
     data.functions,

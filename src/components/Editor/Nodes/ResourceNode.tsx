@@ -21,11 +21,10 @@ import {
   buildTreeData,
   moveIntersectingNodes,
   pathRows,
+  resourceNodeHeight,
   RESOURCE_NODE_WIDTH,
+  RESOURCE_ROW_HEIGHT as SPACE_BETWEEN_HANDLES,
 } from '../../../lib/editorUtils';
-
-const SPACE_BETWEEN_HANDLES = 30;
-const MIN_RESOURCE_NODE_HEIGHT = 80;
 
 // The two columns split the node between them, each reading outwards towards
 // its own handles: targets left to right, sources right-aligned. The column
@@ -94,13 +93,7 @@ const ResourceNodeComponent = ({
     [handles],
   );
 
-  const nodeHeight = useMemo(() => {
-    const maxRowCount = Math.max(targetRows.length, sourceRows.length);
-    return Math.max(
-      (maxRowCount + 2) * SPACE_BETWEEN_HANDLES,
-      MIN_RESOURCE_NODE_HEIGHT,
-    );
-  }, [targetRows, sourceRows]);
+  const nodeHeight = useMemo(() => resourceNodeHeight(handles), [handles]);
 
   useEffect(() => {
     setNodes((currentNodes) =>
