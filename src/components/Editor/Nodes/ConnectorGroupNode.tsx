@@ -248,7 +248,7 @@ const ConnectorGroupNodeComponent = ({
                 // either, the other kind on its hidden handle.
                 isConnectable={!isInput || draggedFrom !== 'source'}
                 inactiveClass={'opacity-30'}
-                className={isInput ? undefined : 'status-handle'}
+                className={isInput ? 'spec-handle' : 'status-handle'}
                 path={row.path}
                 description={row.item?.description ?? ''}
                 variant="block"

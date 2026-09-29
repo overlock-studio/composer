@@ -1,46 +1,58 @@
+/* Glows in the handle's own colours, so they follow whatever colours the
+   host sets (see `colors` on ComposerEditor). */
 @keyframes pulseNeonSource {
   0% {
     box-shadow:
-      0 0 4px rgba(45, 45, 255, 1),
-      0 0 8px rgba(45, 45, 255, 0.9),
-      0 0 16px rgba(45, 45, 255, 0.8),
-      0 0 32px rgba(154, 174, 255, 0.6),
-      0 0 48px rgba(154, 174, 255, 0.5),
-      0 0 64px rgba(154, 174, 255, 0.4),
-      0 0 80px rgba(154, 174, 255, 0.3);
+      0 0 4px var(--handle-output-border-color),
+      0 0 8px
+        color-mix(in srgb, var(--handle-output-border-color) 90%, transparent),
+      0 0 16px
+        color-mix(in srgb, var(--handle-output-border-color) 80%, transparent),
+      0 0 32px color-mix(in srgb, var(--handle-output-color) 60%, transparent),
+      0 0 48px color-mix(in srgb, var(--handle-output-color) 50%, transparent),
+      0 0 64px color-mix(in srgb, var(--handle-output-color) 40%, transparent),
+      0 0 80px color-mix(in srgb, var(--handle-output-color) 30%, transparent);
   }
   100% {
     box-shadow:
-      0 0 4px rgba(45, 45, 255, 0.6),
-      0 0 8px rgba(45, 45, 255, 0.5),
-      0 0 16px rgba(45, 45, 255, 0.4),
-      0 0 32px rgba(154, 174, 255, 0.3),
-      0 0 48px rgba(154, 174, 255, 0.2),
-      0 0 64px rgba(154, 174, 255, 0.1),
-      0 0 80px rgba(154, 174, 255, 0.05);
+      0 0 4px
+        color-mix(in srgb, var(--handle-output-border-color) 60%, transparent),
+      0 0 8px
+        color-mix(in srgb, var(--handle-output-border-color) 50%, transparent),
+      0 0 16px
+        color-mix(in srgb, var(--handle-output-border-color) 40%, transparent),
+      0 0 32px color-mix(in srgb, var(--handle-output-color) 30%, transparent),
+      0 0 48px color-mix(in srgb, var(--handle-output-color) 20%, transparent),
+      0 0 64px color-mix(in srgb, var(--handle-output-color) 10%, transparent),
+      0 0 80px color-mix(in srgb, var(--handle-output-color) 5%, transparent);
   }
 }
 
 @keyframes pulseNeonTarget {
   0% {
     box-shadow:
-      0 0 4px rgba(99, 49, 155, 1),
-      0 0 8px rgba(99, 49, 155, 0.9),
-      0 0 16px rgba(99, 49, 155, 0.8),
-      0 0 32px rgba(166, 134, 202, 0.6),
-      0 0 48px rgba(166, 134, 202, 0.5),
-      0 0 64px rgba(166, 134, 202, 0.4),
-      0 0 80px rgba(166, 134, 202, 0.3);
+      0 0 4px var(--handle-input-border-color),
+      0 0 8px
+        color-mix(in srgb, var(--handle-input-border-color) 90%, transparent),
+      0 0 16px
+        color-mix(in srgb, var(--handle-input-border-color) 80%, transparent),
+      0 0 32px color-mix(in srgb, var(--handle-input-color) 60%, transparent),
+      0 0 48px color-mix(in srgb, var(--handle-input-color) 50%, transparent),
+      0 0 64px color-mix(in srgb, var(--handle-input-color) 40%, transparent),
+      0 0 80px color-mix(in srgb, var(--handle-input-color) 30%, transparent);
   }
   100% {
     box-shadow:
-      0 0 4px rgba(99, 49, 155, 0.6),
-      0 0 8px rgba(99, 49, 155, 0.5),
-      0 0 16px rgba(99, 49, 155, 0.4),
-      0 0 32px rgba(166, 134, 202, 0.3),
-      0 0 48px rgba(166, 134, 202, 0.2),
-      0 0 64px rgba(166, 134, 202, 0.1),
-      0 0 80px rgba(166, 134, 202, 0.05);
+      0 0 4px
+        color-mix(in srgb, var(--handle-input-border-color) 60%, transparent),
+      0 0 8px
+        color-mix(in srgb, var(--handle-input-border-color) 50%, transparent),
+      0 0 16px
+        color-mix(in srgb, var(--handle-input-border-color) 40%, transparent),
+      0 0 32px color-mix(in srgb, var(--handle-input-color) 30%, transparent),
+      0 0 48px color-mix(in srgb, var(--handle-input-color) 20%, transparent),
+      0 0 64px color-mix(in srgb, var(--handle-input-color) 10%, transparent),
+      0 0 80px color-mix(in srgb, var(--handle-input-color) 5%, transparent);
   }
 }
 
@@ -55,8 +67,20 @@
   --node-box-shadow: none;
   --bg-color: hsl(var(--card));
   --text-color: hsl(var(--foreground));
-  --edge-input-color: #2a8af6;
-  --edge-output-color: #ae53ba;
+  /* Input and output colours: the host can set the `--composer-*` properties
+     (ComposerEditor's `colors` prop does), otherwise these defaults apply. */
+  --handle-input-color: var(--composer-input-handle-color, #a686ca);
+  --handle-input-border-color: var(
+    --composer-input-handle-border-color,
+    #63319b
+  );
+  --handle-output-color: var(--composer-output-handle-color, #9aaeff);
+  --handle-output-border-color: var(
+    --composer-output-handle-border-color,
+    #2d2dff
+  );
+  --edge-input-color: var(--composer-input-edge-color, #ae53ba);
+  --edge-output-color: var(--composer-output-edge-color, #2a8af6);
   color: var(--text-color);
 
   &.dark {
@@ -91,8 +115,8 @@
       pointer-events: all;
       &.target {
         left: 0;
-        background-color: #a686ca;
-        border: 3px solid #63319b;
+        background-color: var(--handle-input-color);
+        border: 3px solid var(--handle-input-border-color);
         &:hover,
         &.is-active {
           animation: pulseNeonTarget 1.2s ease-in-out infinite;
@@ -101,8 +125,8 @@
       }
       &.source {
         right: 0;
-        background-color: #9aaeff;
-        border: 3px solid #2d2dff;
+        background-color: var(--handle-output-color);
+        border: 3px solid var(--handle-output-border-color);
         &:hover,
         &.is-active {
           animation: pulseNeonSource 1.2s ease-in-out infinite;
@@ -144,27 +168,6 @@
         z-index: 10004 !important;
       }
 
-      /* A block's dots take the colour of their edges: blue where Spec and
-         Status feed its inputs, violet where its outputs leave. */
-      .react-flow__handle.target {
-        background-color: #9aaeff;
-        border-color: #2d2dff;
-        &:hover,
-        &.is-active {
-          animation: pulseNeonSource 1.2s ease-in-out infinite;
-          border-color: #fff;
-        }
-      }
-      .react-flow__handle.source {
-        background-color: #a686ca;
-        border-color: #63319b;
-        &:hover,
-        &.is-active {
-          animation: pulseNeonTarget 1.2s ease-in-out infinite;
-          border-color: #fff;
-        }
-      }
-
       .node-body {
         overflow: visible;
       }
@@ -195,11 +198,20 @@
         overflow: visible;
       }
 
-      /* Status holds what the blocks put out, so its handles take the output
-         colour whichever way round they are. */
+      /* Spec handles are blue and Status handles violet, whichever way round
+         they are. */
+      .react-flow__handle.spec-handle {
+        background-color: var(--handle-output-color);
+        border-color: var(--handle-output-border-color);
+        &:hover,
+        &.is-active {
+          animation: pulseNeonSource 1.2s ease-in-out infinite;
+          border-color: #fff;
+        }
+      }
       .react-flow__handle.status-handle {
-        background-color: #a686ca;
-        border-color: #63319b;
+        background-color: var(--handle-input-color);
+        border-color: var(--handle-input-border-color);
         &:hover,
         &.is-active {
           animation: pulseNeonTarget 1.2s ease-in-out infinite;
@@ -455,14 +467,11 @@
      at rest, hollowed out to the canvas colour while hovered or while its menu
      is open, and zoomed with the canvas like the transformer chips. */
   .edge-menu-point {
-    --edge-point-color: #6c6ed8;
-
-    &.edge-input {
-      --edge-point-color: var(--edge-input-color);
-    }
-    &.edge-output {
-      --edge-point-color: var(--edge-output-color);
-    }
+    --edge-point-color: color-mix(
+      in srgb,
+      var(--edge-input-color),
+      var(--edge-output-color)
+    );
 
     position: absolute;
     top: 0;
@@ -502,14 +511,6 @@
     stroke: url(#edge-gradient);
     stroke-width: 2;
     stroke-opacity: 0.75;
-  }
-  /* Data edges in one colour each: blue into a block's input, violet out of
-     its output. */
-  .react-flow__edge .react-flow__edge-path.edge-input {
-    stroke: var(--edge-input-color);
-  }
-  .react-flow__edge .react-flow__edge-path.edge-output {
-    stroke: var(--edge-output-color);
   }
   .react-flow__edge .react-flow__edge-path.edge-flow-animated {
     stroke-dasharray: 8 4;

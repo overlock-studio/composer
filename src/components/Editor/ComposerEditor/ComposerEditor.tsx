@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useImperativeHandle,
   useMemo,
+  type CSSProperties,
   type Ref,
 } from 'react';
 import {
@@ -41,13 +42,46 @@ export type ComposerSavePayload = {
   blocks: Block[];
 };
 
+// Colours of block inputs and outputs, as any CSS colour. Spec takes the
+// output colours and Status the input ones; an edge fades from the colour of
+// the end its data leaves to the other. Anything left out keeps its default.
+export type ComposerColors = {
+  inputHandle?: string;
+  inputHandleBorder?: string;
+  inputEdge?: string;
+  outputHandle?: string;
+  outputHandleBorder?: string;
+  outputEdge?: string;
+};
+
 export type ComposerEditorProps = {
   // What a previous save handed out.
   blocks: Block[];
   adapter: EditorDataAdapter;
   entityRef?: EditorEntityRef;
   onSave: (payload: ComposerSavePayload) => void;
+  colors?: ComposerColors;
 };
+
+// The CSS custom property each colour sets (see editor.css).
+const COLOR_PROPERTIES: Record<keyof ComposerColors, string> = {
+  inputHandle: '--composer-input-handle-color',
+  inputHandleBorder: '--composer-input-handle-border-color',
+  inputEdge: '--composer-input-edge-color',
+  outputHandle: '--composer-output-handle-color',
+  outputHandleBorder: '--composer-output-handle-border-color',
+  outputEdge: '--composer-output-edge-color',
+};
+
+const colorStyle = (colors: ComposerColors | undefined): CSSProperties =>
+  Object.fromEntries(
+    Object.entries(colors ?? {})
+      .filter(([, value]) => value)
+      .map(([key, value]) => [
+        COLOR_PROPERTIES[key as keyof ComposerColors],
+        value,
+      ]),
+  );
 
 export type ComposerEditorHandle = {
   save: () => void;
@@ -67,7 +101,7 @@ type InnerProps = ComposerEditorProps & {
   forwardedRef: Ref<ComposerEditorHandle>;
 };
 
-function ComposerEditorBody({ onSave, forwardedRef }: InnerProps) {
+function ComposerEditorBody({ onSave, colors, forwardedRef }: InnerProps) {
   const { getNodes, getEdges } = useReactFlow();
   const { containerSession } = useEditorActions();
 
@@ -93,6 +127,11 @@ function ComposerEditorBody({ onSave, forwardedRef }: InnerProps) {
     triggerSave,
   ]);
 
+  const canvasStyle = useMemo(
+    () => ({ flex: 1, minHeight: 0, ...colorStyle(colors) }),
+    [colors],
+  );
+
   return (
     <SidebarProvider defaultLeftOpen={false} defaultRightOpen={false}>
       <SidebarInset>
@@ -111,7 +150,7 @@ function ComposerEditorBody({ onSave, forwardedRef }: InnerProps) {
             <PanelRight className="h-4 w-4" />
           </SidebarTrigger>
         </header>
-        <div style={{ flex: 1, minHeight: 0 }}>
+        <div style={canvasStyle}>
           <EditorArea />
         </div>
       </SidebarInset>
