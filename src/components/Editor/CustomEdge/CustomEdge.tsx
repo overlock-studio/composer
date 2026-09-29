@@ -20,7 +20,7 @@ import {
   touchesActiveHandle,
 } from '../../../lib/editorUtils';
 import { CustomEdgeToolbar } from '../Toolbars';
-import { isConnectorGroupId } from '../../../lib/containerGraph';
+import { connectorGroupId } from '../../../lib/containerGraph';
 import { useFocusedEdges } from '../../../lib/edgeFocus';
 import { Transformer } from '../Transformer';
 import { useEditorActions } from '../EditorAreaContext';
@@ -71,9 +71,11 @@ const CustomEdgeComponent = ({
   const isFlowActive =
     isHandleFlowActive || isSourceSelected || isTargetSelected || isRelayed;
 
-  // An edge is coloured by what it carries: blue when it feeds a block's
-  // input from Spec or Status, violet when it leaves a block's output.
-  const kindClass = isConnectorGroupId(source) ? 'edge-input' : 'edge-output';
+  // An edge starts in the colour of the handle its flow leaves, violet from
+  // Status and blue from Spec or a block output, and fades into the other
+  // colour, so it shows where its data comes from.
+  const fromStatus = source === connectorGroupId('output');
+  const gradientId = `edge-gradient-${id.replace(/[^\w-]/g, '_')}`;
 
   // While other edges are active this one steps back; the canvas decides
   // whether any are (see `edges-focused` in EditorArea).
@@ -246,10 +248,39 @@ const CustomEdgeComponent = ({
 
   return (
     <>
+      {/* Anchored to the ends themselves, so the colours follow the flow
+          whichever way the edge runs on the canvas. */}
+      <defs>
+        <linearGradient
+          id={gradientId}
+          gradientUnits="userSpaceOnUse"
+          x1={sourceX}
+          y1={sourceY}
+          x2={targetX}
+          y2={targetY}
+        >
+          <stop
+            offset="0%"
+            style={{
+              stopColor: fromStatus
+                ? 'var(--edge-input-color)'
+                : 'var(--edge-output-color)',
+            }}
+          />
+          <stop
+            offset="100%"
+            style={{
+              stopColor: fromStatus
+                ? 'var(--edge-output-color)'
+                : 'var(--edge-input-color)',
+            }}
+          />
+        </linearGradient>
+      </defs>
       <path
         id={id}
-        style={style}
-        className={`react-flow__edge-path nopan nodrag ${isFlowActive ? 'edge-flow-animated' : ''} ${kindClass} ${inactiveClass}`}
+        style={{ ...style, stroke: `url(#${gradientId})` }}
+        className={`react-flow__edge-path nopan nodrag ${isFlowActive ? 'edge-flow-animated' : ''} ${inactiveClass}`}
         d={edgePath}
       />
       <EdgeLabelRenderer>
@@ -258,7 +289,7 @@ const CustomEdgeComponent = ({
           type="button"
           // Active only while its own menu is open: opening a transformer's
           // menu selects the edge too, and that should not light this up.
-          className={`edge-menu-point nodrag nopan ${kindClass} ${
+          className={`edge-menu-point nodrag nopan ${
             openEdgeToolbar ? 'is-active' : ''
           } ${inactiveClass}`}
           style={{
