@@ -126,7 +126,8 @@ export type EditorAreaContextType = {
   setActiveHandle: React.Dispatch<React.SetStateAction<ActiveHandle | null>>;
   adapter: EditorDataAdapter;
   entityRef: EditorEntityRef;
-  registerBlockTypes: (types: BlockType[]) => void;
+  // Replacing overwrites types already known, as a library refresh does.
+  registerBlockTypes: (types: BlockType[], replace?: boolean) => void;
   editorMode: EditorMode;
   activeContainerId: string | null;
   // Null unless a container is open. Held as a ref so parking a graph never

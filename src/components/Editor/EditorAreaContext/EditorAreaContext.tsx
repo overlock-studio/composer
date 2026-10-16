@@ -127,22 +127,25 @@ export const EditorAreaProvider: React.FC<EditorAreaProviderProps> = ({
     setActiveContainerId(null);
   }, []);
 
-  const registerBlockTypes = useCallback((types: BlockType[]) => {
-    if (!types.length) return;
-    setBlockTypeRegistry((prev) => {
-      let changed = false;
-      const next = { ...prev };
-      for (const type of types) {
-        if (!hasNonEmptySchema(type)) continue;
-        const key = blockTypeKey(type.apiVersion, type.kind);
-        if (!next[key]) {
-          next[key] = type;
-          changed = true;
+  const registerBlockTypes = useCallback(
+    (types: BlockType[], replace = false) => {
+      if (!types.length) return;
+      setBlockTypeRegistry((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const type of types) {
+          if (!hasNonEmptySchema(type)) continue;
+          const key = blockTypeKey(type.apiVersion, type.kind);
+          if (replace ? next[key] !== type : !next[key]) {
+            next[key] = type;
+            changed = true;
+          }
         }
-      }
-      return changed ? next : prev;
-    });
-  }, []);
+        return changed ? next : prev;
+      });
+    },
+    [],
+  );
 
   const resolveBlockType = useCallback(
     (apiVersion: string | undefined, kind: string | undefined) =>
