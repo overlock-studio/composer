@@ -7,6 +7,7 @@ import { NodeDeletionDialog } from '../ConfirmDeletionDialog';
 import { useNodeDeleteShortcut } from '../../../lib/useNodeDeleteShortcut';
 import { ContainerNodeFooter } from './ContainerNodeFooter';
 import { CustomHandle } from '../CustomHandle';
+import { RowTree } from '../RowTree';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import {
@@ -16,11 +17,16 @@ import {
   DialogTitle,
 } from '../../ui/dialog';
 import {
-  connectorLabels,
   CONTAINER_HANDLE_SPACING,
   CONTAINER_NODE_WIDTH,
+  pathRows,
 } from '../../../lib/editorUtils';
 import { useEditorActions } from '../EditorAreaContext/EditorAreaContext';
+
+// Each column owns half the node and reads outwards towards its handles, as on
+// a block: inputs left to right, outputs right-aligned, long names truncating.
+const INPUT_ROW = 'flex w-full items-center justify-start pl-[10px] pr-1';
+const OUTPUT_ROW = 'flex w-full items-center justify-end pr-[10px] pl-1';
 
 const ContainerNodeComponent = ({
   id: containerId,
@@ -32,8 +38,6 @@ const ContainerNodeComponent = ({
   useNodeDeleteShortcut(selected, () => setOpenDeleteDialog(true));
   const connectors = data.connectors;
   const { setNodes, resolveBlockType, openContainer } = useEditorActions();
-
-  const labels = useMemo(() => connectorLabels(connectors), [connectors]);
 
   const { name, blockType, functions } = data;
   const kind = data.kind ?? blockType?.kind ?? '';
@@ -52,6 +56,10 @@ const ContainerNodeComponent = ({
     () => (connectors || []).filter((c) => c.connection === 'output'),
     [connectors],
   );
+  // Each side is its own tree, drawn the way a block draws its handles; branch
+  // rows are rows like any other, so the node grows with them.
+  const inputRows = useMemo(() => pathRows(inputs), [inputs]);
+  const outputRows = useMemo(() => pathRows(outputs), [outputs]);
 
   const updateData = (patch: Partial<ContainerNodeData>) => {
     setNodes((nds) =>
@@ -136,36 +144,52 @@ const ContainerNodeComponent = ({
         </div>
       </div>
       <div className="flex flex-row justify-between">
-        <div className="flex flex-col">
-          {inputs.map((connector, index) => (
+        <div className="flex w-1/2 flex-col">
+          {inputRows.map((row, index) => (
             <CustomHandle
-              key={connector.path}
+              key={row.path}
               type="target"
               position={Position.Left}
-              id={connector.path}
+              id={row.path}
               style={{ top: `${CONTAINER_HANDLE_SPACING * (index + 2)}px` }}
               inactiveClass={'opacity-30'}
-              description={connector.description}
-              path={connector.path}
-              label={labels[connector.path]}
+              description={row.item?.description ?? ''}
+              path={row.path}
+              label={
+                <>
+                  <RowTree row={row} height={CONTAINER_HANDLE_SPACING} />
+                  <span className="min-w-0 truncate">{row.name}</span>
+                </>
+              }
+              labelClassName={INPUT_ROW}
               variant="block"
             />
           ))}
         </div>
-        <div className="flex flex-col">
-          {outputs.map((connector, index) => (
+        <div className="flex w-1/2 flex-col">
+          {outputRows.map((row, index) => (
             <CustomHandle
-              key={connector.path}
+              key={row.path}
               type="source"
               position={Position.Right}
-              id={connector.path}
+              id={row.path}
               style={{ top: `${CONTAINER_HANDLE_SPACING * (index + 2)}px` }}
               isConnectableStart={false}
               isConnectableEnd={false}
               inactiveClass={'opacity-30'}
-              description={connector.description}
-              path={connector.path}
-              label={labels[connector.path]}
+              description={row.item?.description ?? ''}
+              path={row.path}
+              label={
+                <>
+                  <span className="min-w-0 truncate">{row.name}</span>
+                  <RowTree
+                    row={row}
+                    height={CONTAINER_HANDLE_SPACING}
+                    mirrored
+                  />
+                </>
+              }
+              labelClassName={OUTPUT_ROW}
               variant="block"
             />
           ))}
