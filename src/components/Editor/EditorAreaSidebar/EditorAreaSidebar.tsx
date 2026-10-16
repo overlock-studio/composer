@@ -24,7 +24,14 @@ import {
   CrossplaneFunctionDB,
   CrossplaneProviderDB,
 } from '../../../api/typesDB';
-import { Box, Filter, Layers } from 'lucide-react';
+import { Box, Filter, Layers, RefreshCw } from 'lucide-react';
+import { Button } from '../../ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../../ui/tooltip';
 
 // Accordion value and filter key of the Functions section, apart from the
 // provider ids the other sections use.
@@ -139,8 +146,14 @@ export const EditorAreaSidebar = () => {
     );
   }, [functions, filterByProvider]);
 
-  const fetchBlockTypes = async (url: string, providerIcon?: string) => {
-    if (providerBlockTypes.some((pc) => pc.key === url)) return;
+  // A provider's block types are fetched once; `force` fetches them again
+  // and puts them in place of the ones already loaded.
+  const fetchBlockTypes = async (
+    url: string,
+    providerIcon?: string,
+    force = false,
+  ) => {
+    if (!force && providerBlockTypes.some((pc) => pc.key === url)) return;
 
     setBlockTypesLoadingMap((prev) => ({ ...prev, [url]: true }));
     try {
@@ -148,20 +161,29 @@ export const EditorAreaSidebar = () => {
       const blockTypes = providerIcon
         ? fetched.map((bt) => ({ ...bt, icon: bt.icon ?? providerIcon }))
         : fetched;
-      setProviderBlockTypes((prev) => [...prev, { key: url, blockTypes }]);
-      registerBlockTypes(blockTypes);
+      setProviderBlockTypes((prev) => [
+        ...prev.filter((pc) => pc.key !== url),
+        { key: url, blockTypes },
+      ]);
+      registerBlockTypes(blockTypes, force);
     } finally {
       setBlockTypesLoadingMap((prev) => ({ ...prev, [url]: false }));
     }
   };
 
-  useEffect(() => {
+  const fetchProvidersBlockTypes = (force = false) => {
     providers.forEach((pr) => {
       if (!pr.url) return;
       const fullUrl = pr.version ? `${pr.url}:${pr.version}` : pr.url;
-      fetchBlockTypes(fullUrl, pr.icon);
+      fetchBlockTypes(fullUrl, pr.icon, force);
     });
+  };
+
+  useEffect(() => {
+    fetchProvidersBlockTypes();
   }, [providers]);
+
+  const refreshing = Object.values(blockTypesLoadingMap).some(Boolean);
 
   // The container-level canvas only takes containers; provider blocks are
   // added inside a container, on its own canvas.
@@ -203,9 +225,38 @@ export const EditorAreaSidebar = () => {
           <SidebarGroup className="h-full">
             <SidebarGroupContent className="h-full">
               <div className="flex flex-col h-full">
-                <h2 className="px-2 pt-2 pb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {editorMode === 'containers' ? 'Containers' : 'Block library'}
-                </h2>
+                <div className="flex items-center gap-1 px-2 pt-2 pb-3">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {editorMode === 'containers'
+                      ? 'Containers'
+                      : 'Block library'}
+                  </h2>
+                  {/* Providers publish new blocks while the editor is open;
+                      this fetches them again without reloading the page. */}
+                  {editorMode === 'container' && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground [&_svg]:size-3.5"
+                            aria-label="Refresh block library"
+                            disabled={refreshing}
+                            onClick={() => fetchProvidersBlockTypes(true)}
+                          >
+                            <RefreshCw
+                              className={refreshing ? 'animate-spin' : ''}
+                            />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">
+                          Refresh block library
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
                 <Accordion
                   type="single"
                   collapsible
