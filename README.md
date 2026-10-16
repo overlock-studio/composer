@@ -7,6 +7,8 @@ Visual editor library for Crossplane configurations. Node-based canvas with pars
 
 Live demo: [v1](https://overlock-studio.github.io/composer/v1/)
 
+![Blocks inside a container, wired to its Spec and Status](docs/screenshot-blocks.png)
+
 ## Install
 
 ```bash
