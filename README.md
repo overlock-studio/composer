@@ -3,7 +3,9 @@
 [![stable](https://img.shields.io/github/v/release/overlock-studio/composer?label=stable)](https://github.com/overlock-studio/composer/releases/latest)
 [![unstable](https://img.shields.io/github/v/release/overlock-studio/composer?include_prereleases&sort=semver&label=unstable)](https://github.com/overlock-studio/composer/releases)
 
-Visual editor library for Crossplane configurations. Node-based canvas with parsers and serializers for YAML round-trip.
+**Visual DSL Editor for Infrastructure Configurations and Workflows.**
+
+Composer is for building infrastructure configurations and workflows visually instead of writing them by hand. Embed it in a platform or internal tool to give its users a canvas where they assemble building blocks, see how data flows between them, and get back a configuration ready to store and deploy. It makes complex configurations easier to read, review and change, for the people who write them and for those who only need to understand them.
 
 Live demo: [v1](https://overlock-studio.github.io/composer/v1/)
 
