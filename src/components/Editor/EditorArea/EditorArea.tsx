@@ -684,21 +684,47 @@ export const EditorArea = () => {
 
   // Blocks step back behind whatever has the focus. While a handle is lit,
   // the blocks wired to it through an edge stay as they are, so what the field
-  // feeds or comes from stands out. While blocks are selected, they do, and so
-  // do the blocks wired to them — straight, or relayed through a Status field,
-  // whether the selection writes it and they read it or the other way round —
-  // together with the edges on the way, which do not touch the selection
-  // themselves. Only what is drawn changes; the graph itself is left alone.
+  // feeds or comes from stands out, and so do the blocks on the other side of
+  // a Status field it is wired to, with the edges on the way. While blocks are
+  // selected, they do, and so do the blocks wired to them — straight, or
+  // relayed through a Status field, whether the selection writes it and they
+  // read it or the other way round — together with the edges on the way, which
+  // do not touch the selection themselves. Only what is drawn changes; the
+  // graph itself is left alone.
   const focus = useMemo(() => {
     const relayEdges = new Set<string>();
     const dataEdges = edges.filter((edge) => edge.type === 'customEdge');
 
+    const status = connectorGroupId('output');
+
     if (activeHandle) {
       const kept = new Set([activeHandle.nodeId]);
+      // Status fields the handle is wired to, when it is not on Status itself.
+      const relayed = new Set<string>();
       for (const edge of dataEdges) {
         if (!touchesActiveHandle(activeHandle, edge)) continue;
         kept.add(edge.source);
         kept.add(edge.target);
+        if (edge.source === status && edge.target === activeHandle.nodeId) {
+          relayed.add(handleRow(edge.sourceHandle));
+        } else if (
+          edge.target === status &&
+          edge.source === activeHandle.nodeId
+        ) {
+          relayed.add(handleRow(edge.targetHandle));
+        }
+      }
+      // The rest of those fields' edges light up with the handle's own, and
+      // so do the blocks at their far ends: what reads the field the handle
+      // writes, or writes the field it reads.
+      for (const edge of dataEdges) {
+        const onRelayed =
+          (edge.source === status &&
+            relayed.has(handleRow(edge.sourceHandle))) ||
+          (edge.target === status && relayed.has(handleRow(edge.targetHandle)));
+        if (!onRelayed || touchesActiveHandle(activeHandle, edge)) continue;
+        kept.add(edge.source === status ? edge.target : edge.source);
+        relayEdges.add(edge.id);
       }
       return { kept, relayEdges };
     }
@@ -710,7 +736,6 @@ export const EditorArea = () => {
 
     const kept = new Set(selected.map((node) => node.id));
     const isSelected = (id: string) => selected.some((node) => node.id === id);
-    const status = connectorGroupId('output');
     // Status fields the selection writes, and the ones it reads.
     const written = new Set<string>();
     const read = new Set<string>();
